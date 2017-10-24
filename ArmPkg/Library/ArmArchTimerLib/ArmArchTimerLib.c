@@ -257,7 +257,7 @@ GetTimeInNanoSecond (
   UINT32  Remainder;
   UINT32  TimerFreq;
 
-  TimerFreq = GetPlatformTimerFreq ();
+  TimerFreq = (UINT32)GetPlatformTimerFreq ();
   //
   //          Ticks
   // Time = --------- x 1,000,000,000
