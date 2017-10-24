@@ -257,7 +257,7 @@ DefaultExceptionHandler (
 
   DEBUG ((EFI_D_ERROR, "\n ESR : EC 0x%02x  IL 0x%x  ISS 0x%08x\n", (SystemContext.SystemContextAArch64->ESR & 0xFC000000) >> 26, (SystemContext.SystemContextAArch64->ESR >> 25) & 0x1, SystemContext.SystemContextAArch64->ESR & 0x1FFFFFF ));
 
-  DescribeExceptionSyndrome (SystemContext.SystemContextAArch64->ESR);
+  DescribeExceptionSyndrome ((UINT32)SystemContext.SystemContextAArch64->ESR);
 
   DEBUG ((EFI_D_ERROR, "\nStack dump:\n"));
   for (Offset = -256; Offset < 256; Offset += 32) {

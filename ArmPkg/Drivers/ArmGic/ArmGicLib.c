@@ -141,8 +141,8 @@ ArmGicSendSgiTo (
 {
   MmioWrite32 (
     GicDistributorBase + ARM_GIC_ICDSGIR,
-    ((TargetListFilter & 0x3) << 24) | ((CPUTargetList & 0xFF) << 16) | SgiId
-    );
+	(UINT32)(((TargetListFilter & 0x3) << 24) | ((CPUTargetList & 0xFF) << 16) | SgiId)
+	);  // MS_CHANGE
 }
 
 /*
@@ -267,7 +267,7 @@ ArmGicEnableInterrupt (
   UINTN                 GicCpuRedistributorBase;
 
   // Calculate enable register offset and bit position
-  RegOffset = Source / 32;
+  RegOffset = (UINT32)(Source / 32);    // MS_CHANGE
   RegShift = Source % 32;
 
   Revision = ArmGicGetSupportedArchRevision ();
@@ -311,7 +311,7 @@ ArmGicDisableInterrupt (
   UINTN                 GicCpuRedistributorBase;
 
   // Calculate enable register offset and bit position
-  RegOffset = Source / 32;
+  RegOffset = (UINT32)(Source / 32);   // MS_CHANGE
   RegShift = Source % 32;
 
   Revision = ArmGicGetSupportedArchRevision ();
@@ -355,7 +355,7 @@ ArmGicIsInterruptEnabled (
   UINT32                Interrupts;
 
   // Calculate enable register offset and bit position
-  RegOffset = Source / 32;
+  RegOffset = (UINT32)(Source / 32);  // MS_CHANGE
   RegShift = Source % 32;
 
   Revision = ArmGicGetSupportedArchRevision ();

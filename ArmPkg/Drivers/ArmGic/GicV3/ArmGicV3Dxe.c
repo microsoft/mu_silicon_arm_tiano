@@ -159,7 +159,7 @@ GicV3IrqInterruptHandler (
   UINT32                      GicInterrupt;
   HARDWARE_INTERRUPT_HANDLER  InterruptHandler;
 
-  GicInterrupt = ArmGicV3AcknowledgeInterrupt ();
+  GicInterrupt = (UINT32)ArmGicV3AcknowledgeInterrupt ();   // MS_CHANGE
 
   // Special Interrupts (ID1020-ID1023) have an Interrupt ID greater than the
   // number of interrupt (ie: Spurious interrupt).
@@ -381,8 +381,8 @@ GicV3DxeInitialize (
   // the system.
   ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gHardwareInterruptProtocolGuid);
 
-  mGicDistributorBase    = PcdGet64 (PcdGicDistributorBase);
-  mGicRedistributorsBase = PcdGet64 (PcdGicRedistributorsBase);
+  mGicDistributorBase    = (UINT32)PcdGet64 (PcdGicDistributorBase);           // MS_CHANGE
+  mGicRedistributorsBase = (UINT32)PcdGet64 (PcdGicRedistributorsBase);        // MS_CHANGE
   mGicNumInterrupts      = ArmGicGetMaxNumInterrupts (mGicDistributorBase);
 
   // We will be driving this GIC in native v3 mode, i.e., with Affinity
@@ -423,7 +423,7 @@ GicV3DxeInitialize (
       for (Index = 8; Index < (mGicNumInterrupts / 4); Index++) {
         MmioWrite32 (
           mGicDistributorBase + ARM_GIC_ICDIPTR + (Index * 4),
-          CpuTarget
+          (UINT32)CpuTarget      // MS_CHANGE
           );
       }
     }
@@ -460,7 +460,7 @@ GicV3DxeInitialize (
     for (Index = 0; Index < (mGicNumInterrupts - 32); Index++) {
       MmioWrite64 (
         mGicDistributorBase + ARM_GICD_IROUTER + (Index * 8),
-        CpuTarget
+        (UINT32)CpuTarget
         );
     }
   }

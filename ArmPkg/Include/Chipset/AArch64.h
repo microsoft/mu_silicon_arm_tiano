@@ -116,6 +116,8 @@
 // build for ARMv8.0, we need to define the register here.
 #define ID_AA64MMFR2_EL1 S3_0_C0_C7_2
 
+#if !defined(_MSC_VER)
+
 #define VECTOR_BASE(tbl)          \
   .section .text.##tbl##,"ax";    \
   .align 11;                      \
@@ -129,6 +131,23 @@
 #define VECTOR_END(tbl)           \
   .org 0x800;                     \
   .previous
+
+#else
+
+#define VECTOR_BASE(tbl)          \
+    AREA    |.text|,ALIGN=11,CODE,READONLY  __CR__\
+    EXPORT  tbl                             __CR__\
+## tbl PROC                                 __CR__
+
+#define VECTOR_ENTRY(tbl, off)    \
+    ALIGN   128             __CR__\
+
+#define VECTOR_END(tbl)                     \
+tbl ENDP                                    __CR__\
+    ALIGN   0x800                           __CR__\
+    AREA    |.text|,ALIGN=3,CODE,READONLY   __CR__
+
+#endif
 
 VOID
 EFIAPI

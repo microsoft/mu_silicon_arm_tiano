@@ -20,7 +20,8 @@
 
 [Sources.AARCH64]
   AArch64/ArmMmuLibCore.c
-  AArch64/ArmMmuLibReplaceEntry.S
+  AArch64/ArmMmuLibReplaceEntry.S    | GCC
+  AArch64/ArmMmuLibReplaceEntry.masm | MSFT
 
 [Sources.ARM]
   Arm/ArmMmuLibConvert.c
