@@ -229,7 +229,7 @@ InitializeDma (
   IN OUT  EFI_CPU_ARCH_PROTOCOL   *CpuArchProtocol
   )
 {
-  CpuArchProtocol->DmaBufferAlignment = ArmCacheWritebackGranule ();
+  CpuArchProtocol->DmaBufferAlignment = (UINT32)ArmCacheWritebackGranule ();
 }
 
 EFI_STATUS
