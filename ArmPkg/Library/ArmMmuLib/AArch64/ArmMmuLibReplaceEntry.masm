@@ -1,0 +1,127 @@
+//------------------------------------------------------------------------------
+//
+// Copyright (c) 2016, Linaro Limited. All rights reserved.
+//
+// This program and the accompanying materials
+// are licensed and made available under the terms and conditions of the BSD License
+// which accompanies this distribution.  The full text of the license may be found at
+// http://opensource.org/licenses/bsd-license.php
+//
+// THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+// WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+//
+//------------------------------------------------------------------------------
+
+#include <AsmMacroIoLibV8.h>
+
+    AREA    |.text|,ALIGN=3,CODE,READONLY
+
+    EXPORT ArmReplaceLiveTranslationEntry
+    EXPORT ArmReplaceLiveTranslationEntrySize
+
+#define CTRL_M_BIT      (1 << 0)
+
+//VOID
+//ArmReplaceLiveTranslationEntry (
+//  IN  UINT64  *Entry,
+//  IN  UINT64  Value
+//  )
+ArmReplaceLiveTranslationEntry PROC
+
+  // disable interrupts
+  mrs   x2, daif
+  msr   daifset, #0xf
+  isb sy
+
+  // clean and invalidate first so that we don't clobber
+  // adjacent entries that are dirty in the caches
+  dc    civac, x0
+  dsb   ish
+
+  EL1_OR_EL2_OR_EL3(x3)
+1
+  // disable the MMU
+  mrs   x8, sctlr_el1
+  bic   x9, x8, #CTRL_M_BIT
+  msr   sctlr_el1, x9
+  isb sy
+
+  // write updated entry
+  str   x1, [x0]
+
+  // invalidate again to get rid of stale clean cachelines that may
+  // have been filled speculatively since the last invalidate
+  dmb   sy
+  dc    ivac, x0
+
+  // flush the TLBs
+    tlbi    vmalle1      // error A2503: SP register cannot be used in this context
+  dsb   sy
+
+  // re-enable the MMU
+  msr   sctlr_el1, x8
+  isb sy
+    b  %f4
+
+
+2
+  // disable the MMU
+  mrs   x8, sctlr_el2
+  bic   x9, x8, #CTRL_M_BIT
+  msr   sctlr_el2, x9
+  isb sy
+
+  // write updated entry
+  str   x1, [x0]
+
+  // invalidate again to get rid of stale clean cachelines that may
+  // have been filled speculatively since the last invalidate
+  dmb   sy
+  dc    ivac, x0
+
+  // flush the TLBs
+  tlbi  alle2
+  dsb   sy
+
+  // re-enable the MMU
+  msr   sctlr_el2, x8
+  isb sy
+    b  %f4
+
+
+3
+  // disable the MMU
+  mrs   x8, sctlr_el3
+  bic   x9, x8, #CTRL_M_BIT
+  msr   sctlr_el3, x9
+  isb sy
+
+  // write updated entry
+  str   x1, [x0]
+
+  // invalidate again to get rid of stale clean cachelines that may
+  // have been filled speculatively since the last invalidate
+  dmb   sy
+  dc    ivac, x0
+
+  // flush the TLBs
+  tlbi  alle3
+  dsb   sy
+
+  // re-enable the MMU
+  msr   sctlr_el3, x8
+  isb sy
+
+4
+  msr   daif, x2
+  ret
+ArmReplaceLiveTranslationEntry ENDP
+
+ArmReplaceLiveTranslationEntryEnd
+
+ArmReplaceLiveTranslationEntrySize PROC
+  DCD  . - ArmReplaceLiveTranslationEntry
+ArmReplaceLiveTranslationEntrySize ENDP
+
+
+    END
