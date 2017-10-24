@@ -72,7 +72,9 @@ PeCoffLoaderRelocateImageExtraAction (
   )
 {
  #if !defined (MDEPKG_NDEBUG)
+ #if defined (__CC_ARM) || defined (__GNUC__)
   CHAR8  Temp[512];
+ #endif
  #endif
 
   if (ImageContext->PdbPointer) {
@@ -107,7 +109,9 @@ PeCoffLoaderUnloadImageExtraAction (
   )
 {
  #if !defined (MDEPKG_NDEBUG)
+ #if defined (__CC_ARM) || defined (__GNUC__)
   CHAR8  Temp[512];
+ #endif
  #endif
 
   if (ImageContext->PdbPointer) {
