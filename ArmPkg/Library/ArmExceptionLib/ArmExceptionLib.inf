@@ -37,7 +37,8 @@
 
 [Sources.AARCH64]
   AArch64/AArch64Exception.c
-  AArch64/ExceptionSupport.S
+  AArch64/ExceptionSupport.S    | GCC
+  AArch64/ExceptionSupport.masm | MSFT
 
 [Packages]
   MdePkg/MdePkg.dec
