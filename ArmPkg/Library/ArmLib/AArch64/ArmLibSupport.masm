@@ -1,0 +1,281 @@
+//------------------------------------------------------------------------------
+//
+// Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
+// Copyright (c) 2011 - 2016, ARM Limited. All rights reserved.
+// Copyright (c) 2016, Linaro Limited. All rights reserved.
+//
+// This program and the accompanying materials
+// are licensed and made available under the terms and conditions of the BSD License
+// which accompanies this distribution.  The full text of the license may be found at
+// http://opensource.org/licenses/bsd-license.php
+//
+// THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+// WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+//
+//------------------------------------------------------------------------------
+
+#include <AsmMacroIoLibV8.h>
+
+    AREA    |.text|,ALIGN=3,CODE,READONLY
+
+    EXPORT ArmReadMidr
+    EXPORT ArmCacheInfo
+    EXPORT ArmGetInterruptState
+    EXPORT ArmGetFiqState
+    EXPORT ArmGetTTBR0BaseAddress
+    EXPORT ArmSetTTBR0
+    EXPORT ArmGetTCR
+    EXPORT ArmSetTCR
+    EXPORT ArmGetMAIR
+    EXPORT ArmSetMAIR
+    EXPORT ArmWriteCpacr
+    EXPORT ArmWriteAuxCr
+    EXPORT ArmReadAuxCr
+    EXPORT ArmInvalidateTlb
+    EXPORT ArmUpdateTranslationTableEntry
+    EXPORT ArmWriteCptr
+    EXPORT ArmWriteScr
+    EXPORT ArmWriteMVBar
+    EXPORT ArmCallWFE
+    EXPORT ArmCallSEV
+    EXPORT ArmReadCpuActlr
+    EXPORT ArmWriteCpuActlr
+    EXPORT ArmReadSctlr
+
+//------------------------------------------------------------------------------
+
+DAIF_RD_FIQ_BIT    EQU   (1 << 6)
+DAIF_RD_IRQ_BIT    EQU   (1 << 7)
+
+ArmReadMidr PROC
+  mrs     x0, midr_el1        // Read from Main ID Register (MIDR)
+  ret
+ArmReadMidr ENDP
+
+ArmCacheInfo PROC
+  mrs     x0, ctr_el0         // Read from Cache Type Regiter (CTR)
+  ret
+ArmCacheInfo ENDP
+
+ArmGetInterruptState PROC
+  mrs     x0, daif
+  tst     w0, #DAIF_RD_IRQ_BIT  // Check if IRQ is enabled. Enabled if 0 (Z=1)
+  cseteq  w0                // if Z=1 return 1, else 0
+  ret
+ArmGetInterruptState ENDP
+
+ArmGetFiqState PROC
+  mrs     x0, daif
+  tst     w0, #DAIF_RD_FIQ_BIT  // Check if FIQ is enabled. Enabled if 0 (Z=1)
+  cseteq  w0                // if Z=1 return 1, else 0
+  ret
+ArmGetFiqState ENDP
+
+ArmWriteCpacr PROC
+  msr     cpacr_el1, x0      // Coprocessor Access Control Reg (CPACR)
+  ret
+ArmWriteCpacr ENDP
+
+ArmWriteAuxCr PROC
+  EL1_OR_EL2(x1)
+1 
+  msr     actlr_el1, x0      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
+  ret
+2 
+  msr     actlr_el2, x0      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
+  ret
+ArmWriteAuxCr ENDP
+
+ArmReadAuxCr PROC
+  EL1_OR_EL2(x1)
+1 
+  mrs     x0, actlr_el1      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
+  ret
+2 
+  mrs     x0, actlr_el2      // Aux Control Reg (ACTLR) at EL2. Also available in EL1 and EL3
+  ret
+ArmReadAuxCr ENDP
+
+ArmSetTTBR0 PROC
+  EL1_OR_EL2_OR_EL3(x1)
+1
+  msr     ttbr0_el1, x0      // Translation Table Base Reg 0 (TTBR0)
+  b       %f4
+2
+  msr     ttbr0_el2, x0      // Translation Table Base Reg 0 (TTBR0)
+  b       %f4
+3
+  msr     ttbr0_el3, x0      // Translation Table Base Reg 0 (TTBR0)
+4
+  isb sy
+  ret
+ArmSetTTBR0 ENDP
+
+ArmGetTTBR0BaseAddress PROC
+  EL1_OR_EL2(x1)
+1
+  mrs     x0, ttbr0_el1
+  b       %f3
+2
+  mrs     x0, ttbr0_el2
+3
+  LoadConstantToReg(0xFFFFFFFFFFFF, x1) /* Look at bottom 48 bits */
+  and     x0, x0, x1
+  isb sy
+  ret
+ArmGetTTBR0BaseAddress ENDP
+
+ArmGetTCR PROC
+  EL1_OR_EL2_OR_EL3(x1)
+1
+  mrs     x0, tcr_el1
+  b       %f4
+2
+  mrs     x0, tcr_el2
+  b       %f4
+3
+  mrs     x0, tcr_el3
+4
+  isb  sy
+  ret
+ArmGetTCR ENDP
+
+ArmSetTCR PROC
+  EL1_OR_EL2_OR_EL3(x1)
+1
+  msr     tcr_el1, x0
+  b       %f4
+2
+  msr     tcr_el2, x0
+  b       %f4
+3
+  msr     tcr_el3, x0
+4 
+  isb sy
+  ret
+ArmSetTCR ENDP
+
+ArmGetMAIR PROC
+  EL1_OR_EL2_OR_EL3(x1)
+1
+  mrs     x0, mair_el1
+  b       %f4
+2
+  mrs     x0, mair_el2
+  b       %f4
+3
+  mrs     x0, mair_el3
+4
+  isb  sy
+  ret
+ArmGetMAIR ENDP
+
+ArmSetMAIR PROC
+  EL1_OR_EL2_OR_EL3(x1)
+1
+  msr     mair_el1, x0
+  b       %f4
+2
+  msr     mair_el2, x0
+  b       %f4
+3
+  msr     mair_el3, x0
+4
+  isb sy
+  ret
+ArmSetMAIR ENDP
+
+
+//
+//VOID
+//ArmUpdateTranslationTableEntry (
+//  IN VOID  *TranslationTableEntry  // X0
+//  IN VOID  *MVA                    // X1
+//  );
+ArmUpdateTranslationTableEntry PROC
+   dc      civac, x0             // Clean and invalidate data line
+   dsb     sy
+   EL1_OR_EL2_OR_EL3(x0)
+1
+   tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   b       %f4
+2
+   tlbi    vae2, x1              // TLB Invalidate VA , EL2
+   b       %f4
+3
+   tlbi    vae3, x1              // TLB Invalidate VA , EL3
+4
+   dsb     sy
+   isb sy
+   ret
+ArmUpdateTranslationTableEntry ENDP
+
+ArmInvalidateTlb PROC
+   EL1_OR_EL2_OR_EL3(x0)
+1
+   tlbi  vmalle1    
+   b     %f4
+2
+   tlbi  alle2
+   b     %f4
+3
+   tlbi  alle3
+4 
+   dsb   sy
+   isb sy
+   ret
+ArmInvalidateTlb ENDP
+
+ArmWriteCptr PROC
+  msr     cptr_el3, x0           // EL3 Coprocessor Trap Reg (CPTR)
+  ret
+ArmWriteCptr ENDP
+
+ArmWriteScr PROC
+  msr     scr_el3, x0            // Secure configuration register EL3
+  isb sy
+  ret
+ArmWriteScr ENDP
+
+ArmWriteMVBar PROC
+  msr    vbar_el3, x0            // Exception Vector Base address for Monitor on EL3
+  ret
+ArmWriteMVBar ENDP
+
+ArmCallWFE PROC
+  wfe
+  ret
+ArmCallWFE ENDP
+
+ArmCallSEV PROC
+  sev
+  ret
+ArmCallSEV ENDP
+
+ArmReadCpuActlr PROC
+  mrs x0, ACTLR_EL1
+  ret
+ArmReadCpuActlr ENDP
+
+ArmWriteCpuActlr PROC
+  msr   ACTLR_EL1, x0
+  dsb   sy
+  isb sy
+  ret
+ArmWriteCpuActlr ENDP
+
+ArmReadSctlr PROC
+  EL1_OR_EL2_OR_EL3(x1)
+1
+  mrs   x0, sctlr_el1
+  ret
+2
+  mrs   x0, sctlr_el2
+  ret
+3
+  mrs   x0, sctlr_el3
+4
+  ret
+ArmReadSctlr ENDP
+
+    END

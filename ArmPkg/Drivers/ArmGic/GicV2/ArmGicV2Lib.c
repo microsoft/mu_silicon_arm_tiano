@@ -32,5 +32,5 @@ ArmGicV2EndOfInterrupt (
   IN UINTN                  Source
   )
 {
-  MmioWrite32 (GicInterruptInterfaceBase + ARM_GIC_ICCEIOR, Source);
+  MmioWrite32 (GicInterruptInterfaceBase + ARM_GIC_ICCEIOR, (UINT32)Source);
 }
