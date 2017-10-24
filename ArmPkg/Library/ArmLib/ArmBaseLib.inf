@@ -39,10 +39,15 @@
   AArch64/AArch64Lib.h
   AArch64/AArch64Lib.c
 
-  AArch64/ArmLibSupport.S
-  AArch64/ArmLibSupportV8.S
-  AArch64/AArch64Support.S
-  AArch64/AArch64ArchTimerSupport.S
+  AArch64/ArmLibSupport.S               | GCC
+  AArch64/ArmLibSupportV8.S             | GCC
+  AArch64/AArch64Support.S              | GCC
+  AArch64/AArch64ArchTimerSupport.S     | GCC
+
+  AArch64/ArmLibSupport.masm            | MSFT
+  AArch64/ArmLibSupportV8.masm          | MSFT
+  AArch64/AArch64Support.masm           | MSFT
+  AArch64/AArch64ArchTimerSupport.masm  | MSFT
 
 [LibraryClasses]
   DebugLib
