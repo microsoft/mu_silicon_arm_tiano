@@ -165,7 +165,7 @@ GicV2IrqInterruptHandler (
   UINT32                      GicInterrupt;
   HARDWARE_INTERRUPT_HANDLER  InterruptHandler;
 
-  GicInterrupt = ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase);
+  GicInterrupt = (UINT32)ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase);
 
   // Special Interrupts (ID1020-ID1023) have an Interrupt ID greater than the
   // number of interrupt (ie: Spurious interrupt).
@@ -359,7 +359,7 @@ GicV2ExitBootServicesEvent (
 
   // Acknowledge all pending interrupts
   do {
-    GicInterrupt = ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase);
+    GicInterrupt = (UINT32)ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase);
 
     if ((GicInterrupt & ARM_GIC_ICCIAR_ACKINTID) < mGicNumInterrupts) {
       GicV2EndOfInterrupt (&gHardwareInterruptV2Protocol, GicInterrupt);
@@ -400,15 +400,15 @@ GicV2DxeInitialize (
   // the system.
   ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gHardwareInterruptProtocolGuid);
 
-  mGicInterruptInterfaceBase = PcdGet64 (PcdGicInterruptInterfaceBase);
-  mGicDistributorBase        = PcdGet64 (PcdGicDistributorBase);
+  mGicInterruptInterfaceBase = (UINT32)PcdGet64 (PcdGicInterruptInterfaceBase);
+  mGicDistributorBase        = (UINT32)PcdGet64 (PcdGicDistributorBase);
   mGicNumInterrupts          = ArmGicGetMaxNumInterrupts (mGicDistributorBase);
 
   for (Index = 0; Index < mGicNumInterrupts; Index++) {
     GicV2DisableInterruptSource (&gHardwareInterruptV2Protocol, Index);
 
     // Set Priority
-    RegOffset = Index / 4;
+    RegOffset = (UINT32)(Index / 4);
     RegShift  = (Index % 4) * 8;
     MmioAndThenOr32 (
       mGicDistributorBase + ARM_GIC_ICDIPR + (4 * RegOffset),

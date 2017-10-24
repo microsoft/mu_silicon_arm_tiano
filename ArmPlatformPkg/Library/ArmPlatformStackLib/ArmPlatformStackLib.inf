@@ -25,7 +25,8 @@
   Arm/ArmPlatformStackLib.S       | GCC
 
 [Sources.AARCH64]
-  AArch64/ArmPlatformStackLib.S
+  AArch64/ArmPlatformStackLib.S   | GCC
+  AArch64/ArmPlatformStackLib.masm | MSFT
 
 [LibraryClasses]
   ArmPlatformLib
