@@ -1,0 +1,158 @@
+//------------------------------------------------------------------------------
+//
+// Copyright (c) 2011 - 2013, ARM Limited. All rights reserved.
+//
+// This program and the accompanying materials
+// are licensed and made available under the terms and conditions of the BSD License
+// which accompanies this distribution.  The full text of the license may be found at
+// http://opensource.org/licenses/bsd-license.php
+//
+// THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+// WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+//
+//------------------------------------------------------------------------------
+
+    AREA    |.text|,ALIGN=3,CODE,READONLY
+
+    EXPORT ArmReadCntFrq
+    EXPORT ArmWriteCntFrq
+    EXPORT ArmReadCntPct
+    EXPORT ArmReadCntkCtl
+    EXPORT ArmWriteCntkCtl
+    EXPORT ArmReadCntpTval
+    EXPORT ArmWriteCntpTval
+    EXPORT ArmReadCntpCtl
+    EXPORT ArmWriteCntpCtl
+    EXPORT ArmReadCntvTval
+    EXPORT ArmWriteCntvTval
+    EXPORT ArmReadCntvCtl
+    EXPORT ArmWriteCntvCtl
+    EXPORT ArmReadCntvCt
+    EXPORT ArmReadCntpCval
+    EXPORT ArmWriteCntpCval
+    EXPORT ArmReadCntvCval
+    EXPORT ArmWriteCntvCval
+    EXPORT ArmReadCntvOff
+    EXPORT ArmWriteCntvOff
+
+ArmReadCntFrq PROC
+  mrs   x0, cntfrq_el0           // Read CNTFRQ
+  ret
+ArmReadCntFrq ENDP
+
+
+// NOTE - Can only write while at highest implemented EL level (EL3 on model). Else ReadOnly (EL2, EL1, EL0)
+ArmWriteCntFrq PROC
+  msr   cntfrq_el0, x0           // Write to CNTFRQ
+  ret
+ArmWriteCntFrq ENDP
+
+
+ArmReadCntPct PROC
+  mrs   x0, cntpct_el0           // Read CNTPCT (Physical counter register)
+  ret
+ArmReadCntPct ENDP
+
+
+ArmReadCntkCtl PROC
+  mrs   x0, cntkctl_el1          // Read CNTK_CTL (Timer PL1 Control Register)
+  ret
+ArmReadCntkCtl ENDP
+
+
+ArmWriteCntkCtl PROC
+  msr   cntkctl_el1, x0          // Write to CNTK_CTL (Timer PL1 Control Register)
+  ret
+ArmWriteCntkCtl ENDP
+
+
+ArmReadCntpTval PROC
+  mrs   x0, cntp_tval_el0        // Read CNTP_TVAL (PL1 physical timer value register)
+  ret
+ArmReadCntpTval ENDP
+
+ArmWriteCntpTval PROC
+  msr   cntp_tval_el0, x0        // Write to CNTP_TVAL (PL1 physical timer value register)
+  ret
+ArmWriteCntpTval ENDP
+
+
+ArmReadCntpCtl PROC
+  mrs   x0, cntp_ctl_el0         // Read CNTP_CTL (PL1 Physical Timer Control Register)
+  ret
+ArmReadCntpCtl ENDP
+
+
+ArmWriteCntpCtl PROC
+  msr   cntp_ctl_el0, x0         // Write to  CNTP_CTL (PL1 Physical Timer Control Register)
+  ret
+ArmWriteCntpCtl ENDP
+
+
+ArmReadCntvTval PROC
+  mrs   x0, cntv_tval_el0        // Read CNTV_TVAL (Virtual Timer Value register)
+  ret
+ArmReadCntvTval ENDP
+
+
+ArmWriteCntvTval PROC
+  msr   cntv_tval_el0, x0        // Write to CNTV_TVAL (Virtual Timer Value register)
+  ret
+ArmWriteCntvTval ENDP
+
+
+ArmReadCntvCtl PROC
+  mrs   x0, cntv_ctl_el0         // Read CNTV_CTL (Virtual Timer Control Register)
+  ret
+ArmReadCntvCtl ENDP
+
+
+ArmWriteCntvCtl PROC
+  msr   cntv_ctl_el0, x0         // Write to CNTV_CTL (Virtual Timer Control Register)
+  ret
+ArmWriteCntvCtl ENDP
+
+
+ArmReadCntvCt PROC
+  mrs  x0, cntvct_el0            // Read CNTVCT  (Virtual Count Register)
+  ret
+ArmReadCntvCt ENDP
+
+
+ArmReadCntpCval PROC
+  mrs   x0, cntp_cval_el0        // Read CNTP_CTVAL (Physical Timer Compare Value Register)
+  ret
+ArmReadCntpCval ENDP
+
+
+ArmWriteCntpCval PROC
+  msr   cntp_cval_el0, x0        // Write to CNTP_CTVAL (Physical Timer Compare Value Register)
+  ret
+ArmWriteCntpCval ENDP
+
+
+ArmReadCntvCval PROC
+  mrs   x0, cntv_cval_el0        // Read CNTV_CTVAL (Virtual Timer Compare Value Register)
+  ret
+ArmReadCntvCval ENDP
+
+
+ArmWriteCntvCval PROC
+  msr   cntv_cval_el0, x0        // write to  CNTV_CTVAL (Virtual Timer Compare Value Register)
+  ret
+ArmWriteCntvCval ENDP
+
+
+ArmReadCntvOff PROC
+  mrs   x0, cntvoff_el2          // Read CNTVOFF (virtual Offset register)
+  ret
+ArmReadCntvOff ENDP
+
+
+ArmWriteCntvOff PROC
+  msr   cntvoff_el2, x0          // Write to CNTVOFF (Virtual Offset register)
+  ret
+ArmWriteCntvOff ENDP
+
+    END
+
