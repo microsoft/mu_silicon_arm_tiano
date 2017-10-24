@@ -314,7 +314,7 @@ SyncCacheConfig (
   GetRootTranslationTableInfo (T0SZ, &TableLevel, &TableCount);
 
   // First Attribute of the Page Tables
-  PageAttribute = GetFirstPageAttribute (FirstLevelTableAddress, TableLevel);
+  PageAttribute = (UINT32)GetFirstPageAttribute (FirstLevelTableAddress, TableLevel);
 
   // We scan from the start of the memory map (ie: at the address 0x0)
   BaseAddressGcdRegion = 0x0;
