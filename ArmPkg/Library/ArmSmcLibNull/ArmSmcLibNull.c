@@ -34,7 +34,7 @@ ArmCallSmc3 (
   IN OUT UINTN  *Arg3 OPTIONAL
   )
 {
-  return SMC_ARCH_CALL_NOT_SUPPORTED;
+  return (UINTN)SMC_ARCH_CALL_NOT_SUPPORTED; // MU_CHANGE
 }
 
 /** Trigger an SMC call with 2 arguments.
@@ -55,7 +55,7 @@ ArmCallSmc2 (
   OUT UINTN     *Arg3 OPTIONAL
   )
 {
-  return SMC_ARCH_CALL_NOT_SUPPORTED;
+  return (UINTN)SMC_ARCH_CALL_NOT_SUPPORTED; // MU_CHANGE
 }
 
 /** Trigger an SMC call with 1 argument.
@@ -76,7 +76,7 @@ ArmCallSmc1 (
   OUT UINTN     *Arg3 OPTIONAL
   )
 {
-  return SMC_ARCH_CALL_NOT_SUPPORTED;
+  return (UINTN)SMC_ARCH_CALL_NOT_SUPPORTED; // MU_CHANGE
 }
 
 /** Trigger an SMC call with 0 arguments.
@@ -97,5 +97,5 @@ ArmCallSmc0 (
   OUT UINTN  *Arg3 OPTIONAL
   )
 {
-  return SMC_ARCH_CALL_NOT_SUPPORTED;
+  return (UINTN)SMC_ARCH_CALL_NOT_SUPPORTED; // MU_CHANGE
 }

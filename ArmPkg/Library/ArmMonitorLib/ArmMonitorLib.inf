@@ -2,6 +2,7 @@
 #  Arm Monitor Library
 #
 #  Copyright (c) 2022, Arm Limited. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
@@ -15,10 +16,12 @@
   LIBRARY_CLASS                  = ArmMonitorLib
 
 [Sources.ARM]
-  Arm/ArmMonitorLib.S
+  Arm/ArmMonitorLib.S     | GCC
+  Arm/ArmMonitorLib.masm  | MSFT
 
 [Sources.AARCH64]
-  AArch64/ArmMonitorLib.S
+  AArch64/ArmMonitorLib.S     | GCC
+  AArch64/ArmMonitorLib.masm  | MSFT
 
 [Packages]
   ArmPkg/ArmPkg.dec

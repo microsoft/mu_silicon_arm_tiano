@@ -137,7 +137,7 @@ GetArmTrngFeatures (
   Parameters.Arg1 = FunctionId;
   ArmMonitorCall (&Parameters);
 
-  Status = TrngStatusToReturnStatus (Parameters.Arg0);
+  Status = TrngStatusToReturnStatus ((INT32)Parameters.Arg0);
   if (RETURN_ERROR (Status)) {
     return Status;
   }

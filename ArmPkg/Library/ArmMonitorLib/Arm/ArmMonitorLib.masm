@@ -1,0 +1,54 @@
+//
+//  Copyright (c) 2024, Google Llc. All rights reserved.
+//  Copyright (c) Microsoft Corporation.
+//
+//  SPDX-License-Identifier: BSD-2-Clause-Patent
+//
+//
+
+    AREA |.text|, CODE, READONLY
+    ALIGN 3
+
+    EXPORT ArmMonitorCall
+
+ArmMonitorCall PROC
+    // Create a stack frame
+    stp     x29, x30, [sp, #-32]!
+    mov     x29, sp
+
+    // Preserve X0 for later use
+    mov     x19, x0
+
+    // Load the SMCCC arguments values into the appropriate registers
+    ldp     x0, x1, [x19, #0]
+    ldp     x2, x3, [x19, #16]
+    ldp     x4, x5, [x19, #32]
+    ldp     x6, x7, [x19, #48]
+
+#if !defined(_PCD_VALUE_PcdMonitorConduitHvc)
+#error
+#elif _PCD_VALUE_PcdMonitorConduitHvc == 0
+    smc     #0
+#elif _PCD_VALUE_PcdMonitorConduitHvc == 1
+    hvc     #0
+#else
+#error
+#endif
+
+    // A SMCCC SMC64/HVC64 call can return up to 8 values.
+    stp     x0, x1, [x19, #0]
+    stp     x2, x3, [x19, #16]
+    stp     x4, x5, [x19, #32]
+    stp     x6, x7, [x19, #48]
+
+    // Clear return values from registers
+    mov     x0, #0
+    mov     x1, #0
+    mov     x2, #0
+    mov     x3, #0
+
+    ldp     x29, x30, [sp], #32
+    ret
+    ENDP
+
+    END

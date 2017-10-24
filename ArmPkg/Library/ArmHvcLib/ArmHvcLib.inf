@@ -2,6 +2,8 @@
 #
 #  Copyright (c) 2012-2013, ARM Ltd. All rights reserved.<BR>
 #  Copyright (c) 2014, Linaro Ltd. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.<BR>
+#
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #**/
@@ -16,9 +18,11 @@
 
 [Sources.ARM]
   Arm/ArmHvc.S      | GCC
+  Arm/ArmHvc.masm   | MSFT
 
 [Sources.AARCH64]
-  AArch64/ArmHvc.S
+  AArch64/ArmHvc.S      | GCC
+  AArch64/ArmHvc.masm   | MSFT
 
 [Packages]
   MdePkg/MdePkg.dec

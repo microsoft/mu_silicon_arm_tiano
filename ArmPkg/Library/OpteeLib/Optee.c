@@ -15,6 +15,7 @@
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/OpteeLib.h>
+#include <Library/SafeIntLib.h> // MU_CHANGE
 
 #include <IndustryStandard/ArmStdSmc.h>
 #include <OpteeSmc.h>
@@ -79,7 +80,7 @@ OpteeSharedMemoryRemap (
   Start           = (ArmSmcArgs.Arg1 + SIZE_4KB - 1) & ~(SIZE_4KB - 1);
   End             = (ArmSmcArgs.Arg1 + ArmSmcArgs.Arg2) & ~(SIZE_4KB - 1);
   PhysicalAddress = Start;
-  Size            = End - Start;
+  Size            = (UINTN)(End - Start);
 
   if (Size < SIZE_4KB) {
     DEBUG ((DEBUG_WARN, "OP-TEE shared memory too small\n"));
@@ -158,8 +159,8 @@ OpteeCallWithArg (
 
   while (TRUE) {
     ArmCallSmc (&ArmSmcArgs);
-
-    if (IsOpteeSmcReturnRpc (ArmSmcArgs.Arg0)) {
+    // MU_CHANGE: Cast to UINT32 for RPC return codes
+    if (IsOpteeSmcReturnRpc ((UINT32)ArmSmcArgs.Arg0)) {
       switch (ArmSmcArgs.Arg0) {
         case OPTEE_SMC_RETURN_RPC_FOREIGN_INTERRUPT:
           //
@@ -181,7 +182,7 @@ OpteeCallWithArg (
     }
   }
 
-  return ArmSmcArgs.Arg0;
+  return (UINT32)ArmSmcArgs.Arg0;
 }
 
 STATIC
@@ -326,7 +327,7 @@ OpteeToMessageParam (
         CopyMem (
           (VOID *)ParamSharedMemoryAddress,
           (VOID *)(UINTN)InParam->Union.Memory.BufferAddress,
-          InParam->Union.Memory.Size
+          (UINTN)InParam->Union.Memory.Size
           );
         MessageParam->Union.Memory.BufferAddress = (UINT64)ParamSharedMemoryAddress;
         MessageParam->Union.Memory.Size          = InParam->Union.Memory.Size;
@@ -391,7 +392,7 @@ OpteeFromMessageParam (
         CopyMem (
           (VOID *)(UINTN)OutParam->Union.Memory.BufferAddress,
           (VOID *)(UINTN)MessageParam->Union.Memory.BufferAddress,
-          MessageParam->Union.Memory.Size
+          (UINTN)MessageParam->Union.Memory.Size
           );
         OutParam->Union.Memory.Size = MessageParam->Union.Memory.Size;
         break;

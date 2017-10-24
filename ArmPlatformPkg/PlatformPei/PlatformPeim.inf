@@ -39,6 +39,7 @@
   ArmPlatformLib
   PlatformPeiLib
   PeiServicesLib
+  ArmLib
 
 [Ppis]
   gEfiPeiMasterBootModePpiGuid                  # PPI ALWAYS_PRODUCED

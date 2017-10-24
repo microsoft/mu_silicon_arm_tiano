@@ -1,0 +1,44 @@
+//
+//  Copyright (c) 2012-2014, ARM Limited. All rights reserved.
+//  Copyright (c) 2014-2016, Linaro Limited. All rights reserved.
+//  Copyright (c) Microsoft Corporation.
+//
+//  SPDX-License-Identifier: BSD-2-Clause-Patent
+//
+//
+
+    AREA |.text|, ALIGHT=3, CODE, READONLY
+
+    EXPORT ArmCallHvc
+
+ArmCallHvc PROC
+    // Push x0 on the stack - The stack must always be quad-word aligned
+    stp     x29, x30, [sp, #-16]!
+    mov     x29, sp
+
+    // Preserve X0 for later use
+    mov     x19, x0
+
+    // Load the HVC arguments values into the appropriate registers
+    ldp     x6, x7, [x19, #48]
+    ldp     x4, x5, [x19, #32]
+    ldp     x2, x3, [x19, #16]
+    ldp     x0, x1, [x19, #0]
+
+    hvc     #0
+
+    // Pop the ARM_HVC_ARGS structure address from the stack into x9
+    ldr     x9, [sp], #16
+
+    // Store the HVC returned values into the ARM_HVC_ARGS structure.
+    // A HVC call can return up to 4 values
+    stp     x2, x3, [x9, #16]
+    stp     x0, x1, [x9, #0]
+
+    mov     x0, x9
+
+    ldp     x29, x30, [sp], #16
+    ret
+    ENDP
+
+    END

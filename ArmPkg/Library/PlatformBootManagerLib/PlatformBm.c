@@ -573,8 +573,8 @@ GetPlatformOptions (
   // Process the platform boot options.
   //
   for (Index = 0; Index < BootCount; Index++) {
-    INTN   Match;
-    UINTN  BootOptionNumber;
+    INTN    Match;
+    UINT16  BootOptionNumber; // MU_CHANGE
 
     //
     // If there are any preexistent boot options, and the subject platform boot
@@ -589,7 +589,7 @@ GetPlatformOptions (
               CurrentBootOptionCount
               );
     if (Match >= 0) {
-      BootOptionNumber = CurrentBootOptions[Match].OptionNumber;
+      BootOptionNumber = (UINT16)CurrentBootOptions[Match].OptionNumber;
     } else {
       //
       // Add the platform boot options as a new one, at the end of the boot
@@ -612,7 +612,7 @@ GetPlatformOptions (
         continue;
       }
 
-      BootOptionNumber = BootOptions[Index].OptionNumber;
+      BootOptionNumber = (UINT16)BootOptions[Index].OptionNumber;
     }
 
     //

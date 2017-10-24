@@ -26,10 +26,16 @@
 
 [Sources.AARCH64]
   AArch64/ArchSec.c
-  AArch64/Exception.S
-  AArch64/Helper.S
-  AArch64/ModuleEntryPoint.S
-  AArch64/SwitchStack.S
+
+  AArch64/Exception.S           | GCC
+  AArch64/Helper.S              | GCC
+  AArch64/ModuleEntryPoint.S    | GCC
+  AArch64/SwitchStack.S         | GCC
+
+  AArch64/Exception.masm        | MSFT
+  AArch64/Helper.masm           | MSFT
+  AArch64/ModuleEntryPoint.masm | MSFT
+  AArch64/SwitchStack.masm      | MSFT
 
 [Packages]
   ArmPlatformPkg/ArmPlatformPkg.dec

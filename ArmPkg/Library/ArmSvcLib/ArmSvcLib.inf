@@ -1,6 +1,8 @@
 #/** @file
 #
 #  Copyright (c) 2016 - 2017, ARM Ltd. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.<BR>
+#
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #**/
@@ -15,9 +17,11 @@
 
 [Sources.ARM]
   Arm/ArmSvc.S      | GCC
+  Arm/ArmSvc.masm   | MSFT
 
 [Sources.AARCH64]
-  AArch64/ArmSvc.S
+  AArch64/ArmSvc.S    | GCC
+  AArch64/ArmSvc.masm | MSFT
 
 [Packages]
   ArmPkg/ArmPkg.dec

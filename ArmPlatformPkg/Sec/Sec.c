@@ -104,7 +104,7 @@ CreatePpiList (
   ArmPlatformGetPlatformPpiList (&PlatformPpiListSize, &PlatformPpiList);
 
   // Copy the Common and Platform PPis in Temporary Memory
-  ListBase = PcdGet64 (PcdCPUCoresStackBase);
+  ListBase = (UINTN)PcdGet64 (PcdCPUCoresStackBase);
   CopyMem ((VOID *)ListBase, gCommonPpiTable, sizeof (gCommonPpiTable));
   CopyMem ((VOID *)(ListBase + sizeof (gCommonPpiTable)), PlatformPpiList, PlatformPpiListSize);
 

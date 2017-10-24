@@ -1,0 +1,134 @@
+//
+//  Copyright (c) 2011-2021, Arm Limited. All rights reserved.<BR>
+//  Copyright (c) Microsoft Corporation.<BR>
+//
+//  SPDX-License-Identifier: BSD-2-Clause-Patent
+//
+//
+
+    AREA |.text|, CODE, READONLY
+
+    INCLUDE AArch64/AArch64.h
+    INCLUDE AsmMacroLib.h
+    INCLUDE Base.h
+    INCLUDE AutoGen.h
+
+//============================================================
+// Default Exception Handlers
+//============================================================
+
+#define TO_HANDLER                                              \
+    EL1_OR_EL2(x1)                                              \
+1:  mrs  x1, elr_el1    /* EL1 Exception Link Register */       ;\
+    b    3f                                                     ;\
+2:  mrs  x1, elr_el2    /* EL2 Exception Link Register */       ;\
+3:  bl   PeiCommonExceptionEntry                                ;
+
+//
+// Default Exception handlers: There is no plan to return from any of these exceptions.
+// No context saving at all.
+//
+
+VECTOR_BASE PeiVectorTable
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SP0_SYNC
+_DefaultSyncExceptHandler_t PROC
+    mov  x0, #EXCEPT_AARCH64_SYNCHRONOUS_EXCEPTIONS
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SP0_IRQ
+_DefaultIrq_t PROC
+    mov  x0, #EXCEPT_AARCH64_IRQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SP0_FIQ
+_DefaultFiq_t PROC
+    mov  x0, #EXCEPT_AARCH64_FIQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SP0_SERR
+_DefaultSError_t PROC
+    mov  x0, #EXCEPT_AARCH64_SERROR
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SPX_SYNC
+_DefaultSyncExceptHandler_h PROC
+    mov  x0, #EXCEPT_AARCH64_SYNCHRONOUS_EXCEPTIONS
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SPX_IRQ
+_DefaultIrq_h PROC
+    mov  x0, #EXCEPT_AARCH64_IRQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SPX_FIQ
+_DefaultFiq_h PROC
+    mov  x0, #EXCEPT_AARCH64_FIQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_CUR_SPX_SERR
+_DefaultSError_h PROC
+    mov  x0, #EXCEPT_AARCH64_SERROR
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A64_SYNC
+_DefaultSyncExceptHandler_LowerA64 PROC
+    mov  x0, #EXCEPT_AARCH64_SYNCHRONOUS_EXCEPTIONS
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A64_IRQ
+_DefaultIrq_LowerA64 PROC
+    mov  x0, #EXCEPT_AARCH64_IRQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A64_FIQ
+_DefaultFiq_LowerA64 PROC
+    mov  x0, #EXCEPT_AARCH64_FIQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A64_SERR
+_DefaultSError_LowerA64 PROC
+    mov  x0, #EXCEPT_AARCH64_SERROR
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A32_SYNC
+_DefaultSyncExceptHandler_LowerA32 PROC
+    mov  x0, #EXCEPT_AARCH64_SYNCHRONOUS_EXCEPTIONS
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A32_IRQ
+_DefaultIrq_LowerA32 PROC
+    mov  x0, #EXCEPT_AARCH64_IRQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A32_FIQ
+_DefaultFiq_LowerA32 PROC
+    mov  x0, #EXCEPT_AARCH64_FIQ
+    TO_HANDLER
+    ENDP
+
+VECTOR_ENTRY PeiVectorTable, ARM_VECTOR_LOW_A32_SERR
+_DefaultSError_LowerA32 PROC
+    mov  x0, #EXCEPT_AARCH64_SERROR
+    TO_HANDLER
+    ENDP
+
+VECTOR_END PeiVectorTable
+
+AARCH64_BTI_NOTE
+
+    END

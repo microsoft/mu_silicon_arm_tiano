@@ -70,7 +70,7 @@ TlGetNextEntry (
     CurrentAddr = (UINTN)Tlh + Tlh->HeaderSize;
   }
 
-  CurrentAddr = ALIGN_VALUE (CurrentAddr, (1 << Tlh->Alignment));
+  CurrentAddr = ALIGN_VALUE (CurrentAddr, LShiftU64 (1, Tlh->Alignment)); // MU_CHANGE - Use LShift instead of <<
 
   Te = (TRANSFER_ENTRY_HEADER *)CurrentAddr;
 
