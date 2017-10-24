@@ -24,7 +24,8 @@
   Arm/ArmPlatformStackLib.S       | GCC
 
 [Sources.AARCH64]
-  AArch64/ArmPlatformStackLib.S
+  AArch64/ArmPlatformStackLib.S   | GCC      # MU_CHANGE - ARM64 VS change
+  AArch64/ArmPlatformStackLib.masm | MSFT    # MU_CHANGE - ARM64 VS change
 
 [LibraryClasses]
   ArmPlatformLib

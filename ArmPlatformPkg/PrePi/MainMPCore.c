@@ -78,7 +78,8 @@ SecondaryMain (
   ASSERT (Index != ArmCoreCount);
 
   // Clear Secondary cores MailBox
-  MmioWrite32 (ArmCoreInfoTable[Index].MailboxClearAddress, ArmCoreInfoTable[Index].MailboxClearValue);
+  // MU_CHANGE - ARM64 VS change
+  MmioWrite32 ((UINT32)ArmCoreInfoTable[Index].MailboxClearAddress, (UINT32)ArmCoreInfoTable[Index].MailboxClearValue);
 
   do {
     ArmCallWFI ();
@@ -96,7 +97,8 @@ SecondaryMain (
   } while (SecondaryEntryAddr == 0);
 
   // Jump to secondary core entry point.
-  SecondaryStart = (VOID (*)()) SecondaryEntryAddr;
+  // MU_CHANGE - ARM64 VS change
+  SecondaryStart = (VOID (*)(void)) SecondaryEntryAddr;
   SecondaryStart ();
 
   // The secondaries shouldn't reach here

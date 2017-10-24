@@ -37,7 +37,8 @@
 
 [Sources.AARCH64]
   AArch64/AArch64Exception.c
-  AArch64/ExceptionSupport.S
+  AArch64/ExceptionSupport.S    | GCC   # MU_CHANGE - ARM64 VS change
+  AArch64/ExceptionSupport.masm | MSFT  # MU_CHANGE - ARM64 VS change
 
 [Packages]
   MdePkg/MdePkg.dec

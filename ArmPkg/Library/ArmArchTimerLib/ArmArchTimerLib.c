@@ -253,7 +253,7 @@ GetTimeInNanoSecond (
   UINT32  Remainder;
   UINT32  TimerFreq;
 
-  TimerFreq = GetPlatformTimerFreq ();
+  TimerFreq = (UINT32)GetPlatformTimerFreq ();  // MU_CHANGE - ARM64 VS change
   //
   //          Ticks
   // Time = --------- x 1,000,000,000

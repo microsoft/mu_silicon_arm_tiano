@@ -34,10 +34,16 @@
   AArch64/AArch64Lib.h
   AArch64/AArch64Lib.c
 
-  AArch64/ArmLibSupport.S
-  AArch64/ArmLibSupportV8.S
-  AArch64/AArch64Support.S
-  AArch64/AArch64ArchTimerSupport.S
+  AArch64/ArmLibSupport.S               | GCC    # MU_CHANGE - ARM64 VS change
+  AArch64/ArmLibSupportV8.S             | GCC    # MU_CHANGE - ARM64 VS change
+  AArch64/AArch64Support.S              | GCC    # MU_CHANGE - ARM64 VS change
+  AArch64/AArch64ArchTimerSupport.S     | GCC    # MU_CHANGE - ARM64 VS change
+
+  AArch64/ArmGetPhysicalAddressBits.c   | MSFT   # MU_CHANGE - ARM64 VS change
+  AArch64/ArmLibSupport.masm            | MSFT   # MU_CHANGE - ARM64 VS change
+  AArch64/ArmLibSupportV8.masm          | MSFT   # MU_CHANGE - ARM64 VS change
+  AArch64/AArch64Support.masm           | MSFT   # MU_CHANGE - ARM64 VS change
+  AArch64/AArch64ArchTimerSupport.masm  | MSFT   # MU_CHANGE - ARM64 VS change
 
 [LibraryClasses]
   DebugLib

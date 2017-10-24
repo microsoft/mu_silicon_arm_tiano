@@ -165,7 +165,7 @@ GicV2IrqInterruptHandler (
   UINTN                       GicInterrupt;
   HARDWARE_INTERRUPT_HANDLER  InterruptHandler;
 
-  GicInterrupt = ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase);
+  GicInterrupt = (UINT32)ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase); // MU_CHANGE - ARM64 VS change
 
   // Special Interrupts (ID1020-ID1023) have an Interrupt ID greater than the
   // number of interrupt (ie: Spurious interrupt).
@@ -359,7 +359,7 @@ GicV2ExitBootServicesEvent (
 
   // Acknowledge all pending interrupts
   do {
-    GicInterrupt = ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase);
+    GicInterrupt = (UINT32)ArmGicV2AcknowledgeInterrupt (mGicInterruptInterfaceBase); // MU_CHANGE - ARM64 VS change
 
     if ((GicInterrupt & ARM_GIC_ICCIAR_ACKINTID) < mGicNumInterrupts) {
       GicV2EndOfInterrupt (&gHardwareInterruptV2Protocol, GicInterrupt);
