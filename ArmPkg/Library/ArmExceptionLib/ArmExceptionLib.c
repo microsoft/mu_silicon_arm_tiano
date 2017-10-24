@@ -103,7 +103,7 @@ InitializeCpuExceptionHandlers(
   // if we are requested to copy exceptin handlers to another location
   if (gArmRelocateVectorTable) {
 
-    VectorBase = PcdGet64(PcdCpuVectorBaseAddress);
+    VectorBase = (UINTN)PcdGet64(PcdCpuVectorBaseAddress);
     Status = CopyExceptionHandlers(VectorBase);
 
   }
@@ -179,7 +179,7 @@ CopyExceptionHandlers(
   }
 
   // Copy our assembly code into the page that contains the exception vectors.
-  CopyMem((VOID *)VectorBase, (VOID *)ExceptionHandlersStart, Length);
+  CopyMem((VOID *)VectorBase, (VOID *)((UINTN)ExceptionHandlersStart), Length);
 
   //
   // Initialize the C entry points for interrupts
@@ -260,7 +260,7 @@ RegisterCpuInterruptHandler(
   IN EFI_EXCEPTION_TYPE             ExceptionType,
   IN EFI_CPU_INTERRUPT_HANDLER      ExceptionHandler
   ) {
-  if (ExceptionType > gMaxExceptionNumber) {
+  if (((UINTN)ExceptionType) > gMaxExceptionNumber) {
     return RETURN_UNSUPPORTED;
   }
 
@@ -307,7 +307,7 @@ CommonCExceptionHandler(
   IN OUT EFI_SYSTEM_CONTEXT           SystemContext
   )
 {
-  if (ExceptionType <= gMaxExceptionNumber) {
+  if (((UINTN)ExceptionType) <= gMaxExceptionNumber) {
     if (gExceptionHandlers[ExceptionType]) {
       gExceptionHandlers[ExceptionType](ExceptionType, SystemContext);
       return;
