@@ -121,7 +121,7 @@ GetRootTranslationTableInfo (
   }
 
   if (TableEntryCount) {
-    *TableEntryCount = 1UL << (BITS_PER_LEVEL - (T0SZ - MIN_T0SZ) % BITS_PER_LEVEL);
+    *TableEntryCount = ((UINTN)1) << (BITS_PER_LEVEL - (T0SZ - MIN_T0SZ) % BITS_PER_LEVEL);
   }
 }
 
@@ -761,7 +761,7 @@ ArmMmuBaseLibConstructor (
   // The ArmReplaceLiveTranslationEntry () helper function may be invoked
   // with the MMU off so we have to ensure that it gets cleaned to the PoC
   //
-  WriteBackDataCacheRange (ArmReplaceLiveTranslationEntry,
+  WriteBackDataCacheRange ((VOID *)(UINTN)ArmReplaceLiveTranslationEntry,
     ArmReplaceLiveTranslationEntrySize);
 
   return RETURN_SUCCESS;
