@@ -24,7 +24,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @param T0SZ                 The T0SZ value to be parsed.
   @param RootTableLevel       The level of the root table.
-  @param RootTableEntryCount  The number of entries in the root table.
+  @param RootTableEntryCount  T
+  he number of entries in the root table.
 **/
 STATIC
 VOID
@@ -314,7 +315,7 @@ SyncCacheConfig (
   GetRootTranslationTableInfo (T0SZ, &TableLevel, &TableCount);
 
   // First Attribute of the Page Tables
-  PageAttribute = GetFirstPageAttribute (FirstLevelTableAddress, TableLevel);
+  PageAttribute = (UINT32)GetFirstPageAttribute (FirstLevelTableAddress, TableLevel); // MU_CHANGE - ARM64 VS change
 
   // We scan from the start of the memory map (ie: at the address 0x0)
   BaseAddressGcdRegion = 0x0;

@@ -24,7 +24,8 @@
   GicV3/Arm/ArmGicV3.S     | GCC
 
 [Sources.AARCH64]
-  GicV3/AArch64/ArmGicV3.S
+  GicV3/AArch64/ArmGicV3.S      | GCC   # MU_CHANGE - ARM64 VS change
+  GicV3/AArch64/ArmGicV3.masm   | MSFT  # MU_CHANGE - ARM64 VS change
 
 [LibraryClasses]
   ArmLib

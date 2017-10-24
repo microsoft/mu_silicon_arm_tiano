@@ -25,7 +25,8 @@
 
 [Sources.AArch64]
   AArch64/ArchPrePi.c
-  AArch64/ModuleEntryPoint.S
+  AArch64/ModuleEntryPoint.S    | GCC      # MU_CHANGE - ARM64 VS change
+  AArch64/ModuleEntryPoint.masm  | MSFT    # MU_CHANGE - ARM64 VS change
 
 [Packages]
   MdePkg/MdePkg.dec
