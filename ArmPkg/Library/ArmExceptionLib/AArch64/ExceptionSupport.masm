@@ -118,7 +118,6 @@
 //
 
 #if defined(ARM_RELOCATE_VECTORS)
-    EXPORT ExceptionHandlersStart
 
 #define ExceptionEntry(val) \
     sub sp, sp, HASH (FP_CONTEXT_SIZE + SYS_CONTEXT_SIZE) __CR__\
@@ -150,11 +149,7 @@
     ldr       x1, =CommonExceptionEntry                   __CR__\
     br        x1                                          __CR__
 
-ExceptionHandlersStart 
-
 #else
-
-    VECTOR_BASE(ExceptionHandlersStart)
 
 #define ExceptionEntry(val) \
     sub sp, sp, HASH (FP_CONTEXT_SIZE + SYS_CONTEXT_SIZE) __CR__\
@@ -186,6 +181,10 @@ ExceptionHandlersStart
     b        CommonExceptionEntry                         __CR__
 
 #endif
+
+  AREA    |.text|,ALIGN=11,CODE,READONLY
+  EXPORT ExceptionHandlersStart
+ExceptionHandlersStart
 
 //
 // Current EL with SP0 : 0x0 - 0x180
@@ -265,11 +264,9 @@ FiqA32 //PROC
 SErrorA32 //PROC
   ExceptionEntry(EXCEPT_AARCH64_SERROR)
 
-VECTOR_END(ExceptionHandlersStart)
-
-
-ExceptionHandlersEnd //PROC
-
+  ALIGN   0x800
+  AREA    |.text|,ALIGN=3,CODE,READONLY
+ExceptionHandlersEnd 
 
 CommonExceptionEntry PROC
 
