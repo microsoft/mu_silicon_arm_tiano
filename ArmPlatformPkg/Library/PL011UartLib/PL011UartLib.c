@@ -192,7 +192,9 @@ PL011UartInitializePort (
       return RETURN_INVALID_PARAMETER;
     }
 
-    Divisor = (UartClkInHz * 4) / *BaudRate;
+    // MS_CHANGE [BEGIN] - Support Hyper-V AARCH64 build with MS toolchain
+    Divisor = (UINT32)((UartClkInHz * 4) / *BaudRate);
+    // MS_CHANGE [END] - Support Hyper-V AARCH64 build with MS toolchain
     Integer = Divisor >> FRACTION_PART_SIZE_IN_BITS;
     Fractional = Divisor & FRACTION_PART_MASK;
   }
