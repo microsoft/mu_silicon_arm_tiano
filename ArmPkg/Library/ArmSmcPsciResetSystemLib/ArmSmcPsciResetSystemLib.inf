@@ -13,7 +13,7 @@
   FILE_GUID                      = 18B12C83-7718-4D83-ADA4-87F2FE698DD4
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
-  LIBRARY_CLASS                  = ResetSystemLib
+  LIBRARY_CLASS                  = HwResetSystemLib # MS_CHANGE - Use HwResetSystemLib instead of ResetSystemLib for Hyper-V AARCH64 support
 
 [Sources]
   ArmSmcPsciResetSystemLib.c

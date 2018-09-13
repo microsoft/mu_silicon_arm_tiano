@@ -144,10 +144,11 @@ CpuArchEventProtocolNotify (
   }
 
   // Register to receive interrupts
+  // MS_CHANGE [BEGIN] - Support Hyper-V AARCH64 with MS toolchain
   Status = Cpu->RegisterInterruptHandler (
                   Cpu,
                   ARM_ARCH_EXCEPTION_IRQ,
-                  Context
+                  (EFI_CPU_INTERRUPT_HANDLER)Context
                   );
   if (EFI_ERROR (Status)) {
     DEBUG ((
@@ -157,6 +158,8 @@ CpuArchEventProtocolNotify (
       Status
       ));
   }
+
+  // MS_CHANGE [END] - Support Hyper-V AARCH64 with MS toolchain
 
   gBS->CloseEvent (Event);
 }
@@ -194,13 +197,15 @@ InstallAndRegisterInterruptService (
   //
   // Install the interrupt handler as soon as the CPU arch protocol appears.
   //
+  // MS_CHANGE [BEGIN] - Support Hyper-V AARCH64 with MS toolchain
   EfiCreateProtocolNotifyEvent (
     &gEfiCpuArchProtocolGuid,
     TPL_CALLBACK,
     CpuArchEventProtocolNotify,
-    InterruptHandler,
+    (VOID *)InterruptHandler,
     &mCpuArchProtocolNotifyEventRegistration
     );
+  // MS_CHANGE [END] - Support Hyper-V AARCH64 with MS toolchain
 
   // Register for an ExitBootServicesEvent
   Status = gBS->CreateEvent (
