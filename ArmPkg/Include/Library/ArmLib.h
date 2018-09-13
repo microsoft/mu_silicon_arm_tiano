@@ -737,6 +737,18 @@ ArmGetPhysicalAddressBits (
   VOID
   );
 
+// MS_CHANGE [BEGIN] - Support Hyper-V AARCH64 with MS toolchain
+//
+// Memory Model
+//
+
+UINTN
+EFIAPI
+ArmReadIdMmfr0 (
+  VOID
+  );
+
+// MS_CHANGE [END] - Support Hyper-V AARCH64 with MS toolchain
 ///
 ///  ID Register Helper functions
 ///
