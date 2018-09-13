@@ -47,8 +47,10 @@ ArmMmuPeiLibConstructor (
     // The ArmReplaceLiveTranslationEntry () helper function may be invoked
     // with the MMU off so we have to ensure that it gets cleaned to the PoC
     //
-    WriteBackDataCacheRange (ArmReplaceLiveTranslationEntry,
+    // MS_CHANGE [BEGIN] - Support Hyper-V AARCH64 with MS toolchain
+    WriteBackDataCacheRange ((VOID*)ArmReplaceLiveTranslationEntry,
       ArmReplaceLiveTranslationEntrySize);
+    // MS_CHANGE [END] - Support Hyper-V AARCH64 with MS toolchain
   }
 
   return RETURN_SUCCESS;
