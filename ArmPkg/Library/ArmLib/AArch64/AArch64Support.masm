@@ -31,6 +31,7 @@
     EXPORT ArmEnableMmu
     EXPORT ArmDisableMmu
     EXPORT ArmDisableCachesAndMmu
+    EXPORT ArmEnableCachesAndMmu // MS_CHANGE - Support Hyper-V AARCH64 with MS toolchain
     EXPORT ArmMmuEnabled
     EXPORT ArmEnableDataCache
     EXPORT ArmDisableDataCache
@@ -60,6 +61,7 @@
     EXPORT ArmReadHcr
     EXPORT ArmReadCurrentEL
     EXPORT ArmWriteCntHctl
+    EXPORT ArmReadIdMmfr0
 
 #define CTRL_M_BIT       (1 << 0)
 #define CTRL_A_BIT       (1 << 1)
@@ -137,7 +139,7 @@ ArmEnableMmu PROC
     orr     x0, x0, #CTRL_M_BIT // Set MMU enable bit
     EL1_OR_EL2_OR_EL3(x1)
 1
-    tlbi    vmalle1      
+    tlbi    vmalle1
     dsb     nsh
     isb sy
     msr     sctlr_el1, x0       // Write back
@@ -174,7 +176,7 @@ ArmDisableMmu PROC
     EL1_OR_EL2_OR_EL3(x1)
 1
     msr     sctlr_el1, x0        // Write back
-    tlbi    vmalle1    
+    tlbi    vmalle1
     b       %f4
 2
     msr     sctlr_el2, x0        // Write back
@@ -217,6 +219,36 @@ ArmDisableCachesAndMmu PROC
     isb sy
     ret
 ArmDisableCachesAndMmu ENDP
+
+// MS_CHANGE [BEGIN] - Support Hyper-V AARCH64 with MS toolchain
+ArmEnableCachesAndMmu PROC
+    EL1_OR_EL2_OR_EL3(x1)
+1
+    mrs     x0, sctlr_el1        // Get control register EL1
+    b       %f4
+2
+    mrs     x0, sctlr_el2        // Get control register EL2
+    b       %f4
+3
+    mrs     x0, sctlr_el3        // Get control register EL3
+4
+    mov     x1, #(CTRL_M_BIT :OR: CTRL_C_BIT :OR: CTRL_I_BIT)  // Enable MMU, D & I caches
+    orr     x0, x0, x1
+    EL1_OR_EL2_OR_EL3(x1)
+1
+    msr     sctlr_el1, x0        // Write back control register
+    b       %f4
+2
+    msr     sctlr_el2, x0        // Write back control register
+    b       %f4
+3
+    msr     sctlr_el3, x0        // Write back control register
+4
+    dsb     sy
+    isb
+    ret
+ArmEnableCachesAndMmu ENDP
+// MS_CHANGE [END] - Support Hyper-V AARCH64 with MS toolchain
 
 
 ArmMmuEnabled PROC
@@ -674,6 +706,11 @@ ArmWriteCntHctl PROC
   ret
 ArmWriteCntHctl ENDP
 
+//UINTN ArmReadIdMmfr0(VOID)
+ArmReadIdMmfr0 PROC
+  mrs   x0, id_aa64mmfr0_el1
+  ret
+ArmReadIdMmfr0 ENDP
 
     END
 
