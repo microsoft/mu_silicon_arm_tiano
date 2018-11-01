@@ -466,7 +466,7 @@ GicV3DxeInitialize (
     }
 
     // Route the SPIs to the primary CPU. SPIs start at the INTID 32
-    for (Index = 0; Index < (mGicNumInterrupts - 32); Index++) {
+    for (Index = 32; Index < mGicNumInterrupts; Index++) {
       MmioWrite32 (
         mGicDistributorBase + ARM_GICD_IROUTER + (Index * 8),
         (UINT32)(CpuTarget | ARM_GICD_IROUTER_IRM)     // MS_CHANGE
