@@ -37,7 +37,11 @@
 #define ARM_GIC_ICDSGIR  0xF00        // Software Generated Interrupt Register
 
 // GICv3 specific registers
-#define ARM_GICD_IROUTER  0x6100       // Interrupt Routing Registers
+// MuChange - This was 0x6100 before, which skips past the reserved lines but
+// requires subtracting 32 from every single usage programming this register as
+// the GICv3 spec defines it as 0x6000. Change it back to the specification
+// value.
+#define ARM_GICD_IROUTER  0x6000       // Interrupt Routing Registers
 
 // GICD_CTLR bits
 #define ARM_GIC_ICDDCR_ARE  (1 << 4)     // Affinity Routing Enable (ARE)
