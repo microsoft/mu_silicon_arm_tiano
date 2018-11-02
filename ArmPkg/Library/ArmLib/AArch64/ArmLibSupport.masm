@@ -78,20 +78,20 @@ ArmWriteCpacr ENDP
 
 ArmWriteAuxCr PROC
   EL1_OR_EL2(x1)
-1 
+1
   msr     actlr_el1, x0      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
   ret
-2 
+2
   msr     actlr_el2, x0      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
   ret
 ArmWriteAuxCr ENDP
 
 ArmReadAuxCr PROC
   EL1_OR_EL2(x1)
-1 
+1
   mrs     x0, actlr_el1      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
   ret
-2 
+2
   mrs     x0, actlr_el2      // Aux Control Reg (ACTLR) at EL2. Also available in EL1 and EL3
   ret
 ArmReadAuxCr ENDP
@@ -150,7 +150,7 @@ ArmSetTCR PROC
   b       %f4
 3
   msr     tcr_el3, x0
-4 
+4
   isb sy
   ret
 ArmSetTCR ENDP
@@ -213,14 +213,22 @@ ArmUpdateTranslationTableEntry ENDP
 ArmInvalidateTlb PROC
    EL1_OR_EL2_OR_EL3(x0)
 1
-   tlbi  vmalle1    
+   // MS_CHANGE
+   // TODO-cho-19475344: Without doing a tlbi vmalle1is we see a write data
+   // abort with KdDxe enabled patching instructions even though that page should
+   // be marked read/write. Its possible the hypervisor is not invalidating the
+   // TLB correctly when moved across physical processors, or some other issue is present.
+   //
+   // This should be swapped back to tlbi vmalle1 when the hypervisor issue
+   // is root caused, and fixed.
+   tlbi  vmalle1is
    b     %f4
 2
    tlbi  alle2
    b     %f4
 3
    tlbi  alle3
-4 
+4
    dsb   sy
    isb sy
    ret
