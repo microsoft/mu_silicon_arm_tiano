@@ -32,7 +32,7 @@
 **/
 EFI_STATUS
 LcdInitialize (
-  IN EFI_PHYSICAL_ADDRESS   VramBaseAddress
+  IN CONST EFI_PHYSICAL_ADDRESS   VramBaseAddress
   )
 {
   // Disable the controller

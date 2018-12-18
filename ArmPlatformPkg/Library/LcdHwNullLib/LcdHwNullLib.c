@@ -42,7 +42,7 @@ LcdIdentify (
 **/
 EFI_STATUS
 LcdInitialize (
-  EFI_PHYSICAL_ADDRESS  FrameBaseAddress
+  IN CONST EFI_PHYSICAL_ADDRESS  FrameBaseAddress
   )
 {
   return EFI_SUCCESS;
