@@ -345,7 +345,7 @@ SetConfigValid (VOID)
 **/
 EFI_STATUS
 LcdSetMode (
-  IN CONST UINT32  ModeNumber
+  IN UINT32  ModeNumber
   )
 {
   EFI_STATUS    Status;
