@@ -38,6 +38,13 @@
   Arm/ArmV7Support.asm          | RVCT
   Arm/ArmV7ArchTimerSupport.asm | RVCT
 
+  # MU_CHANGE START
+  Arm/ArmLibSupport.asm         | MSFT
+  Arm/ArmLibSupportV7.asm       | MSFT
+  Arm/ArmV7Support.asm          | MSFT
+  Arm/ArmV7ArchTimerSupport.asm | MSFT
+  # MU_CHANGE END
+
 [Sources.AARCH64]
   AArch64/AArch64Lib.c
 
