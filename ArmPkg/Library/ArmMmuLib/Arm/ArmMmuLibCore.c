@@ -232,7 +232,9 @@ FillTranslationTable (
     return;
   }
 
-  PhysicalBase = MemoryRegion->PhysicalBase;
+  // MU_CHANGE START
+  PhysicalBase = (UINT32) MemoryRegion->PhysicalBase;
+  // MU_CHANGE END
   RemainLength = MIN(MemoryRegion->Length, SIZE_4GB - PhysicalBase);
 
   switch (MemoryRegion->Attributes) {
@@ -281,8 +283,10 @@ FillTranslationTable (
       PhysicalBase += TT_DESCRIPTOR_SECTION_SIZE;
       RemainLength -= TT_DESCRIPTOR_SECTION_SIZE;
     } else {
-      PageMapLength = MIN (RemainLength, TT_DESCRIPTOR_SECTION_SIZE) -
-                      (PhysicalBase % TT_DESCRIPTOR_SECTION_SIZE);
+      // MU_CHANGE START
+      PageMapLength = (UINT32) (MIN (RemainLength, TT_DESCRIPTOR_SECTION_SIZE) -
+                            (PhysicalBase % TT_DESCRIPTOR_SECTION_SIZE));
+      // MU_CHANGE END
 
       // Case: Physical address aligned on the Section Size (1MB) && the length
       //       does not fill a section
@@ -542,7 +546,7 @@ UpdatePageEntries (
   FirstLevelTable = (ARM_FIRST_LEVEL_DESCRIPTOR *)ArmGetTTBR0BaseAddress ();
 
   // Calculate number of 4KB page table entries to change
-  NumPageEntries = Length / TT_DESCRIPTOR_PAGE_SIZE;
+  NumPageEntries = (UINT32) Length / TT_DESCRIPTOR_PAGE_SIZE;
 
   // Iterate for the number of 4KB pages to change
   Offset = 0;
@@ -678,7 +682,7 @@ UpdateSectionEntries (
   ASSERT (FirstLevelIdx < TRANSLATION_TABLE_SECTION_COUNT);
 
   // calculate number of 1MB first level entries this applies to
-  NumSections = Length / TT_DESCRIPTOR_SECTION_SIZE;
+  NumSections = (UINT32) Length / TT_DESCRIPTOR_SECTION_SIZE;
 
   // iterate through each descriptor
   for(i=0; i<NumSections; i++) {
