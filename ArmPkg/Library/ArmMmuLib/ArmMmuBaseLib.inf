@@ -29,6 +29,9 @@
   Arm/ArmMmuLibUpdate.c
   Arm/ArmMmuLibV7Support.S   |GCC
   Arm/ArmMmuLibV7Support.asm |RVCT
+  # MU_CHANGE START
+  Arm/ArmMmuLibV7Support.asm |MSFT
+  # MU_CHANGE END
 
 [Packages]
   ArmPkg/ArmPkg.dec
