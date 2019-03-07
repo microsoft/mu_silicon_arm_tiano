@@ -225,7 +225,9 @@ FillTranslationTable (
     return;
   }
 
-  PhysicalBase = MemoryRegion->PhysicalBase;
+  // MU_CHANGE START
+  PhysicalBase = (UINT32) MemoryRegion->PhysicalBase;
+  // MU_CHANGE END
   RemainLength = MIN(MemoryRegion->Length, SIZE_4GB - PhysicalBase);
 
   switch (MemoryRegion->Attributes) {
@@ -291,8 +293,10 @@ FillTranslationTable (
       PhysicalBase += TT_DESCRIPTOR_SECTION_SIZE;
       RemainLength -= TT_DESCRIPTOR_SECTION_SIZE;
     } else {
-      PageMapLength = MIN (RemainLength, TT_DESCRIPTOR_SECTION_SIZE -
-                                         (PhysicalBase % TT_DESCRIPTOR_SECTION_SIZE));
+      // MU_CHANGE START
+      PageMapLength = (UINT32) (MIN (RemainLength, TT_DESCRIPTOR_SECTION_SIZE -
+                                         (PhysicalBase % TT_DESCRIPTOR_SECTION_SIZE)));
+      // MU_CHANGE END
 
       // Case: Physical address aligned on the Section Size (1MB) && the length
       //       does not fill a section
