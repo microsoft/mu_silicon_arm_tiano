@@ -1,4 +1,4 @@
-# Project Mu Basecore Repository
+# Project Mu Silicon Arm Tiano Repository
 
 ??? info "Git Details"
     Repository Url: {{mu_silicon_arm_tiano.url}}  
