@@ -41,6 +41,7 @@
     EXPORT ArmReadCpuActlr
     EXPORT ArmWriteCpuActlr
     EXPORT ArmReadSctlr
+    EXPORT ArmGetPhysicalAddressBits // MU_CHANGE
 
 //------------------------------------------------------------------------------
 
@@ -285,5 +286,14 @@ ArmReadSctlr PROC
 4
   ret
 ArmReadSctlr ENDP
+
+// MU_CHANGE [BEGIN]
+// TODO: NULL Implementation to pass CI build.
+//   MUST REWRITE FROM ArmLibSupport.S!!!
+// UINTN ArmGetPhysicalAddressBits(VOID)
+ArmGetPhysicalAddressBits PROC
+  ret
+ArmGetPhysicalAddressBits ENDP
+// MU_CHANGE [END]
 
     END

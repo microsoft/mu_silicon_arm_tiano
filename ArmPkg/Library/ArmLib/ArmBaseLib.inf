@@ -48,6 +48,7 @@
 [Sources.AARCH64]
   AArch64/AArch64Lib.c
 
+  # MU_CHANGE [BEGIN]
   AArch64/ArmLibSupport.S               | GCC
   AArch64/ArmLibSupportV8.S             | GCC
   AArch64/AArch64Support.S              | GCC
@@ -57,6 +58,8 @@
   AArch64/ArmLibSupportV8.masm          | MSFT
   AArch64/AArch64Support.masm           | MSFT
   AArch64/AArch64ArchTimerSupport.masm  | MSFT
+  # MU_CHANGE [END]
+
 
 [Packages]
   ArmPkg/ArmPkg.dec

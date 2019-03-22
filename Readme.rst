@@ -29,7 +29,9 @@ Bug Fixes-dev
 1903_CIBuild Changes
 --------------------
 
-- N/A Incomplete.
+- Port ArmGetPhysicalAddressBits from ArmLibSupport.S to ArmLibSupport.masm.
+
+  - NOTE: Incomplete!!
 
 1903_Rebase Changes
 -------------------
