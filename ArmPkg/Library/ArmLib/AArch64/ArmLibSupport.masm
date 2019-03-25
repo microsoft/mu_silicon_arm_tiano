@@ -287,13 +287,4 @@ ArmReadSctlr PROC
   ret
 ArmReadSctlr ENDP
 
-// MU_CHANGE [BEGIN]
-// TODO: NULL Implementation to pass CI build.
-//   MUST REWRITE FROM ArmLibSupport.S!!!
-// UINTN ArmGetPhysicalAddressBits(VOID)
-ArmGetPhysicalAddressBits PROC
-  ret
-ArmGetPhysicalAddressBits ENDP
-// MU_CHANGE [END]
-
     END
