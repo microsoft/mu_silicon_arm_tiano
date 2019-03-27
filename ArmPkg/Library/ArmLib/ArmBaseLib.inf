@@ -44,6 +44,7 @@
   AArch64/AArch64Support.S              | GCC
   AArch64/AArch64ArchTimerSupport.S     | GCC
 
+  AArch64/ArmGetPhysicalAddressBits.c   | MSFT
   AArch64/ArmLibSupport.masm            | MSFT
   AArch64/ArmLibSupportV8.masm          | MSFT
   AArch64/AArch64Support.masm           | MSFT
