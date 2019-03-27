@@ -41,7 +41,6 @@
     EXPORT ArmReadCpuActlr
     EXPORT ArmWriteCpuActlr
     EXPORT ArmReadSctlr
-    EXPORT ArmGetPhysicalAddressBits // MU_CHANGE
 
 //------------------------------------------------------------------------------
 
