@@ -344,9 +344,22 @@ GicV3ExitBootServicesEvent (
     GicV3DisableInterruptSource (&gHardwareInterruptV3Protocol, Index);
   }
 
-  for (Index = 0; Index < mGicNumInterrupts; Index++) {
-    GicV3EndOfInterrupt (&gHardwareInterruptV3Protocol, Index);
-  }
+  // MU_CHANGE [BEGIN] - Do not issue EOI during exit boot services
+  //
+  // According to the GICv3 specification ICC_EOIR1_EL1 is only valid to be
+  // written to after a valid read by this PE from an Interrupt Acknowledge
+  // register, and INTID must correspond to the valid INTID read from ICC_IAR1_EL1.
+  // Otherwise, access to this register is UNPREDICTABLE.
+  //
+  // Unless an interrupt handler did not EOI an earlier interrupt, these writes
+  // are invalid. Some platforms trigger a CPU exception on these invalid writes,
+  // so don't do it.
+  //
+  // for (Index = 0; Index < mGicNumInterrupts; Index++) {
+  //   GicV3EndOfInterrupt (&gHardwareInterruptV3Protocol, Index);
+  // }
+  //
+  // MU_CHANGE [END] - Do not issue EOI during exit boot services
 
   // Disable Gic Interface
   ArmGicV3DisableInterruptInterface ();
