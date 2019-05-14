@@ -197,7 +197,10 @@ ArmUpdateTranslationTableEntry PROC
    dsb     sy
    EL1_OR_EL2_OR_EL3(x0)
 1
-   tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   // tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   // TODO-cho: Use the alternate encoding of tlbi due to the assembler not
+   // generating the correct code when tlbi is used.
+   sys #0, C8, C7, #3, x1
    b       %f4
 2
    tlbi    vae2, x1              // TLB Invalidate VA , EL2
@@ -214,13 +217,9 @@ ArmInvalidateTlb PROC
    EL1_OR_EL2_OR_EL3(x0)
 1
    // MS_CHANGE
-   // TODO-cho-19475344: Without doing a tlbi vmalle1is we see a write data
-   // abort with KdDxe enabled patching instructions even though that page should
-   // be marked read/write. Its possible the hypervisor is not invalidating the
-   // TLB correctly when moved across physical processors, or some other issue is present.
-   //
-   // This should be swapped back to tlbi vmalle1 when the hypervisor issue
-   // is root caused, and fixed.
+   // TODO-cho-19475344: Promote the tlbi to vmalle1is due to the assembler not
+   // generating the right code when vmalle1 is used.
+   // tlbi vmalle1
    tlbi  vmalle1is
    b     %f4
 2
