@@ -57,7 +57,7 @@ ArmReplaceLiveTranslationEntry PROC
 
   // flush translations for the target address from the TLBs
   // tlbi    vaae1, x2
-  // TODO-cho-19475344: Use the alternate encoding of tlbi due to the assembler not
+  // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
   // generating the correct code when tlbi is used.
   sys #0, C8, C7, #3, x2
   dsb   sy

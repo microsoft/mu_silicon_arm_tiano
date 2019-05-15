@@ -198,7 +198,7 @@ ArmUpdateTranslationTableEntry PROC
    EL1_OR_EL2_OR_EL3(x0)
 1
    // tlbi    vaae1, x1             // TLB Invalidate VA , EL1
-   // TODO-cho-19475344: Use the alternate encoding of tlbi due to the assembler not
+   // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
    // generating the correct code when tlbi vaae1 is used.
    sys #0, C8, C7, #3, x1
    b       %f4
@@ -216,8 +216,7 @@ ArmUpdateTranslationTableEntry ENDP
 ArmInvalidateTlb PROC
    EL1_OR_EL2_OR_EL3(x0)
 1
-   // MS_CHANGE
-   // TODO-cho-19475344: Use the alternate encoding of tlbi due to the assembler not
+   // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
    // generating the right code when tlbi vmalle1 is used.
    // tlbi vmalle1
    sys #0, C8, C7, #0

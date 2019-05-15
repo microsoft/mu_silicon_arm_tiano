@@ -25,8 +25,7 @@ DisableMmuAndReenterPei
   bl    ArmDisableMmu
 
   ; no memory accesses after MMU and caches have been disabled
-  ; MU_CHANGE
-  ; TODO-cho: The Microsoft assembler does not support the movl pseudo-instruction.
+  ; MU_CHANGE : The Microsoft assembler does not support the movl pseudo-instruction.
   ; No platforms using the Microsoft toolchain support S3 and Capsule update anyways,
   ; so comment it out to still use this library.
   ;
