@@ -193,13 +193,13 @@ ArmSetMAIR ENDP
 //  IN VOID  *MVA                    // X1
 //  );
 ArmUpdateTranslationTableEntry PROC
-   dc      civac, x0             // Clean and invalidate data line
-   dsb     sy
+   dsb     nshst
+   lsr     x1, x1, #12
    EL1_OR_EL2_OR_EL3(x0)
 1
    // tlbi    vaae1, x1             // TLB Invalidate VA , EL1
-   // TODO-cho: Use the alternate encoding of tlbi due to the assembler not
-   // generating the correct code when tlbi is used.
+   // TODO-cho-19475344: Use the alternate encoding of tlbi due to the assembler not
+   // generating the correct code when tlbi vaae1 is used.
    sys #0, C8, C7, #3, x1
    b       %f4
 2
@@ -208,7 +208,7 @@ ArmUpdateTranslationTableEntry PROC
 3
    tlbi    vae3, x1              // TLB Invalidate VA , EL3
 4
-   dsb     sy
+   dsb     nsh
    isb sy
    ret
 ArmUpdateTranslationTableEntry ENDP
@@ -217,10 +217,10 @@ ArmInvalidateTlb PROC
    EL1_OR_EL2_OR_EL3(x0)
 1
    // MS_CHANGE
-   // TODO-cho-19475344: Promote the tlbi to vmalle1is due to the assembler not
-   // generating the right code when vmalle1 is used.
+   // TODO-cho-19475344: Use the alternate encoding of tlbi due to the assembler not
+   // generating the right code when tlbi vmalle1 is used.
    // tlbi vmalle1
-   tlbi  vmalle1is
+   sys #0, C8, C7, #0
    b     %f4
 2
    tlbi  alle2
