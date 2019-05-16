@@ -78,20 +78,20 @@ ArmWriteCpacr ENDP
 
 ArmWriteAuxCr PROC
   EL1_OR_EL2(x1)
-1 
+1
   msr     actlr_el1, x0      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
   ret
-2 
+2
   msr     actlr_el2, x0      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
   ret
 ArmWriteAuxCr ENDP
 
 ArmReadAuxCr PROC
   EL1_OR_EL2(x1)
-1 
+1
   mrs     x0, actlr_el1      // Aux Control Reg (ACTLR) at EL1. Also available in EL2 and EL3
   ret
-2 
+2
   mrs     x0, actlr_el2      // Aux Control Reg (ACTLR) at EL2. Also available in EL1 and EL3
   ret
 ArmReadAuxCr ENDP
@@ -150,7 +150,7 @@ ArmSetTCR PROC
   b       %f4
 3
   msr     tcr_el3, x0
-4 
+4
   isb sy
   ret
 ArmSetTCR ENDP
@@ -193,11 +193,14 @@ ArmSetMAIR ENDP
 //  IN VOID  *MVA                    // X1
 //  );
 ArmUpdateTranslationTableEntry PROC
-   dc      civac, x0             // Clean and invalidate data line
-   dsb     sy
+   dsb     nshst
+   lsr     x1, x1, #12
    EL1_OR_EL2_OR_EL3(x0)
 1
-   tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   // tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
+   // generating the correct code when tlbi vaae1 is used.
+   sys #0, C8, C7, #3, x1
    b       %f4
 2
    tlbi    vae2, x1              // TLB Invalidate VA , EL2
@@ -205,7 +208,7 @@ ArmUpdateTranslationTableEntry PROC
 3
    tlbi    vae3, x1              // TLB Invalidate VA , EL3
 4
-   dsb     sy
+   dsb     nsh
    isb sy
    ret
 ArmUpdateTranslationTableEntry ENDP
@@ -213,14 +216,17 @@ ArmUpdateTranslationTableEntry ENDP
 ArmInvalidateTlb PROC
    EL1_OR_EL2_OR_EL3(x0)
 1
-   tlbi  vmalle1    
+   // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
+   // generating the right code when tlbi vmalle1 is used.
+   // tlbi vmalle1
+   sys #0, C8, C7, #0
    b     %f4
 2
    tlbi  alle2
    b     %f4
 3
    tlbi  alle3
-4 
+4
    dsb   sy
    isb sy
    ret
