@@ -193,11 +193,14 @@ ArmSetMAIR ENDP
 //  IN VOID  *MVA                    // X1
 //  );
 ArmUpdateTranslationTableEntry PROC
-   dc      civac, x0             // Clean and invalidate data line
-   dsb     sy
+   dsb     nshst
+   lsr     x1, x1, #12
    EL1_OR_EL2_OR_EL3(x0)
 1
-   tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   // tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
+   // generating the correct code when tlbi vaae1 is used.
+   sys #0, C8, C7, #3, x1
    b       %f4
 2
    tlbi    vae2, x1              // TLB Invalidate VA , EL2
@@ -205,7 +208,7 @@ ArmUpdateTranslationTableEntry PROC
 3
    tlbi    vae3, x1              // TLB Invalidate VA , EL3
 4
-   dsb     sy
+   dsb     nsh
    isb sy
    ret
 ArmUpdateTranslationTableEntry ENDP
@@ -213,15 +216,10 @@ ArmUpdateTranslationTableEntry ENDP
 ArmInvalidateTlb PROC
    EL1_OR_EL2_OR_EL3(x0)
 1
-   // MS_CHANGE
-   // TODO-cho-19475344: Without doing a tlbi vmalle1is we see a write data
-   // abort with KdDxe enabled patching instructions even though that page should
-   // be marked read/write. Its possible the hypervisor is not invalidating the
-   // TLB correctly when moved across physical processors, or some other issue is present.
-   //
-   // This should be swapped back to tlbi vmalle1 when the hypervisor issue
-   // is root caused, and fixed.
-   tlbi  vmalle1is
+   // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
+   // generating the right code when tlbi vmalle1 is used.
+   // tlbi vmalle1
+   sys #0, C8, C7, #0
    b     %f4
 2
    tlbi  alle2
