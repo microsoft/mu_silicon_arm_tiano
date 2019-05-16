@@ -24,19 +24,20 @@
 //VOID
 //ArmReplaceLiveTranslationEntry (
 //  IN  UINT64  *Entry,
-//  IN  UINT64  Value
+//  IN  UINT64  Value,
+//  IN  UINT64  Address
 //  )
 ArmReplaceLiveTranslationEntry PROC
 
   // disable interrupts
-  mrs   x2, daif
+  mrs   x4, daif
   msr   daifset, #0xf
   isb sy
 
   // clean and invalidate first so that we don't clobber
   // adjacent entries that are dirty in the caches
   dc    civac, x0
-  dsb   ish
+  dsb   nsh
 
   EL1_OR_EL2_OR_EL3(x3)
 1
@@ -54,8 +55,11 @@ ArmReplaceLiveTranslationEntry PROC
   dmb   sy
   dc    ivac, x0
 
-  // flush the TLBs
-    tlbi    vmalle1      // error A2503: SP register cannot be used in this context
+  // flush translations for the target address from the TLBs
+  // tlbi    vaae1, x2
+  // MU_CHANGE : Use the alternate encoding of tlbi due to the assembler not
+  // generating the correct code when tlbi is used.
+  sys #0, C8, C7, #3, x2
   dsb   sy
 
   // re-enable the MMU
@@ -80,7 +84,7 @@ ArmReplaceLiveTranslationEntry PROC
   dc    ivac, x0
 
   // flush the TLBs
-  tlbi  alle2
+  tlbi  vae2, x2
   dsb   sy
 
   // re-enable the MMU
@@ -105,7 +109,7 @@ ArmReplaceLiveTranslationEntry PROC
   dc    ivac, x0
 
   // flush the TLBs
-  tlbi  alle3
+  tlbi  vae3, x2
   dsb   sy
 
   // re-enable the MMU
@@ -113,7 +117,7 @@ ArmReplaceLiveTranslationEntry PROC
   isb sy
 
 4
-  msr   daif, x2
+  msr   daif, x4
   ret
 ArmReplaceLiveTranslationEntry ENDP
 
