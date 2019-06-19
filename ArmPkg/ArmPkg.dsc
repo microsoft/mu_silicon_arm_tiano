@@ -101,6 +101,13 @@
   NULL|MdePkg/Library/BaseStackCheckLib/BaseStackCheckLib.inf
 
 [Components.common]
+# MU_CHANGE
+  ArmPkg/Drivers/MmCommunicationDxe/MmCommunication.inf
+  ArmPkg/Drivers/ArmCrashDumpDxe/ArmCrashDumpDxe.inf
+  ArmPkg/Library/ArmMtlNullLib/ArmMtlNullLib.inf
+  ArmPkg/Library/ArmSmcPsciResetSystemLib/ArmSmcPsciResetSystemLib.inf
+# END
+
   ArmPkg/Library/ArmCacheMaintenanceLib/ArmCacheMaintenanceLib.inf
   ArmPkg/Library/ArmDisassemblerLib/ArmDisassemblerLib.inf
   ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
