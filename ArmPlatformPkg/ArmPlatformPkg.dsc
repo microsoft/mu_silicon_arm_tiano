@@ -93,6 +93,12 @@
   PrePiHobListPointerLib|ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
 
 [Components.common]
+
+# MU_CHANGE
+  ArmPlatformPkg/Library/HdLcd/HdLcd.inf 
+  ArmPlatformPkg/Library/PL111Lcd/PL111Lcd.inf
+#END
+
   ArmPlatformPkg/Drivers/LcdGraphicsOutputDxe/LcdGraphicsOutputDxe.inf
   ArmPlatformPkg/Drivers/NorFlashDxe/NorFlashDxe.inf
   ArmPlatformPkg/Drivers/PL061GpioDxe/PL061GpioDxe.inf
