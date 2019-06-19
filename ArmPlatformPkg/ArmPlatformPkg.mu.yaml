@@ -1,0 +1,8 @@
+{
+  "DSCCheck": {
+    "IgnoreInf": [
+      "ArmPlatformPkg/Library/HdLcd/HdLcd.inf",
+      "ArmPlatformPkg/Library/PL111Lcd/PL111Lcd.inf"
+    ]
+  }
+}
