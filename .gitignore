@@ -6,6 +6,9 @@ tags/
 *.bak
 BuildConfig.conf
 
+/Common/
+/MU_BASECORE/
+
 # Ignore unused UDK PKGs.
 /BaseTools/
 /Conf/
