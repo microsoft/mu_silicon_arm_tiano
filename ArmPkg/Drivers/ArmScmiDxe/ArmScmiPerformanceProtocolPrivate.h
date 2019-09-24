@@ -23,7 +23,7 @@
 #define NUM_REMAIN_PERF_LEVELS(Lvls) (Lvls >> NUM_REMAIN_PERF_LEVELS_SHIFT)
 
 /** Return values for SCMI_MESSAGE_ID_PERFORMANCE_DESCRIBE_LEVELS command.
-  SCMI Spec ง 4.5.2.5
+  SCMI Spec ยง 4.5.2.5
 **/
 typedef struct {
   UINT32 NumLevels;
