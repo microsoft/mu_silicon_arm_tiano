@@ -8,6 +8,8 @@ BuildConfig.conf
 
 # Ignore SelfDescribingEnvironment artifacts.
 *_extdep/
+/Common/
+/MU_BASECORE/
 
 # Ignore unused UDK PKGs.
 /AppPkg/
