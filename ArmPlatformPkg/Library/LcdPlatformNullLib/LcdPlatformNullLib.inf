@@ -9,7 +9,7 @@
 [Defines]
   INF_VERSION                    = 0x0001001A
   BASE_NAME                      = LcdPlatformNullLib
-  FILE_GUID                      = b78d02bb-d0b5-4389-bc7f-b39ee846c784
+  FILE_GUID                      = 5CF9DCD0-A71C-46E5-AB2F-DAEFBDEBEC65
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
   LIBRARY_CLASS                  = LcdPlatformLib
