@@ -139,6 +139,14 @@
 
   ArmPkg/Drivers/ArmScmiDxe/ArmScmiDxe.inf
 
+  # MU_CHANGE BEGIN - Add missing modules to pass CI.
+  ArmPkg/Drivers/ArmCrashDumpDxe/ArmCrashDumpDxe.inf
+  ArmPkg/Drivers/MmCommunicationDxe/MmCommunication.inf
+  ArmPkg/Library/ArmMtlNullLib/ArmMtlNullLib.inf
+  ArmPkg/Library/ArmSmcPsciResetSystemLib/ArmSmcPsciResetSystemLib.inf
+  # MU_CHANGE END
+
+
 [Components.AARCH64]
   ArmPkg/Library/ArmMmuLib/ArmMmuPeiLib.inf
   ArmPkg/Library/StandaloneMmMmuLib/ArmMmuStandaloneMmLib.inf
