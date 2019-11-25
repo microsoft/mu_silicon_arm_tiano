@@ -20,9 +20,12 @@ jobs:
   #Use matrix to speed up the build process
   strategy:
     matrix:
-      TARGET_NONE:
-        Build.Pkgs: ''
-        Build.Targets: ''
+      TARGET_ARMPKG:
+        Build.Pkgs: 'ArmPkg'
+        Build.Targets: 'DEBUG,RELEASE,NO-TARGET'
+      TARGET_ARMPLATFORMPKG:
+        Build.Pkgs: 'ArmPlatformPkg'
+        Build.Targets: 'DEBUG,RELEASE,NO-TARGET'
 
   workspace:
     clean: all
