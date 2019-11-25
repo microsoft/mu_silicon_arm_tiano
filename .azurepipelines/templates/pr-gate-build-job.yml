@@ -20,6 +20,12 @@ jobs:
   #Use matrix to speed up the build process
   strategy:
     matrix:
+      TARGET_ARMPKG:
+        Build.Pkgs: 'ArmPkg'
+        Build.Targets: 'DEBUG,RELEASE,NO-TARGET'
+      TARGET_ARMPLATFORMPKG:
+        Build.Pkgs: 'ArmPlatformPkg'
+        Build.Targets: 'DEBUG,RELEASE,NO-TARGET'
       TARGET_PLATFORMS:
         # For Platforms only check code. Leave it to Platform CI
         # to build them.
