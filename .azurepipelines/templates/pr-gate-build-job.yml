@@ -24,50 +24,20 @@ jobs:
   #Use matrix to speed up the build process
   strategy:
     matrix:
-      ${{ if eq(parameters.tool_chain_tag, 'GCC5') }}:
-        TARGET_GCC_ONLY:
-          Build.Pkgs: 'EmbeddedPkg'
-          Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
       TARGET_ARM_ARMPLATFORM:
         Build.Pkgs: 'ArmPkg,ArmPlatformPkg'
         Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
-      TARGET_MDE_CPU:
-        Build.Pkgs: 'MdePkg,UefiCpuPkg'
-        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
-      TARGET_MDEMODULE_DEBUG:
-        Build.Pkgs: 'MdeModulePkg'
-        Build.Targets: 'DEBUG,NOOPT'
-      TARGET_MDEMODULE_RELEASE:
-        Build.Pkgs: 'MdeModulePkg'
-        Build.Targets: 'RELEASE,NO-TARGET'
-      TARGET_NETWORK:
-        Build.Pkgs: 'NetworkPkg,RedfishPkg'
-        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
-      TARGET_OTHER:
-        Build.Pkgs: 'PcAtChipsetPkg,PrmPkg,ShellPkg,SourceLevelDebugPkg,StandaloneMmPkg,SignedCapsulePkg'
-        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
-      TARGET_FMP_FAT_TEST:
-        Build.Pkgs: 'FmpDevicePkg,FatPkg,UnitTestFrameworkPkg,DynamicTablesPkg'
-        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
-      TARGET_CRYPTO_DEBUG:
-        Build.Pkgs: 'CryptoPkg'
+      TARGET_CRYPTO:
         Build.Targets: 'DEBUG,NOOPT'
       TARGET_CRYPTO_RELEASE:
         Build.Pkgs: 'CryptoPkg'
-        Build.Targets: 'RELEASE,NO-TARGET'
-      TARGET_FSP:
-        Build.Pkgs: 'IntelFsp2Pkg,IntelFsp2WrapperPkg'
-        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
-      TARGET_SECURITY:
-        Build.Pkgs: 'SecurityPkg'
-        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
-      TARGET_UEFIPAYLOAD:
-        Build.Pkgs: 'UefiPayloadPkg'
         Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
       TARGET_PLATFORMS:
         # For Platforms only check code. Leave it to Platform CI
         # to build them.
-        Build.Pkgs: 'ArmVirtPkg,EmulatorPkg,OvmfPkg'
+        # MU_CHANGE
+        # Build.Pkgs: 'ArmVirtPkg,EmulatorPkg,OvmfPkg'
+        Build.Pkgs: 'ArmVirtPkg'
         Build.Targets: 'NO-TARGET,NOOPT'
 
   workspace:
@@ -75,7 +45,6 @@ jobs:
 
   pool:
     vmImage: ${{ parameters.vm_image }}
-
   ${{ if not(eq(parameters.container, '')) }}:
     container: ${{ parameters.container }}
 
