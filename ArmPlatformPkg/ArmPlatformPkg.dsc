@@ -117,3 +117,8 @@
   ArmPlatformPkg/PrePi/PeiUniCore.inf
 
   ArmPlatformPkg/Library/ArmMaliDp/ArmMaliDp.inf
+
+  # MU_CHANGE BEGIN - Add missing modules to pass CI.
+  ArmPlatformPkg/Library/HdLcd/HdLcd.inf
+  ArmPlatformPkg/Library/PL111Lcd/PL111Lcd.inf
+  # MU_CHANGE END
