@@ -12,41 +12,41 @@ Branch Status - release/201911
 ==============================
 
 Status:
-  In Development
+  Stabilized
 
 Entered Development:
   2019/12/05
 
-Anticipated Stabilization:
-  November 2019
+Stabilized:
+  2020/03/18
 
 Branch Changes - release/201911
 ===============================
 
-Breaking Changes-dev
---------------------
-
-- None
-
-Main Changes-dev
+Breaking Changes
 ----------------
 
 - None
 
-Bug Fixes-dev
--------------
+Main Changes
+------------
 
 - None
 
-1908_RefBoot Changes
+Bug Fixes
+---------
+
+- None
+
+1911_RefBoot Changes
 --------------------
 
-- Incomplete
+- None
 
 1911_CIBuild Changes
 --------------------
 
-- N/A
+- None
 
 1911_Rebase Changes
 -------------------
