@@ -1,0 +1,51 @@
+## @file
+#  HEST error source gateway Standalone MM driver.
+#
+#  Collects HEST error source descriptors,by communicating with all the MM drivers
+#  implementing the HEST error source descriptor protocol.
+#
+#  Copyright (c) 2020, ARM Limited. All rights reserved.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = HestErrorSourceStandaloneMm
+  FILE_GUID                      = 3ddbebcc-9841-4ef8-87fa-305843c1922d
+  MODULE_TYPE                    = MM_STANDALONE
+  VERSION_STRING                 = 1.0
+  PI_SPECIFICATION_VERSION       = 0x00010032
+  ENTRY_POINT                    = StandaloneMmHestErrorSourceInitialize
+
+[Sources]
+  HestErrorSourceStandaloneMm.c
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+  StandaloneMmPkg/StandaloneMmPkg.dec
+
+[LibraryClasses]
+  ArmLib
+  ArmSvcLib
+  BaseMemoryLib
+  DebugLib
+  MemoryAllocationLib
+  StandaloneMmDriverEntryPoint
+
+[Protocols]
+  gMmHestErrorSourceDescProtocolGuid
+
+[Guids]
+  gMmHestGetErrorSourceInfoGuid               ##PRODUCES
+  gEfiStandaloneMmNonSecureBufferGuid
+
+[FixedPcd]
+  gArmPlatformTokenSpaceGuid.PcdGhesGenericErrorDataMmBufferBase
+  gArmPlatformTokenSpaceGuid.PcdGhesGenericErrorDataMmBufferSize
+
+[Depex]
+  gMmHestErrorSourceDescProtocolGuid
