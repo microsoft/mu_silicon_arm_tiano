@@ -127,3 +127,7 @@
   gArmPlatformTokenSpaceGuid.PcdPL031RtcPpmAccuracy|300000000|UINT32|0x00000022
 
   gArmPlatformTokenSpaceGuid.PcdWatchdogCount|0x0|UINT32|0x00000033
+
+[Protocols.common]
+  ## Arm Platform HEST table generation protocol
+  gHestTableProtocolGuid = { 0x705bdcd9, 0x8c47, 0x457e, { 0xad, 0x0d, 0xf7, 0x86, 0xf3, 0x4a, 0x0d, 0x63 } }
