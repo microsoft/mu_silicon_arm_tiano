@@ -52,6 +52,8 @@
 
 [Guids.common]
   gArmPlatformTokenSpaceGuid   = { 0x9c0aaed4, 0x74c5, 0x4043, { 0xb4, 0x17, 0xa3, 0x22, 0x38, 0x14, 0xce, 0x76 } }
+  gArmPlatformHestErrorSourcesGuid = { 0x76b8ab43, 0x822d, 0x4b00, { 0x9f, 0xd0, 0xf4, 0xa5, 0x35, 0x82, 0x47, 0x0a } }
+  gMmHestGetErrorSourceInfoGuid = { 0x7d602951, 0x678e, 0x4cc4, { 0x98, 0xd9, 0xe3, 0x76, 0x04, 0xf6, 0x93, 0x0d } }
 
 [PcdsFeatureFlag.common]
   gArmPlatformTokenSpaceGuid.PcdSendSgiToBringUpSecondaryCores|FALSE|BOOLEAN|0x00000004
@@ -128,6 +130,11 @@
   gArmPlatformTokenSpaceGuid.PcdPL031RtcPpmAccuracy|300000000|UINT32|0x00000022
 
   gArmPlatformTokenSpaceGuid.PcdWatchdogCount|0x0|UINT32|0x00000033
+
+[PcdsFixedAtBuild, PcdsPatchableInModule]
+  ## ACPI CPER memory space
+  gArmPlatformTokenSpaceGuid.PcdGhesGenericErrorDataMmBufferBase|0x00000000|UINT64|0x00000046
+  gArmPlatformTokenSpaceGuid.PcdGhesGenericErrorDataMmBufferSize|0x00000000|UINT64|0x00000047
 
 [Protocols.common]
   ## Arm Platform HEST table generation protocol
