@@ -43,7 +43,10 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
         ''' return iterable of edk2 packages supported by this build.
         These should be edk2 workspace relative paths '''
 
-        return ("ArmPkg",)
+        return ("ArmPkg",
+                "ArmPlatformPkg",
+                "ArmVirtPkg"
+                )
 
     def GetArchitecturesSupported(self):
         ''' return iterable of edk2 architectures supported by this build '''

@@ -10,7 +10,7 @@
 [Defines]
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = ArmPlatformPrePiUniCore
-  FILE_GUID                      = d959e387-7b91-452c-90e0-a1dbac90ddb8
+  FILE_GUID                      = 4E09D4EF-743F-4589-B5EF-8AC493F9DBE2
   MODULE_TYPE                    = SEC
   VERSION_STRING                 = 1.0
 
