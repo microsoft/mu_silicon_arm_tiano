@@ -49,7 +49,7 @@ Bug Fixes-dev
 2008_CIBuild Changes
 --------------------
 
-- Incomplete
+- N/A
 
 2008_Rebase Changes
 -------------------
@@ -57,7 +57,7 @@ Bug Fixes-dev
 Source Commit from release/202005: 093c3bbce6
 Destination Commit: 06dc822d04 (tag: edk2-stable202008)
 
-- Incomplete
+- N/A
 
 Code of Conduct
 ===============
