@@ -225,7 +225,7 @@ FillTranslationTable (
     return;
   }
 
-  // MU_CHANGE START
+  // MU_CHANGE START [TCBZ2835]
   PhysicalBase = (UINT32) MemoryRegion->PhysicalBase;
   // MU_CHANGE END
   RemainLength = MIN(MemoryRegion->Length, SIZE_4GB - PhysicalBase);
@@ -293,7 +293,7 @@ FillTranslationTable (
       PhysicalBase += TT_DESCRIPTOR_SECTION_SIZE;
       RemainLength -= TT_DESCRIPTOR_SECTION_SIZE;
     } else {
-      // MU_CHANGE START
+      // MU_CHANGE START [TCBZ2835]
       PageMapLength = (UINT32) (MIN (RemainLength, TT_DESCRIPTOR_SECTION_SIZE -
                                          (PhysicalBase % TT_DESCRIPTOR_SECTION_SIZE)));
       // MU_CHANGE END
