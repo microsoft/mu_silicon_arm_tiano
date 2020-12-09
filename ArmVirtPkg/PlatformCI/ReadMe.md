@@ -113,7 +113,7 @@ an error occurs. Locally you don't need to set this.
 ### Passing Build Defines
 
 To pass build defines through _stuart_build_, prepend `BLD_*_`to the define name and pass it on the
-command-line. _stuart_build_ currently requires values to be assigned, so add an`=1` suffix for bare defines.
+command-line. `stuart_build` currently requires values to be assigned, so add an `=1` suffix for bare defines.
 For example, to enable the TPM2 support, instead of the traditional "-D TPM2_ENABLE=TRUE", the stuart_build
 command-line would be:
 
