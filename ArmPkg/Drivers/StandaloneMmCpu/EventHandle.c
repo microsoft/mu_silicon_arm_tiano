@@ -12,6 +12,7 @@
 #include <Pi/PiMmCis.h>
 
 
+#include <Library/PcdLib.h>   // MU_CHANGE ARM_CP_997351F8E3
 #include <Library/ArmSvcLib.h>
 #include <Library/ArmLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -105,9 +106,13 @@ PiMmStandaloneArmTfCpuDriverEntry (
     return EFI_INVALID_PARAMETER;
   }
 
-  if (NsCommBufferAddr < mNsCommBuffer.PhysicalStart) {
-    return EFI_ACCESS_DENIED;
+  // MU_CHANGE ARM_CP_997351F8E3 [BEGIN]
+  if (!FixedPcdGetBool (PcdArmMmCommunicateFromEl3Workaround)) {
+    if (NsCommBufferAddr < mNsCommBuffer.PhysicalStart) {
+      return EFI_ACCESS_DENIED;
+    }
   }
+  // MU_CHANGE ARM_CP_997351F8E3 [END]
 
   if ((NsCommBufferAddr + sizeof (EFI_MM_COMMUNICATE_HEADER)) >=
       (mNsCommBuffer.PhysicalStart + mNsCommBuffer.PhysicalSize)) {
