@@ -47,5 +47,10 @@
   gEfiStandaloneMmNonSecureBufferGuid
   gEfiMmCpuDriverEpDescriptorGuid
 
+# MU_CHANGE ARM_CP_997351F8E3 [BEGIN]
+[Pcd]
+  gArmTokenSpaceGuid.PcdArmMmCommunicateFromEl3Workaround
+# MU_CHANGE ARM_CP_997351F8E3 [END]
+
 [Depex]
   TRUE

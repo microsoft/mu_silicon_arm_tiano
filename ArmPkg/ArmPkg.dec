@@ -234,6 +234,10 @@
   #
   gArmTokenSpaceGuid.PcdUefiShellDefaultBootEnable|FALSE|BOOLEAN|0x0000052
 
+
+  # MU_CHANGE ARM_CP_997351F8E3
+  gArmTokenSpaceGuid.PcdArmMmCommunicateFromEl3Workaround|FALSE|BOOLEAN|0x1000045
+
 [PcdsFixedAtBuild.common, PcdsPatchableInModule.common]
   gArmTokenSpaceGuid.PcdFdBaseAddress|0|UINT64|0x0000002B
   gArmTokenSpaceGuid.PcdFvBaseAddress|0|UINT64|0x0000002D
