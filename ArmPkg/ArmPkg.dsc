@@ -151,6 +151,8 @@
   ArmPkg/Universal/Smbios/ProcessorSubClassDxe/ProcessorSubClassDxe.inf
   ArmPkg/Universal/Smbios/SmbiosMiscDxe/SmbiosMiscDxe.inf
 
+  ArmPkg/Universal/Smbios/OemMiscLibNull/OemMiscLibNull.inf  # mu_Change - TCBZ_3258
+
 [Components.AARCH64]
   ArmPkg/Drivers/MmCommunicationDxe/MmCommunication.inf
   ArmPkg/Library/ArmMmuLib/ArmMmuPeiLib.inf
