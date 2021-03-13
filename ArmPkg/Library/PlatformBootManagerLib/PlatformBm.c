@@ -1218,3 +1218,19 @@ PlatformBootManagerProcessBootCompletion (
 {
   return;
 }
+
+// MU_CHANGE - Project Mu BDS has this function
+
+/**
+  OnDemandConInCOnnect
+ */
+VOID
+EFIAPI
+PlatformBootManagerOnDemandConInConnect (
+  VOID
+  )
+{
+  return;
+}
+
+/**   MSCHANGE end */
