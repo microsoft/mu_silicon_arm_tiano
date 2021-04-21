@@ -14,9 +14,12 @@
 
 trigger: none
 
+# MU_CHANGE BEGIN
 pr:
-- master
-- stable/*
+- dev/*
+- release/202208
+- release/202202
+# MU_CHANGE END
 
 pool:
   vmImage: 'ubuntu-latest'
