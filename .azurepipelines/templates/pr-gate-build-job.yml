@@ -12,9 +12,7 @@ parameters:
   tool_chain_tag: ''
   vm_image: ''
   arch_list: ''
-  extra_install_step: []
-  usePythonVersion: ''
-  container: ''
+  extra_steps: []   # MU_CHANGE
 
 # Build step
 jobs:
@@ -24,8 +22,11 @@ jobs:
   #Use matrix to speed up the build process
   strategy:
     matrix:
-      TARGET_ARM_ARMPLATFORM:
-        Build.Pkgs: 'ArmPkg,ArmPlatformPkg'
+      TARGET_ARMPKG:
+        Build.Pkgs: 'ArmPkg'
+        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
+      TARGET_ARMPLATFORMPKG:
+        Build.Pkgs: 'ArmPlatformPkg'
         Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
       TARGET_PLATFORMS:
         # For Platforms only check code. Leave it to Platform CI
@@ -40,57 +41,12 @@ jobs:
 
   pool:
     vmImage: ${{ parameters.vm_image }}
-  ${{ if not(eq(parameters.container, '')) }}:
-    container: ${{ parameters.container }}
 
   steps:
+  - ${{ parameters.extra_steps }}   # MU_CHANGE
   - template: pr-gate-steps.yml
     parameters:
       tool_chain_tag: ${{ parameters.tool_chain_tag }}
       build_pkgs: $(Build.Pkgs)
       build_targets: $(Build.Targets)
       build_archs: ${{ parameters.arch_list }}
-      usePythonVersion: ${{ parameters.usePythonVersion }}
-      extra_install_step: ${{ parameters.extra_install_step }}
-
-- job: Build_${{ parameters.tool_chain_tag }}_TARGET_CODE_COVERAGE
-  dependsOn: Build_${{ parameters.tool_chain_tag }}
-  workspace:
-    clean: all
-
-  pool:
-    vmImage: 'windows-2019'
-
-  steps:
-    - checkout: self
-      clean: true
-      fetchDepth: 1
-      submodules: true
-
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download Build Artifacts'
-      inputs:
-        buildType: 'current'
-        targetPath: '$(Build.ArtifactStagingDirectory)'
-
-    - powershell: Write-Host "##vso[task.setvariable variable=is_code_coverage]0"
-      displayName: Give default value for whether CodeCoverage or not
-
-    - powershell: if (Test-Path -Path $(Build.ArtifactStagingDirectory)/**/coverage.xml) {Write-Host "##vso[task.setvariable variable=is_code_coverage]1"}
-      displayName: Check coverage.xml exist or not
-
-    - task: CmdLine@2
-      displayName: Create code coverage report
-      inputs:
-        script: |
-          dotnet tool install -g dotnet-reportgenerator-globaltool
-          reportgenerator -reports:$(Build.ArtifactStagingDirectory)/**/coverage.xml -targetdir:$(Build.ArtifactStagingDirectory)/Coverage -reporttypes:Cobertura -filefilters:-*Build*;-*UnitTest*;-*Mock*;-*usr*
-      condition: eq(variables.is_code_coverage, 1)
-
-    - task: PublishCodeCoverageResults@1
-      displayName: 'Publish code coverage'
-      inputs:
-        codeCoverageTool: Cobertura
-        summaryFileLocation: '$(Build.ArtifactStagingDirectory)/Coverage/Cobertura.xml'
-      condition: eq(variables.is_code_coverage, 1)
-

@@ -81,6 +81,13 @@
         "IgnoreDuplicates": [],
     },
 
+    "MarkdownLintCheck": {
+        "AuditOnly": False,          # If True, log all errors and then mark as skipped
+        "IgnoreFiles": [
+            "Library/ArmSoftFloatLib/berkeley-softfloat-3",
+        ]            # package root relative file, folder, or glob pattern to ignore
+    },
+
     ## options defined .pytool/Plugin/LibraryClassCheck
     "LibraryClassCheck": {
         "IgnoreHeaderFile": []
