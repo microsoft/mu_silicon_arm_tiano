@@ -12,6 +12,11 @@ BuildConfig.conf
 /Common/MU_TIANO
 /MU_BASECORE
 
+# Packages not ignored:
+# ArmPkg
+# ArmPlatformPkg
+# ArmVirtPkg
+
 # Ignore unused UDK PKGs.
 /BaseTools/
 /Conf/

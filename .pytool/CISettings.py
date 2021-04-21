@@ -2,7 +2,7 @@
 #
 # Copyright (c) Microsoft Corporation.
 # Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
-# Copyright (c) 2020, ARM Limited. All rights reserved.<BR>
+# Copyright (c) 2020 - 2021, ARM Limited. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 import os
