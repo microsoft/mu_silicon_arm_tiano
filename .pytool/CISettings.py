@@ -2,7 +2,7 @@
 #
 # Copyright (c) Microsoft Corporation.
 # Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
-# Copyright (c) 2020, ARM Limited. All rights reserved.<BR>
+# Copyright (c) 2020 - 2021, ARM Limited. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 import os
@@ -24,16 +24,24 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
         self.ActualTargets = []
         self.ActualArchitectures = []
         self.ActualToolChainTag = ""
+        self.UseBuiltInBaseTools = None
+        self.ActualScopes = None
 
     # ####################################################################################### #
     #                             Extra CmdLine configuration                                 #
     # ####################################################################################### #
 
     def AddCommandLineOptions(self, parserObj):
-        pass
+        group = parserObj.add_mutually_exclusive_group()
+        group.add_argument("-force_piptools", "--fpt", dest="force_piptools", action="store_true", default=False, help="Force the system to use pip tools")
+        group.add_argument("-no_piptools", "--npt", dest="no_piptools", action="store_true", default=False, help="Force the system to not use pip tools")
 
     def RetrieveCommandLineOptions(self, args):
-        pass
+        # MU_CHANGE - Don't call super....lots of issues...see pytools docs...super().RetrieveCommandLineOptions(args)
+        if args.force_piptools:
+            self.UseBuiltInBaseTools = True
+        if args.no_piptools:
+            self.UseBuiltInBaseTools = False
 
     # ####################################################################################### #
     #                        Default Support for this Ci Build                                #
@@ -54,7 +62,9 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
                 "IA32",
                 "X64",
                 "ARM",
-                "AARCH64")
+                "AARCH64",
+                # "RISCV64"     # MU_CHANGE remove RISC-V
+                )
 
     def GetTargetsSupported(self):
         ''' return iterable of edk2 target tags supported by this build '''
@@ -115,19 +125,38 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
 
     def GetActiveScopes(self):
         ''' return tuple containing scopes that should be active for this process '''
-        scopes = ("cibuild", "edk2-build", "host-based-test")
+        if self.ActualScopes is None:
+            scopes = ("cibuild", "edk2-build", "host-based-test")
 
-        self.ActualToolChainTag = shell_environment.GetBuildVars().GetValue("TOOL_CHAIN_TAG", "")
+            self.ActualToolChainTag = shell_environment.GetBuildVars().GetValue("TOOL_CHAIN_TAG", "")
 
-        if GetHostInfo().os.upper() == "LINUX" and self.ActualToolChainTag.upper().startswith("GCC"):
-            if "AARCH64" in self.ActualArchitectures:
-                scopes += ("gcc_aarch64_linux",)
-            if "ARM" in self.ActualArchitectures:
-                scopes += ("gcc_arm_linux",)
-            if "RISCV64" in self.ActualArchitectures:
-                scopes += ("gcc_riscv64_unknown",)
+            is_linux = GetHostInfo().os.upper() == "LINUX"
 
-        return scopes
+            if self.UseBuiltInBaseTools is None:
+                # MU_CHANGE - redundant is_linux = GetHostInfo().os.upper() == "LINUX"
+                # try and import the pip module for basetools
+                try:
+                    import edk2basetools
+                    self.UseBuiltInBaseTools = True
+                except ImportError:
+                    self.UseBuiltInBaseTools = False
+                    pass
+
+            if self.UseBuiltInBaseTools == True:
+                scopes += ('pipbuild-unix',) if is_linux else ('pipbuild-win',)
+                logging.warning("Using Pip Tools based BaseTools")
+            else:
+                logging.warning("Falling back to using in-tree BaseTools")
+
+            if is_linux and self.ActualToolChainTag.upper().startswith("GCC"):
+                if "AARCH64" in self.ActualArchitectures:
+                    scopes += ("gcc_aarch64_linux",)
+                if "ARM" in self.ActualArchitectures:
+                    scopes += ("gcc_arm_linux",)
+                if "RISCV64" in self.ActualArchitectures:
+                    scopes += ("gcc_riscv64_unknown",)
+            self.ActualScopes = scopes
+        return self.ActualScopes
 
     def GetRequiredSubmodules(self):
         ''' return iterable containing RequiredSubmodule objects.
@@ -159,13 +188,13 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
         return [
             {
                 "Path": "Common/MU_TIANO",
-                "Url": "https://windowspartners@dev.azure.com/windowspartners/MSCoreUEFI/_git/mu_tiano_plus",
-                "Branch": "rebase/202108_5_funsies"
+                "Url": "https://github.com/microsoft/mu_tiano_plus.git",
+                "Branch": "release/202108"
             },
             {
                 "Path": "MU_BASECORE",
-                "Url": "https://github.com/Microsoft/mu_basecore.git",
-                "Branch": "dev/201911_pre"
+                "Url": "https://github.com/microsoft/mu_basecore.git",
+                "Branch": "release/202108"
             }
         ]
         # MU_CHANGE END
