@@ -12,6 +12,7 @@ parameters:
   tool_chain_tag: ''
   vm_image: ''
   arch_list: ''
+  extra_steps: []   # MU_CHANGE
 
 # Build step
 jobs:
@@ -21,8 +22,11 @@ jobs:
   #Use matrix to speed up the build process
   strategy:
     matrix:
-      TARGET_ARM_ARMPLATFORM:
-        Build.Pkgs: 'ArmPkg,ArmPlatformPkg'
+      TARGET_ARMPKG:
+        Build.Pkgs: 'ArmPkg'
+        Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
+      TARGET_ARMPLATFORMPKG:
+        Build.Pkgs: 'ArmPlatformPkg'
         Build.Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
       TARGET_PLATFORMS:
         # For Platforms only check code. Leave it to Platform CI
@@ -39,6 +43,7 @@ jobs:
     vmImage: ${{ parameters.vm_image }}
 
   steps:
+  - ${{ parameters.extra_steps }}   # MU_CHANGE
   - template: pr-gate-steps.yml
     parameters:
       tool_chain_tag: ${{ parameters.tool_chain_tag }}
