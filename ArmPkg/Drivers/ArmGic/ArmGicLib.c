@@ -218,10 +218,18 @@ ArmGicSetInterruptPriority (
   IN UINTN                  Priority
   )
 {
-  UINT32                RegOffset;
+  UINTN                 RegOffset;    // MU_CHANGE TCBZ3399
   UINTN                 RegShift;
   ARM_GIC_ARCH_REVISION Revision;
   UINTN                 GicCpuRedistributorBase;
+
+  // MU_CHANGE [BEGIN] - TCBZ3399
+  ASSERT (Priority <= MAX_UINT32);
+  if (Priority > MAX_UINT32) {
+    ASSERT_EFI_ERROR(EFI_INVALID_PARAMETER);
+    return;
+  }
+  // MU_CHANGE [END] - TCBZ3399
 
   // Calculate register offset and bit position
   RegOffset = Source / 4;
@@ -234,7 +242,7 @@ ArmGicSetInterruptPriority (
     MmioAndThenOr32 (
       GicDistributorBase + ARM_GIC_ICDIPR + (4 * RegOffset),
       ~(0xff << RegShift),
-      Priority << RegShift
+      (UINT32)Priority << RegShift    // MU_CHANGE TCBZ3399
       );
   } else {
     GicCpuRedistributorBase = GicGetCpuRedistributorBase (
@@ -248,7 +256,7 @@ ArmGicSetInterruptPriority (
     MmioAndThenOr32 (
       IPRIORITY_ADDRESS (GicCpuRedistributorBase, RegOffset),
       ~(0xff << RegShift),
-      Priority << RegShift
+      (UINT32)Priority << RegShift    // MU_CHANGE TCBZ3399
       );
   }
 }
