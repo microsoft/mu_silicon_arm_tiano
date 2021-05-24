@@ -131,5 +131,11 @@
 
   ArmPlatformPkg/Library/ArmMaliDp/ArmMaliDp.inf
 
+  # MU_CHANGE [BEGIN] - CI Fixes
+  ArmPlatformPkg/Drivers/Apei/HestDxe/HestDxe.inf
+  ArmPlatformPkg/Drivers/HestMmErrorSources/HestErrorSourceDxe.inf
+  ArmPlatformPkg/Drivers/HestMmErrorSources/HestErrorSourceStandaloneMm.inf
+  # MU_CHANGE [END] - CI Fixes
+
 [Components.AARCH64]
   ArmPlatformPkg/Drivers/NorFlashDxe/NorFlashStandaloneMm.inf
