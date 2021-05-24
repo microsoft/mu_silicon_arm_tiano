@@ -21,7 +21,7 @@
   ArmPlatformPkg/ArmPlatformPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
-  Platform/ARM/SgiPkg/SgiPlatform.dec
+  #Platform/ARM/SgiPkg/SgiPlatform.dec    # MU_CHANGE - CI Fixes
 
 [LibraryClasses]
   ArmLib

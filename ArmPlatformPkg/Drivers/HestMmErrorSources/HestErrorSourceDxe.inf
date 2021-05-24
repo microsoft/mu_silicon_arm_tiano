@@ -9,7 +9,7 @@
 [Defines]
   INF_VERSION                    = 0x0001001A
   BASE_NAME                      = HestMmErrorSourceDxe
-  FILE_GUID                      = 76b8ab43-822d-4b00-9fd0-f4a53582470a
+  FILE_GUID                      = 9BF479E4-0F72-4388-BECF-69F8D7F8CFF2   # MU_CHANGE - CI Fixes
   MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
   ENTRY_POINT                    = HestErrorSourceInitialize
