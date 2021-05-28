@@ -55,13 +55,14 @@
     EXPORT ArmReadTpidrurw
     EXPORT ArmWriteTpidrurw
     EXPORT ArmIsArchTimerImplemented
-    EXPORT ArmReadIdPfr0
+    EXPORT ArmReadIdAA64Pfr0 // MS_CHANGE
     EXPORT ArmReadIdPfr1
     EXPORT ArmWriteHcr
     EXPORT ArmReadHcr
     EXPORT ArmReadCurrentEL
     EXPORT ArmWriteCntHctl
     EXPORT ArmReadIdMmfr0
+    EXPORT ArmReadIdAA64Mmfr2 // MS_CHANGE
 
 #define CTRL_M_BIT       (1 << 0)
 #define CTRL_A_BIT       (1 << 1)
@@ -70,6 +71,8 @@
 #define CTRL_I_BIT       (1 << 12)
 #define CTRL_V_BIT       (1 << 12)
 #define CPACR_VFP_BITS   (3 << 20)
+
+ID_AA64MMFR2_EL1 EQU 0x403A    // MS_CHANGE
 
 ArmInvalidateDataCacheEntryByMVA PROC
   dc      ivac, x0    // Invalidate single data cache line
@@ -600,7 +603,7 @@ ArmReadVBar ENDP
 ArmEnableVFP PROC
     // Check whether floating-point is implemented in the processor.
     mov   x1, x30                 // Save LR
-    bl    ArmReadIdPfr0           // Read EL1 Processor Feature Register (PFR0)
+    bl    ArmReadIdAA64Pfr0       // Read EL1 Processor Feature Register (PFR0) // MS_CHANGE
     mov   x30, x1                 // Restore LR
     ands  x0, x0, #AARCH64_PFR0_FP// Extract bits indicating VFP implementation
     cmp   x0, #0                  // VFP is implemented if '0'.
@@ -661,10 +664,10 @@ ArmIsArchTimerImplemented PROC
 ArmIsArchTimerImplemented ENDP
 
 
-ArmReadIdPfr0 PROC
+ArmReadIdAA64Pfr0 PROC  // MS_CHANGE
   mrs   x0, id_aa64pfr0_el1   // Read ID_AA64PFR0 Register
   ret
-ArmReadIdPfr0 ENDP
+ArmReadIdAA64Pfr0 ENDP  // MS_CHANGE
 
 
 // Q: id_aa64pfr1_el1 not defined yet. What does this funtion want to access?
@@ -711,6 +714,14 @@ ArmReadIdMmfr0 PROC
   mrs   x0, id_aa64mmfr0_el1
   ret
 ArmReadIdMmfr0 ENDP
+
+// MS_CHANGE [BEGIN]
+//UINTN ArmReadIdAA64Mmfr2(VOID)
+ArmReadIdAA64Mmfr2 PROC
+  mrs   x0, ID_AA64MMFR2_EL1
+  ret
+ArmReadIdAA64Mmfr2 ENDP
+// MS_CHANGE [END]
 
     END
 
