@@ -10,8 +10,10 @@
 
 [Defines]
   INF_VERSION                    = 0x0001001A
-  BASE_NAME                      = StandaloneMmCoreEntryPoint
-  FILE_GUID                      = C97AC593-109A-4C63-905C-675FDE2689E8
+  # MU_CHANGE [BEGIN]
+  BASE_NAME                      = ArmStandaloneMmCoreEntryPoint
+  FILE_GUID                      = 0D7C6883-E1A8-4A7A-A35C-E0C200775B43
+  # MU_CHANGE [END]
   MODULE_TYPE                    = MM_CORE_STANDALONE
   VERSION_STRING                 = 1.0
   PI_SPECIFICATION_VERSION       = 0x00010032
@@ -26,8 +28,10 @@
   Arm/SetPermissions.c
   Arm/CreateHobList.c
 
-[Sources.X64]
-  X64/StandaloneMmCoreEntryPoint.c
+# MU_CHANGE [BEGIN]
+# [Sources.X64]
+#   X64/StandaloneMmCoreEntryPoint.c
+# MU_CHANGE [END]
 
 [Packages]
   MdePkg/MdePkg.dec
