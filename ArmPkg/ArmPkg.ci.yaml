@@ -46,7 +46,8 @@
             "EmbeddedPkg/EmbeddedPkg.dec",
             "MdeModulePkg/MdeModulePkg.dec",
             "MdePkg/MdePkg.dec",
-            "ShellPkg/ShellPkg.dec"
+            "ShellPkg/ShellPkg.dec",
+            "StandaloneMmPkg/StandaloneMmPkg.dec"       # MU_CHANGE
         ],
         # For host based unit tests
         "AcceptableDependencies-HOST_APPLICATION":[
