@@ -159,8 +159,8 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
         return [
             {
                 "Path": "Common/MU_TIANO",
-                "Url": "https://github.com/Microsoft/mu_tiano_plus.git",
-                "Branch": "dev/201911_pre"
+                "Url": "https://windowspartners@dev.azure.com/windowspartners/MSCoreUEFI/_git/mu_tiano_plus",
+                "Branch": "rebase/202108_5_funsies"
             },
             {
                 "Path": "MU_BASECORE",
