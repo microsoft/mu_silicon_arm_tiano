@@ -16,6 +16,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
+#include <Library/SafeIntLib.h>
 
 #include <Protocol/DebugSupport.h> // for EFI_SYSTEM_CONTEXT
 
@@ -264,6 +265,7 @@ PiMmCpuTpFwRootMmiHandler (
 {
   EFI_STATUS  Status;
   UINTN       CpuNumber;
+  UINTN       LocalMessageLength;       // MU_CHANGE - Pin to UINT64 MessageLength.
 
   ASSERT (Context == NULL);
   ASSERT (CommBuffer == NULL);
@@ -281,15 +283,36 @@ PiMmCpuTpFwRootMmiHandler (
     PerCpuGuidedEventContext[CpuNumber]->MessageLength
     ));
 
+  // MU_CHANGE [BEGIN] - Pin to UINT64 MessageLength.
+  LocalMessageLength = 0;
+  Status             = SafeUint64ToUintn (PerCpuGuidedEventContext[CpuNumber]->MessageLength, &LocalMessageLength);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "[%a] Message length too long! 0x%016lX > 0x%016lX\n",
+      __FUNCTION__,
+      PerCpuGuidedEventContext[CpuNumber]->MessageLength,
+      MAX_UINTN
+      ));
+    ASSERT_EFI_ERROR (Status);
+    return Status;
+  }
+
+  // MU_CHANGE [END] - Pin to UINT64 MessageLength.
+
   Status = mMmst->MmiManage (
                     &PerCpuGuidedEventContext[CpuNumber]->HeaderGuid,
                     NULL,
                     PerCpuGuidedEventContext[CpuNumber]->Data,
-                    &PerCpuGuidedEventContext[CpuNumber]->MessageLength
+                    &LocalMessageLength         // MU_CHANGE
                     );
 
   if (Status != EFI_SUCCESS) {
     DEBUG ((DEBUG_WARN, "Unable to manage Guided Event - %d\n", Status));
+    // MU_CHANGE [BEGIN] - Pin to UINT64 MessageLength.
+  } else {
+    PerCpuGuidedEventContext[CpuNumber]->MessageLength = LocalMessageLength;
+    // MU_CHANGE [END] - Pin to UINT64 MessageLength.
   }
 
   return Status;

@@ -94,6 +94,7 @@
   OemMiscLib|ArmPkg/Universal/Smbios/OemMiscLibNull/OemMiscLibNull.inf
 
   ArmSvcLib|ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf              # MU_CHANGE
+  SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf   # MU_CHANGE
 
 [LibraryClasses.common.PEIM]
   HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
