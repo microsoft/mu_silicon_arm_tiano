@@ -92,6 +92,8 @@
 
   OemMiscLib|ArmPkg/Universal/Smbios/OemMiscLibNull/OemMiscLibNull.inf
 
+  ArmSvcLib|ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf              # MU_CHANGE
+
 [LibraryClasses.common.PEIM]
   HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
   PeimEntryPoint|MdePkg/Library/PeimEntryPoint/PeimEntryPoint.inf
@@ -105,6 +107,14 @@
 
   # Add support for GCC stack protector
   NULL|MdePkg/Library/BaseStackCheckLib/BaseStackCheckLib.inf
+
+# MU_CHANGE [BEGIN]
+[LibraryClasses.common.MM_STANDALONE]
+  HobLib|StandaloneMmPkg/Library/StandaloneMmHobLib/StandaloneMmHobLib.inf
+  MemoryAllocationLib|StandaloneMmPkg/Library/StandaloneMmMemoryAllocationLib/StandaloneMmMemoryAllocationLib.inf
+  MmServicesTableLib|MdePkg/Library/StandaloneMmServicesTableLib/StandaloneMmServicesTableLib.inf
+  StandaloneMmDriverEntryPoint|MdePkg/Library/StandaloneMmDriverEntryPoint/StandaloneMmDriverEntryPoint.inf
+# MU_CHANGE [END]
 
 [Components.common]
   ArmPkg/Library/ArmCacheMaintenanceLib/ArmCacheMaintenanceLib.inf
