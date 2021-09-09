@@ -35,6 +35,7 @@
   DebugLib
   HobLib
   StandaloneMmDriverEntryPoint
+  SafeIntLib
 
 [Protocols]
   gEfiMmConfigurationProtocolGuid                        # PROTOCOL ALWAYS_PRODUCED
