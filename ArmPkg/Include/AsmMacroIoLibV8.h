@@ -70,7 +70,7 @@
 
 #if defined(_MSC_VER)
 
-// MSchange - add
+// MS_CHANGE - add
 #define LoadConstantToReg(Data, Reg) \
   ldr Reg, =Data 
   
