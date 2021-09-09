@@ -230,7 +230,28 @@
           "umodsi",
           "usada",
           "vlpis",
-          "writec"
+          "writec",
+          # MU_CHANGE
+          "abi's",
+          "cachelevel",
+          "cachelines",
+          "civac",
+          "cntfrq",
+          "cntkctl",
+          "cntpct",
+          "cntvct",
+          "cntvoff",
+          "comms",
+          "cseteq",
+          "ctval",
+          "daifclr",
+          "daifset",
+          "iallu",
+          "igrpen",
+          "nshst",
+          "tpidr",
+          "vmalle",
+          "mschange"
         ],                          # words to extend to the dictionary for this package
         "IgnoreStandardPaths": [    # Standard Plugin defined paths that
             "*.asm", "*.s"          # should be ignore
