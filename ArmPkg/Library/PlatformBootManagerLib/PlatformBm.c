@@ -1222,7 +1222,7 @@ PlatformBootManagerProcessBootCompletion (
 // MU_CHANGE - Project Mu BDS has this function
 
 /**
-  OnDemandConInCOnnect
+  OnDemandConInConnect
  */
 VOID
 EFIAPI
