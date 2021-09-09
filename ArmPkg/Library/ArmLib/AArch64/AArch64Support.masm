@@ -643,14 +643,14 @@ ArmReadMpidr PROC
 ArmReadMpidr ENDP
 
 
-// Keep old function names for C compatibilty for now. Change later?
+// Keep old function names for C compatibility for now. Change later?
 ArmReadTpidrurw PROC
   mrs   x0, tpidr_el0           // read tpidr_el0 (v7 TPIDRURW) -> (v8 TPIDR_EL0)
   ret
 ArmReadTpidrurw ENDP
 
 
-// Keep old function names for C compatibilty for now. Change later?
+// Keep old function names for C compatibility for now. Change later?
 ArmWriteTpidrurw PROC
   msr   tpidr_el0, x0           // write tpidr_el0 (v7 TPIDRURW) -> (v8 TPIDR_EL0)
   ret
@@ -670,7 +670,7 @@ ArmReadIdAA64Pfr0 PROC  // MS_CHANGE
 ArmReadIdAA64Pfr0 ENDP  // MS_CHANGE
 
 
-// Q: id_aa64pfr1_el1 not defined yet. What does this funtion want to access?
+// Q: id_aa64pfr1_el1 not defined yet. What does this function want to access?
 // A: used to setup arch timer. Check if we have security extensions, permissions to set stuff.
 //    See: ArmPkg/Library/ArmArchTimerLib/AArch64/ArmArchTimerLib.c
 //    Not defined yet, but stick in here for now, should read all zeros.
