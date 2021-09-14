@@ -1,11 +1,14 @@
-Hardware Error Source Table (HEST)[1] and Software Delegated Exception Interface
-(SDEI)[2] ACPI tables are used to acomplish firmware first error handling.This
+# HEST & SDEI
+
+Hardware Error Source Table HEST [1] and Software Delegated Exception Interface
+SDEI [2] ACPI tables are used to accomplish firmware first error handling.This
 patch series introduces a framework to build and install the HEST ACPI table
 dynamically.
 
-The following figure illustrates the possible usage of the dyanamic
+The following figure illustrates the possible usage of the dynamic
 generation of HEST ACPI table.
 
+``` ascii art
                                     NS | S
 +--------------------------------------+--------------------------------------+
 |                                      |                                      |
@@ -28,6 +31,7 @@ generation of HEST ACPI table.
 +--------------------------------------+--------------------------------------+
                                        |
                    Figure: Dynamic Hest Table Generation.
+```
 
 All the hardware error sources are added to HEST table as GHESv2[3] error source
 descriptors. The framework comprises of following DXE and MM drivers:
@@ -52,10 +56,10 @@ This patch series provides reference implementation for DMC-620 Dynamic Memory
 Controller[4] that has RAS feature enabled. This is platform code
 implemented as Standalone MM driver in edk2-platforms.
 
-References:
-[1] : ACPI 6.3, Table 18-382, Hardware Error Source Table
-[2] : SDEI Platform Design Document, revision b, 10 Appendix C, ACPI table
-      definitions for SDEI
+## References
+
+[1]: ACPI 6.3, Table 18-382, Hardware Error Source Table
+[2] : SDEI Platform Design Document, revision b, 10 Appendix C, ACPI table definitions for SDEI
 [3] : ACPI Reference Specification 6.3, Table 18-393 GHESv2 Structure
 [4] : DMC620 Dynamic Memory Controller, revision r1p0
 [5] : UEFI Reference Specification 2.8, Appendix N - Common Platform Error
@@ -63,4 +67,4 @@ References:
 [6] : UEFI Reference Specification 2.8, Section N.2.5 Memory Error Section
 
 Link to github branch with the patches in this series -
-https://github.com/omkkul01/edk2/tree/ras_firmware_first_edk2
+<https://github.com/omkkul01/edk2/tree/ras_firmware_first_edk2>
