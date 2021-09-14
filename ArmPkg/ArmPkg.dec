@@ -45,6 +45,10 @@
   #
   ArmMmuLib|Include/Library/ArmMmuLib.h
 
+  ##  @libraryclass  Provides a Standalone MM Mmu interface.
+  #
+  ArmStandaloneMmMmuLib|Include/Library/ArmStandaloneMmMmuLib.h
+
   ##  @libraryclass  Provides a Mailbox Transport Layer (MTL) interface
   #   for the System Control and Management Interface (SCMI).
   #
@@ -80,9 +84,11 @@
   #
   SemihostLib|Include/Library/SemihostLib.h
 
+  # MU_CHANGE [BEGIN] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
   ##  @libraryclass  Provides an interface for a StandaloneMm Mmu.
   #
-  StandaloneMmMmuLib|Include/Library/StandaloneMmMmuLib.h
+  #StandaloneMmMmuLib|Include/Library/StandaloneMmMmuLib.h
+  # MU_CHANGE [END] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
 
   ##  @libraryclass  Provides an interface for a Arm Transfer List.
   #
