@@ -19,6 +19,7 @@
 
 #include <Library/ArmLib.h>
 #include <Library/ArmMmuLib.h>
+#include <Library/ArmStandaloneMmMmuLib.h>
 #include <Library/ArmSvcLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -331,3 +332,45 @@ ArmClearMemoryRegionReadOnly (
 
   return Status;
 }
+
+// MU_CHANGE [BEGIN] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
+EFI_STATUS
+EFIAPI
+ArmConfigureMmu (
+  IN  ARM_MEMORY_REGION_DESCRIPTOR  *MemoryTable,
+  OUT VOID                          **TranslationTableBase OPTIONAL,
+  OUT UINTN                         *TranslationTableSize  OPTIONAL
+  )
+{
+  DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
+  ASSERT (FALSE);
+  return EFI_UNSUPPORTED;
+}
+
+VOID
+EFIAPI
+ArmReplaceLiveTranslationEntry (
+  IN  UINT64   *Entry,
+  IN  UINT64   Value,
+  IN  UINT64   RegionStart,
+  IN  BOOLEAN  DisableMmu
+  )
+{
+  DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
+  ASSERT (FALSE);
+}
+
+EFI_STATUS
+ArmSetMemoryAttributes (
+  IN EFI_PHYSICAL_ADDRESS  BaseAddress,
+  IN UINT64                Length,
+  IN UINT64                Attributes,
+  IN UINT64                AttributeMask  // MU_CHANGE - Added missing input variable
+  )
+{
+  DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
+  ASSERT (FALSE);
+  return EFI_UNSUPPORTED;
+}
+
+// MU_CHANGE [END] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
