@@ -87,9 +87,11 @@
   #
   SemihostLib|Include/Library/SemihostLib.h
 
+  # MU_CHANGE [BEGIN] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
   ##  @libraryclass  Provides an interface for a StandaloneMm Mmu.
   #
-  StandaloneMmMmuLib|Include/Library/StandaloneMmMmuLib.h
+  #StandaloneMmMmuLib|Include/Library/StandaloneMmMmuLib.h
+  # MU_CHANGE [END] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
 
 [Guids.common]
   gArmTokenSpaceGuid       = { 0xBB11ECFE, 0x820F, 0x4968, { 0xBB, 0xA6, 0xF7, 0x6A, 0xFE, 0x30, 0x25, 0x96 } }
