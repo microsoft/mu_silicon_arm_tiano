@@ -22,7 +22,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/SerialPortLib.h>
-#include <Library/StandaloneMmMmuLib.h>
+#include <Library/ArmStandaloneMmMmuLib.h>
 #include <Library/PcdLib.h>
 
 #include <IndustryStandard/ArmStdSmc.h>

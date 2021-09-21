@@ -42,7 +42,7 @@ MmuSetAttributes (
   Status = EFI_UNSUPPORTED;
 
   if (Attributes & EFI_MEMORY_XP) {
-    Status = ArmSetMemoryRegionNoExec (BaseAddress, Length);
+    Status = ArmSetMemoryAttributes (BaseAddress, Length, EFI_MEMORY_XP, EFI_MEMORY_XP);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a - Failed to set NX.  Status = %r\n", __FUNCTION__, Status));
     }
@@ -51,7 +51,7 @@ MmuSetAttributes (
   }
 
   if (Attributes & EFI_MEMORY_RO) {
-    Status = ArmSetMemoryRegionReadOnly (BaseAddress, Length);
+    Status = ArmSetMemoryAttributes (BaseAddress, Length, EFI_MEMORY_RO, EFI_MEMORY_RO);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a - Failed to set RO.  Status = %r\n", __FUNCTION__, Status));
     }
@@ -89,7 +89,15 @@ MmuClearAttributes (
   Status = EFI_UNSUPPORTED;
 
   if (Attributes & EFI_MEMORY_XP) {
-    Status = ArmClearMemoryRegionNoExec (BaseAddress, Length);
+    // MU_CHANGE - START
+    // Use ArmSetMemoryAttributes because the individually called attribute updates have been removed
+    Status = ArmSetMemoryAttributes (
+               BaseAddress,
+               Length,
+               0,
+               Attributes
+               );
+    // MU_CHANGE - END
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a - Failed to clear NX.  Status = %r\n", __FUNCTION__, Status));
     }
@@ -98,7 +106,15 @@ MmuClearAttributes (
   }
 
   if (Attributes & EFI_MEMORY_RO) {
-    Status = ArmClearMemoryRegionReadOnly (BaseAddress, Length);
+    // MU_CHANGE - START
+    // Use ArmSetMemoryAttributes because the individually called attribute updates have been removed
+    Status = ArmSetMemoryAttributes (
+               BaseAddress,
+               Length,
+               0,
+               Attributes
+               );
+    // MU_CHANGE - END
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a - Failed to clear RO.  Status = %r\n", __FUNCTION__, Status));
     }
