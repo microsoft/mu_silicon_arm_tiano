@@ -77,7 +77,7 @@
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
 
   #NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf          # MU_CHANGE
-  NULL|UefiCpuPkg/Library/CompilerIntrinsicsLib/ArmCompilerIntrinsicsLib.inf    # MU_CHANGE
+  NULL|MdePkg/Library/CompilerIntrinsicsLib/ArmCompilerIntrinsicsLib.inf        # MU_CHANGE
   NULL|MdePkg/Library/BaseStackCheckLib/BaseStackCheckLib.inf
 
   ArmSvcLib|ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf                              # MU_CHANGE
