@@ -46,8 +46,18 @@ MmuSetAttributes (
       if (EFI_ERROR(Status)) {
         DEBUG((DEBUG_ERROR, "%a - Failed to set NX.  Status = %r\n", __FUNCTION__, Status));
       }
+      Attributes &= ~EFI_MEMORY_XP;
     }
 
+    if (Attributes & EFI_MEMORY_RO) {
+      Status = ArmSetMemoryRegionReadOnly(BaseAddress, Length);
+      if (EFI_ERROR(Status)) {
+        DEBUG((DEBUG_ERROR, "%a - Failed to set RO.  Status = %r\n", __FUNCTION__, Status));
+      }
+      Attributes &= ~EFI_MEMORY_RO;
+    }
+
+    ASSERT (Attributes == 0);
     ASSERT_EFI_ERROR(Status);
     return Status;
   }
@@ -82,6 +92,7 @@ MmuClearAttributes (
       if (EFI_ERROR(Status)) {
         DEBUG((DEBUG_ERROR, "%a - Failed to clear NX.  Status = %r\n", __FUNCTION__, Status));
       }
+      Attributes &= ~EFI_MEMORY_XP;
     }
 
     if (Attributes & EFI_MEMORY_RO) {
@@ -89,8 +100,10 @@ MmuClearAttributes (
       if (EFI_ERROR(Status)) {
         DEBUG((DEBUG_ERROR, "%a - Failed to clear RO.  Status = %r\n", __FUNCTION__, Status));
       }
+      Attributes &= ~EFI_MEMORY_RO;
     }
 
+    ASSERT (Attributes == 0);
     ASSERT_EFI_ERROR(Status);
     return Status;
   }
