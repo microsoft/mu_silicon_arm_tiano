@@ -72,8 +72,6 @@
 #define CTRL_V_BIT       (1 << 12)
 #define CPACR_VFP_BITS   (3 << 20)
 
-ID_AA64MMFR2_EL1 EQU 0x403A    // MS_CHANGE
-
 ArmInvalidateDataCacheEntryByMVA PROC
   dc      ivac, x0    // Invalidate single data cache line
   ret
