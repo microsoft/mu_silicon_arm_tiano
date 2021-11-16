@@ -604,8 +604,11 @@ ArmEnableVFP PROC
     bl    ArmReadIdAA64Pfr0       // Read EL1 Processor Feature Register (PFR0) // MS_CHANGE
     mov   x30, x1                 // Restore LR
     ands  x0, x0, #AARCH64_PFR0_FP// Extract bits indicating VFP implementation
-    cmp   x0, #0                  // VFP is implemented if '0'.
-    bne   %f4                      // Exit if VFP not implemented.
+// MS_CHANGE [BEGIN] - Correctly query VFP on aarch64 systems
+    mov   x1, #AARCH64_PFR0_FP
+    cmp   x0, x1                  // VFP is not implemented if all FP bits are 1 ('0b1111').
+    beq   %f4                     // Exit if VFP not implemented.
+// MS_CHANGE [END] - Correctly query VFP on aarch64 systems
     // FVP is implemented.
     // Make sure VFP exceptions are not trapped (to any exception level).
     mrs   x0, cpacr_el1           // Read EL1 Coprocessor Access Control Register (CPACR)
