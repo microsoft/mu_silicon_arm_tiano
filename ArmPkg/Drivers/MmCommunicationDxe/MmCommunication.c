@@ -44,12 +44,20 @@ STATIC EFI_HANDLE  mMmCommunicateHandle;
   @param[in] This                The EFI_MM_COMMUNICATION_PROTOCOL instance.
   @param[in] CommBufferPhysical  Physical address of the MM communication buffer
   @param[in] CommBufferVirtual   Virtual address of the MM communication buffer
-  @param[in] CommSize            The size of the data buffer being passed in. On exit, the size of data
-                                 being returned. Zero if the handler does not wish to reply with any data.
+  // MU_CHANGE: TCBZ3751 Starts: Update MM communicate inspection routine.
+  @param[in] CommSize            The size of the data buffer being passed in. On input, when not
+                                 omitted, the buffer should cover EFI_MM_COMMUNICATE_HEADER and the
+                                 value of MessageLength field. On exit, the size of data being
+                                 returned. Zero if the handler does not wish to reply with any data.
                                  This parameter is optional and may be NULL.
+  // MU_CHANGE: TCBZ3751 Ends.
 
   @retval EFI_SUCCESS            The message was successfully posted.
-  @retval EFI_INVALID_PARAMETER  CommBufferPhysical was NULL or CommBufferVirtual was NULL.
+  // MU_CHANGE: TCBZ3751 Starts: Update MM communicate inspection routine.
+  @retval EFI_INVALID_PARAMETER  CommBufferPhysical or CommBufferVirtual was NULL, or integer value
+                                 pointed by CommSize does not cover EFI_MM_COMMUNICATE_HEADER and the
+                                 value of MessageLength field.
+  // MU_CHANGE: TCBZ3751 Ends.
   @retval EFI_BAD_BUFFER_SIZE    The buffer is too large for the MM implementation.
                                  If this error is returned, the MessageLength field
                                  in the CommBuffer header or the integer pointed by
@@ -82,10 +90,14 @@ MmCommunication2Communicate (
   //
   // Check parameters
   //
-  if (CommBufferVirtual == NULL) {
+  // MU_CHANGE: TCBZ3751 Starts: Update MM communicate inspection routine.
+  // if (CommBufferVirtual == NULL) {
+  if ((CommBufferVirtual == NULL) || (CommBufferPhysical == NULL)) {
+    // MU_CHANGE: TCBZ3751 Ends.
     return EFI_INVALID_PARAMETER;
   }
 
+  Status            = EFI_SUCCESS; // MU_CHANGE: TCBZ3751: Update MM communicate inspection routine.
   CommunicateHeader = CommBufferVirtual;
   // CommBuffer is a mandatory parameter. Hence, Rely on
   // MessageLength + Header to ascertain the
@@ -95,37 +107,71 @@ MmCommunication2Communicate (
                sizeof (CommunicateHeader->HeaderGuid) +
                sizeof (CommunicateHeader->MessageLength);
 
-  // If the length of the CommBuffer is 0 then return the expected length.
-  if (CommSize != 0) {
+  // MU_CHANGE: TCBZ3751 Starts: Update MM communicate inspection routine.
+  // // If the length of the CommBuffer is 0 then return the expected length.
+  // if (CommSize != 0) {
+  // If CommSize is not omitted, perform size inspection before proceeding.
+  if (CommSize != NULL) {
+    // MU_CHANGE: TCBZ3751 Ends.
     // This case can be used by the consumer of this driver to find out the
     // max size that can be used for allocating CommBuffer.
     if ((*CommSize == 0) ||
         (*CommSize > mNsCommBuffMemRegion.Length))
     {
       *CommSize = mNsCommBuffMemRegion.Length;
-      return EFI_BAD_BUFFER_SIZE;
+      // MU_CHANGE: TCBZ3751: Update MM communicate inspection routine.
+      // return EFI_BAD_BUFFER_SIZE;
+      Status = EFI_BAD_BUFFER_SIZE;
     }
 
+    // MU_CHANGE: TCBZ3751 Starts: Update MM communicate inspection routine.
+    // //
+    // // CommSize must match MessageLength + sizeof (EFI_MM_COMMUNICATE_HEADER);
+    // //
+    // if (*CommSize != BufferSize) {
+    //     return EFI_INVALID_PARAMETER;
+    // }
     //
-    // CommSize must match MessageLength + sizeof (EFI_MM_COMMUNICATE_HEADER);
+    // CommSize should cover at least MessageLength + sizeof (EFI_MM_COMMUNICATE_HEADER);
     //
-    if (*CommSize != BufferSize) {
-      return EFI_INVALID_PARAMETER;
+    if (*CommSize < BufferSize) {
+      Status = EFI_INVALID_PARAMETER;
     }
+
+    // MU_CHANGE: TCBZ3751 Ends.
   }
 
+  // MU_CHANGE: TCBZ3751 Starts: Update MM communicate inspection routine.
+  // //
+  // // If the buffer size is 0 or greater than what can be tolerated by the MM
+  // // environment then return the expected size.
+  // //
+  // if ((BufferSize == 0) ||
+  //     (BufferSize > mNsCommBuffMemRegion.Length)) {
+  //   CommunicateHeader->MessageLength = mNsCommBuffMemRegion.Length -
+  //                                      sizeof (CommunicateHeader->HeaderGuid) -
+  //                                      sizeof (CommunicateHeader->MessageLength);
+  //   return EFI_BAD_BUFFER_SIZE;
+  // }
   //
-  // If the buffer size is 0 or greater than what can be tolerated by the MM
+  // If the message length is 0 or greater than what can be tolerated by the MM
   // environment then return the expected size.
   //
-  if ((BufferSize == 0) ||
+  if ((CommunicateHeader->MessageLength == 0) ||
       (BufferSize > mNsCommBuffMemRegion.Length))
   {
     CommunicateHeader->MessageLength = mNsCommBuffMemRegion.Length -
                                        sizeof (CommunicateHeader->HeaderGuid) -
                                        sizeof (CommunicateHeader->MessageLength);
-    return EFI_BAD_BUFFER_SIZE;
+    Status = EFI_BAD_BUFFER_SIZE;
   }
+
+  // MessageLength or CommSize check has failed, return here.
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  // MU_CHANGE: TCBZ3751 Ends.
 
   // SMC Function ID
   CommunicateSmcArgs.Arg0 = ARM_SMC_ID_MM_COMMUNICATE_AARCH64;
