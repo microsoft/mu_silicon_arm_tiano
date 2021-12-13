@@ -21,6 +21,9 @@
   AArch64/ArmSmc.S
   AArch64/ArmSmc.masm | MSFT
 
+[Sources]
+  ArmSmc.c
+
 [Packages]
   MdePkg/MdePkg.dec
   ArmPkg/ArmPkg.dec
