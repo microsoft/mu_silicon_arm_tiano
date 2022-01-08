@@ -21,10 +21,11 @@ Branch Status - release/202108
   September 2021
 
 :Anticipated Stabilization:
-  November 2021
+  Jan 2022
 
 Branch Changes - release/202108
 ===============================
+Updated on 1/7/2022 to sync with additional changes from release/202102 @ commit 226ffe105bf7af4e87d534783171ff830cd82487
 
 Breaking Changes-dev
 --------------------
