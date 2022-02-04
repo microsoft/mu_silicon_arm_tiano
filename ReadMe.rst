@@ -18,10 +18,10 @@ Branch Status - release/202108
   In Development
 
 :Entered Development:
-  September 2021
+  Feb 2022
 
 :Anticipated Stabilization:
-  November 2021
+  Feb 2022
 
 Branch Changes - release/202108
 ===============================
@@ -41,12 +41,12 @@ Bug Fixes-dev
 
 - None
 
-2108_RefBoot Changes
+2111_RefBoot Changes
 --------------------
 
 - Incomplete
 
-2108_CIBuild Changes
+2111_CIBuild Changes
 --------------------
 
 * N/A
@@ -54,11 +54,11 @@ Bug Fixes-dev
     As such, it would be best to just check the commits themselves, focusing on the 20 or so
     before the CI tag.
 
-2108_Rebase Changes
+2111_Rebase Changes
 -------------------
 
-Source Commit from release/202102: 4f52ce339c6438e4265788cb219ca3cc79afd4b5
-Destination Commit from upstream edk2: 7b4a99be8a (tag: edk2-stable202108)
+Source Commit from release/202108: 6a25bef3cf0fd9dd262712fce6ce408994b523e1
+Destination Commit from upstream edk2: dc453b51640f945233a1edb062c0c97f88c21e79 (tag: 2011_Upstream)
 
 * A number of modules were swapped with Basecore
   - Most of these can be seen in the TCMORPH commits at the beginning of thise
