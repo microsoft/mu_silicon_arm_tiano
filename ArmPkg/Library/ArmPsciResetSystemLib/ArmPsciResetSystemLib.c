@@ -45,10 +45,13 @@ LibResetSystem (
   ARM_SMC_ARGS  ArmSmcArgs;
 
   switch (ResetType) {
+    case EfiResetWarm:
+      ArmSmcArgs.Arg0 = ARM_SMC_ID_PSCI_SYSTEM_RESET2_AARCH64;
+      ArmSmcArgs.Arg1 = 0;
+      ArmSmcArgs.Arg2 = 0;
+      break;
     case EfiResetPlatformSpecific:
     // Map the platform specific reset as reboot
-    case EfiResetWarm:
-    // Map a warm reset into a cold reset
     case EfiResetCold:
       // Send a PSCI 0.2 SYSTEM_RESET command
       ArmSmcArgs.Arg0 = ARM_SMC_ID_PSCI_SYSTEM_RESET;
