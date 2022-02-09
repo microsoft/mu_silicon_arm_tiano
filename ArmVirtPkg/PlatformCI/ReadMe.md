@@ -95,7 +95,7 @@ Pytools build system.
 1. Including the expected build architecture and toolchain to the _stuart_update_ command is critical.
    This is because there are extra scopes and tools that will be resolved during the update step that
    need to match your build step.
-2. Configuring *ACTIVE_PLATFORM* and *TARGET_ARCH* in Conf/target.txt is **not** required. This
+2. Configuring _ACTIVE_PLATFORM_ and _TARGET_ARCH_ in Conf/target.txt is **not** required. This
    environment is set by PlatformBuild.py based upon the `[-a <TARGET_ARCH>]` parameter.
 3. QEMU must be on your path.  On Windows this is a manual process and not part of the QEMU installer.
 
@@ -103,9 +103,9 @@ Pytools build system.
 
 ### Custom Build Options
 
-**MAKE_STARTUP_NSH=TRUE** will output a *startup.nsh* file to the location mapped as fs0. This is
+**MAKE_STARTUP_NSH=TRUE** will output a _startup.nsh_ file to the location mapped as fs0. This is
 used in CI in combination with the `--FlashOnly` feature to run QEMU to the UEFI shell and then execute
-the contents of *startup.nsh*.
+the contents of _startup.nsh_.
 
 **QEMU_HEADLESS=TRUE** Since CI servers run headless QEMU must be told to run with no display otherwise
 an error occurs. Locally you don't need to set this.
