@@ -145,7 +145,6 @@
 #define ARM_SMC_ID_TOS_UID         0xbf00ff01
 /*                                    0xbf00ff02 is reserved */
 #define ARM_SMC_ID_TOS_REVISION  0xbf00ff03
-
 // Firmware TRNG interface Function IDs
 
 /*
