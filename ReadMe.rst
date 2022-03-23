@@ -57,8 +57,8 @@ Bug Fixes-dev
 2202_Rebase Changes
 -------------------
 
-Source Commit from release/202108: 6a25bef3cf0fd9dd262712fce6ce408994b523e1
-Destination Commit from upstream edk2: dc453b51640f945233a1edb062c0c97f88c21e79 (tag: 2011_Upstream)
+Source Commit from release/202111: 6a25bef3cf0fd9dd262712fce6ce408994b523e1
+Destination Commit from upstream edk2: dc453b51640f945233a1edb062c0c97f88c21e79 (tag: 2202_Upstream)
 
 * A number of modules were swapped with Basecore
   - Most of these can be seen in the TCMORPH commits at the beginning of thise
