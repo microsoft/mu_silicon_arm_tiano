@@ -405,6 +405,22 @@ PL011UartGetControl (
 }
 
 /**
+  Check to see if any data is available to be read from the debug device.
+
+  @retval TRUE       At least one byte of data is available to be read
+  @retval FALSE      No data is available to be read
+
+**/
+BOOLEAN
+EFIAPI
+PL011UartPoll (
+  IN  UINTN  UartBase
+  )
+{
+  return ((MmioRead32 (UartBase + UARTFR) & UART_RX_EMPTY_FLAG_MASK) == 0);
+}
+
+/**
   Write data to serial device.
 
   @param  Buffer           Point of data buffer which need to be written.
@@ -455,28 +471,11 @@ PL011UartRead (
 {
   UINTN  Count;
 
-  for (Count = 0; Count < NumberOfBytes; Count++, Buffer++) {
-    while ((MmioRead32 (UartBase + UARTFR) & UART_RX_EMPTY_FLAG_MASK) != 0) {
-    }
-
+  // MU_CHANGE Starts: Do not wait indefinitely for the receive buffer to get filled.
+  for (Count = 0; (Count < NumberOfBytes) && PL011UartPoll (UartBase); Count++, Buffer++) {
     *Buffer = MmioRead8 (UartBase + UARTDR);
   }
 
-  return NumberOfBytes;
-}
-
-/**
-  Check to see if any data is available to be read from the debug device.
-
-  @retval TRUE       At least one byte of data is available to be read
-  @retval FALSE      No data is available to be read
-
-**/
-BOOLEAN
-EFIAPI
-PL011UartPoll (
-  IN  UINTN  UartBase
-  )
-{
-  return ((MmioRead32 (UartBase + UARTFR) & UART_RX_EMPTY_FLAG_MASK) == 0);
+  // MU_CHANGE Ends
+  return Count;
 }
