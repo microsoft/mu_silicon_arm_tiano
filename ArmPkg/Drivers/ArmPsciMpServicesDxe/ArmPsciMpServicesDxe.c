@@ -45,6 +45,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
+
 #include <IndustryStandard/ArmStdSmc.h>
 #include <Ppi/ArmMpCoreInfo.h>
 #include <Protocol/LoadedImage.h>
@@ -52,6 +53,7 @@
 #include "MpServicesInternal.h"
 
 #define POLL_INTERVAL_US  50000
+
 
 STATIC CPU_MP_DATA  mCpuMpData;
 STATIC BOOLEAN      mNonBlockingModeAllowed;
@@ -100,6 +102,7 @@ DispatchCpu (
 
   Args.Arg1 = gProcessorIDs[ProcessorIndex];
   Args.Arg2 = (UINTN)ApEntryPoint;
+
 
   ArmCallSmc (&Args);
 
@@ -542,7 +545,6 @@ StartupAllAPs (
   }
 
   StartupAllAPsPrepareState (SingleThread);
-
   // If any enabled APs are busy (ignoring the BSP), return EFI_NOT_READY
   if (mCpuMpData.StartCount != (mCpuMpData.NumberOfEnabledProcessors - 1)) {
     return EFI_NOT_READY;
@@ -557,7 +559,6 @@ StartupAllAPs (
                SingleThread,
                FailedCpuList
                );
-
     if (EFI_ERROR (Status) && (FailedCpuList != NULL)) {
       if (mCpuMpData.FailedListIndex == 0) {
         FreePool (*FailedCpuList);
@@ -572,7 +573,6 @@ StartupAllAPs (
                SingleThread,
                FailedCpuList
                );
-
     if (FailedCpuList != NULL) {
       if (mCpuMpData.FailedListIndex == 0) {
         FreePool (*FailedCpuList);
@@ -1091,7 +1091,6 @@ UpdateApStatus (
             mCpuMpData.Procedure,
             mCpuMpData.ProcedureArgument
             );
-
           Status = DispatchCpu (NextNumber);
           if (!EFI_ERROR (Status)) {
             mCpuMpData.StartCount++;
@@ -1352,7 +1351,6 @@ MpServicesInitialize (
   }
 
   gProcessorIDs[Index] = MAX_UINT64;
-
   gTcr   = ArmGetTCR ();
   gMair  = ArmGetMAIR ();
   gTtbr0 = ArmGetTTBR0BaseAddress ();
@@ -1368,7 +1366,6 @@ MpServicesInitialize (
     gProcessorIDs,
     (mCpuMpData.NumberOfProcessors + 1) * sizeof (UINT64)
     );
-
   mNonBlockingModeAllowed = TRUE;
 
   Status = EfiCreateEventReadyToBootEx (
@@ -1428,6 +1425,7 @@ ArmPsciMpServicesDxeInitialize (
 
   MaxCpus = 1;
 
+
   Status = gBS->HandleProtocol (
                   ImageHandle,
                   &gEfiLoadedImageProtocolGuid,
@@ -1473,7 +1471,6 @@ ArmPsciMpServicesDxeInitialize (
                   NULL
                   );
   ASSERT_EFI_ERROR (Status);
-
   return Status;
 }
 
@@ -1745,7 +1742,6 @@ StartupAllAPsWithWaitEvent (
                                         TimerPeriodic,
                                         POLL_INTERVAL_US
                                         );
-
   return Status;
 }
 
