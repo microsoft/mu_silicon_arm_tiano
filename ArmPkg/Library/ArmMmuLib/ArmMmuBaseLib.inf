@@ -38,7 +38,11 @@
 [LibraryClasses]
   ArmLib
   CacheMaintenanceLib
+  HobLib
   MemoryAllocationLib
+
+[Guids]
+  gArmMmuReplaceLiveTranslationEntryFuncGuid
 
 [Pcd.ARM]
   gArmTokenSpaceGuid.PcdNormalMemoryNonshareableOverride
