@@ -5,25 +5,25 @@ Project Mu Silicon Arm Tiano Repository
 ============================= ================= =============== ===================
  Host Type & Toolchain        Build Status      Test Status     Code Coverage
 ============================= ================= =============== ===================
-Windows_VS2019_               |WindowsCiBuild|  |WindowsCiTest| |WindowsCiCoverage|
+Windows_VS2022_               |WindowsCiBuild|  |WindowsCiTest| |WindowsCiCoverage|
 Ubuntu_GCC5_                  |UbuntuCiBuild|   |UbuntuCiTest|  |UbuntuCiCoverage|
 ============================= ================= =============== ===================
 
 This repository is part of Project Mu.  Please see Project Mu for details https://microsoft.github.io/mu
 
-Branch Status - release/202202
+Branch Status - release/202208
 ==============================
 
 :Status:
   In Development
 
 :Entered Development:
-  Feb 2022
+  Sep 2022
 
 :Anticipated Stabilization:
-  May 2022
+  Nov 2022
 
-Branch Changes - release/202202
+Branch Changes - release/202208
 ===============================
 
 Breaking Changes-dev
@@ -41,30 +41,23 @@ Bug Fixes-dev
 
 - None
 
-2202_RefBoot Changes
+2208_RefBoot Changes
 --------------------
 
 - Incomplete
 
-2202_CIBuild Changes
+2208_CIBuild Changes
 --------------------
 
-* N/A
-  - This was completed as part of the rebase, due to the size and scope of this integration.
-    As such, it would be best to just check the commits themselves, focusing on the 20 or so
-    before the CI tag.
+- Incomplete
 
-2202_Rebase Changes
+2208_Rebase Changes
 -------------------
 
-Source Commit from release/202111: 6a25bef3cf0fd9dd262712fce6ce408994b523e1
-Destination Commit from upstream edk2: dc453b51640f945233a1edb062c0c97f88c21e79 (tag: 2202_Upstream)
+Source Commit from release/202202: 87faec5856a90c271b2630e9df998d099b4c91f5
+Destination Commit from upstream edk2: ba0e0e4c6a174b71b18ccd6e47319cc45878893c (tag: 2208_Upstream)
 
-* A number of modules were swapped with Basecore
-  - Most of these can be seen in the TCMORPH commits at the beginning of thise
-    branch
-  - Notable moves: StandaloneMmCpu, StandaloneMmCoreEntryPoint
-  - Goal being to make BaseCore build without any dependencies
+- Incomplete
 
 Code of Conduct
 ===============
@@ -148,12 +141,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 .. CoreCI
 
-.. _Windows_VS2019: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202202
-.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20VS2019?branchName=release%2F202202
+.. _Windows_VS2019: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202208
+.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20VS2019?branchName=release%2F202208
 .. |WindowsCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/51.svg
 .. |WindowsCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
 
-.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202202
-.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?branchName=release%2F202202
+.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202208
+.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?branchName=release%2F202208
 .. |UbuntuCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/52.svg
 .. |UbuntuCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
