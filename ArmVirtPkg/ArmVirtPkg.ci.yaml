@@ -51,6 +51,7 @@
             "DynamicTablesPkg/DynamicTablesPkg.dec",
             "NetworkPkg/NetworkPkg.dec",
             "ArmPkg/ArmPkg.dec",
+            "OvmfPkg/OvmfPkg.dec",
             "EmbeddedPkg/EmbeddedPkg.dec",
             "ArmPlatformPkg/ArmPlatformPkg.dec",
             "PcAtChipsetPkg/PcAtChipsetPkg.dec",
