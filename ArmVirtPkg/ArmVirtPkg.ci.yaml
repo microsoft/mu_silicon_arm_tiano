@@ -56,7 +56,8 @@
             "ArmPlatformPkg/ArmPlatformPkg.dec",
             "PcAtChipsetPkg/PcAtChipsetPkg.dec",
             "SecurityPkg/SecurityPkg.dec",
-            "ShellPkg/ShellPkg.dec"  #Is this ok?
+            "ShellPkg/ShellPkg.dec",  #Is this ok?
+            "QemuQ35Pkg/QemuQ35Pkg.dec"  #This probably not ok?
         ],
         # For host based unit tests
         "AcceptableDependencies-HOST_APPLICATION":[
