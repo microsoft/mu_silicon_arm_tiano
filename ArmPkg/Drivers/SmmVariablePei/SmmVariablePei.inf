@@ -1,0 +1,46 @@
+## @file -- SmmVariablePei.inf
+# Provides interface for reading Secure System Variables during PEI.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SmmVariablePei
+  FILE_GUID                      = 7B93DCF8-8F5D-4BC1-A3E5-8288D337CAA0
+  MODULE_TYPE                    = PEIM
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = PeiSmmVariableInitialize
+
+[Sources]
+  SmmVariablePei.c
+  SmmVariablePei.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  ArmPkg/ArmPkg.dec
+
+[LibraryClasses]
+  PcdLib
+  PeiServicesLib
+  PeimEntryPoint
+  MemoryAllocationLib
+  HobLib
+
+[Pcd]
+  gArmTokenSpaceGuid.PcdMmBufferBase
+  gArmTokenSpaceGuid.PcdMmBufferSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize
+
+[Protocols]
+  gEfiSmmVariableProtocolGuid             ## CONSUMES
+
+[Ppis]
+  gEfiPeiReadOnlyVariable2PpiGuid         ## PRODUCES
+  gEfiPeiMmCommunicationPpiGuid           ## CONSUMES
+
+[Depex]
+  gEfiPeiMmCommunicationPpiGuid
