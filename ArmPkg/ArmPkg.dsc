@@ -176,6 +176,7 @@
   ArmPkg/Drivers/StandaloneMmCpu/StandaloneMmCpu.inf
   ArmPkg/Library/StandaloneMmCoreEntryPoint/StandaloneMmCoreEntryPoint.inf
   ArmPkg/Drivers/MmCommunicationPei/MmCommunicationPei.inf
+  ArmPkg/Drivers/SmmVariablePei/SmmVariablePei.inf
   # MU_CHANGE [END]
 
 [Components.AARCH64]
