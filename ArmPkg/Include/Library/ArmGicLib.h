@@ -336,4 +336,12 @@ ArmGicV3SetPriorityMask (
   IN UINTN  Priority
   );
 
+// MU_CHANGE Starts: Add ArmGicV3SendNsG1Sgi, to allow sending SGI from one core to other cores on GICv3
+VOID
+ArmGicV3SendNsG1Sgi (
+  IN UINT64  SgiVal
+  );
+
+// MU_CHANGE Ends
+
 #endif // ARMGIC_H_
