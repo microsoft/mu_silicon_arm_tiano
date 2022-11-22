@@ -166,6 +166,7 @@
           "ipriority",
           "irouter",
           "isenabler",
+          "ishst",      # MU_CHANGE: Fix spell check error
           "istatus",
           "itargets",
           "lable",
