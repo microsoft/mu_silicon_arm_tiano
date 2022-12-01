@@ -1063,6 +1063,11 @@ UpdateApStatus (
   CPU_STATE    State;
   UINTN        NextNumber;
 
+  if (ProcessorIndex >= mCpuMpData.NumberOfProcessors) {
+    // Reject request if index is out of boundary
+    return;
+  }
+
   CpuData = &mCpuMpData.CpuData[ProcessorIndex];
 
   if (IsProcessorBSP (ProcessorIndex)) {

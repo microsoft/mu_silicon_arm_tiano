@@ -187,6 +187,7 @@
           "modsi",
           "mpcore",
           "mpidr",
+          "mstrict",    # MU_CHANGE: Fix spell check error
           "muldi",
           "mullu",
           "nonshareable",
