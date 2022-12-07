@@ -169,8 +169,9 @@ AddOscMethod (
   }
   else
   {
-    Status = EFI_INVALID_PARAMETER;
-    return Status;
+    // Default allows native hot plug, disallows native DPC
+    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
+                        ssdtpcieosctemplatehotplugnodpc_aml_code;
   }
 
   // Parse the Ssdt Pci Osc Template.
