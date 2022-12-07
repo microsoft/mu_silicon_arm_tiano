@@ -420,6 +420,19 @@ typedef struct CmArmGenericWatchdogInfo {
   UINT32    Flags;
 } CM_ARM_GENERIC_WATCHDOG_INFO;
 
+/** The ARM_PCI_OSC_INFO struct describes the features that FW will
+ * grant native control over via _OSC method.
+*/
+typedef struct PciOscInfo {
+  /// Allow OS Native control of Hot Plug if set
+  UINT8     AllowNativeHotPlugControl : 1;
+
+  /// Allow OS Native control of Downstream Port Control if set
+  UINT8     AllowNativeDpcControl : 1;
+
+  UINT8     Reserved6 : 6;
+} ARM_PCI_OSC_INFO;
+
 /** A structure that describes the
     PCI Configuration Space information for the Platform.
 
@@ -445,6 +458,9 @@ typedef struct CmArmPciConfigSpaceInfo {
   /// Optional field: Reference Token for interrupt mapping.
   /// Token identifying a CM_ARM_OBJ_REF structure.
   CM_OBJECT_TOKEN    InterruptMapToken;
+
+  /// Bitmap to enable/disable native OS control of certain features
+  ARM_PCI_OSC_INFO  OscEnableBitmap;
 } CM_ARM_PCI_CONFIG_SPACE_INFO;
 
 /** A structure that describes the
