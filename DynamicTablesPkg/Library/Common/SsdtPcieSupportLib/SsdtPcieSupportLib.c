@@ -142,10 +142,38 @@ AddOscMethod (
 
   ASSERT (PciNode != NULL);
 
-  // Parse the Ssdt Pci Osc Template.
-  SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
-                        ssdtpcieosctemplate_aml_code;
+  // Select the correct Osc Template
+  if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == FALSE &&
+      PciInfo->OscEnableBitmap.AllowNativeDpcControl == FALSE)
+  {
+    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
+                        ssdtpcieosctemplatenohotplugnodpc_aml_code;
+  }
+  else if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == TRUE &&
+      PciInfo->OscEnableBitmap.AllowNativeDpcControl == FALSE)
+  {
+    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
+                        ssdtpcieosctemplatehotplugnodpc_aml_code;
+  }
+  else if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == FALSE &&
+      PciInfo->OscEnableBitmap.AllowNativeDpcControl == TRUE)
+  {
+    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
+                        ssdtpcieosctemplatedpcnohotplug_aml_code;
+  }
+  else if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == TRUE &&
+      PciInfo->OscEnableBitmap.AllowNativeDpcControl == TRUE)
+  {
+    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
+                        ssdtpcieosctemplatehotplugdpc_aml_code;
+  }
+  else
+  {
+    Status = EFI_INVALID_PARAMETER;
+    return Status;
+  }
 
+  // Parse the Ssdt Pci Osc Template.
   OscNode         = NULL;
   OscTemplateRoot = NULL;
   Status          = AmlParseDefinitionBlock (

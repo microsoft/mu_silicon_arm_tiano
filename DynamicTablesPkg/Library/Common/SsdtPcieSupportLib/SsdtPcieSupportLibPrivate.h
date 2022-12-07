@@ -20,6 +20,9 @@
     This symbol is defined in the auto generated C file
     containing the AML bytecode array.
 */
-extern CHAR8  ssdtpcieosctemplate_aml_code[];
+extern CHAR8  ssdtpcieosctemplatedpcnohotplug_aml_code[];
+extern CHAR8  ssdtpcieosctemplatehotplugdpc_aml_code[];
+extern CHAR8  ssdtpcieosctemplatehotplugnodpc_aml_code[];
+extern CHAR8  ssdtpcieosctemplatenohotplugnodpc_aml_code[];
 
 #endif // SSDT_PCIE_SUPPORT_LIB_PRIVATE_H_
