@@ -139,40 +139,12 @@ AddOscMethod (
   EFI_ACPI_DESCRIPTION_HEADER  *SsdtPcieOscTemplate;
   AML_ROOT_NODE_HANDLE         OscTemplateRoot;
   AML_OBJECT_NODE_HANDLE       OscNode;
+  AML_OBJECT_NODE_HANDLE       NameOpCtrlNode;
 
   ASSERT (PciNode != NULL);
 
-  // Select the correct Osc Template
-  if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == FALSE &&
-      PciInfo->OscEnableBitmap.AllowNativeDpcControl == FALSE)
-  {
-    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
-                        ssdtpcieosctemplatenohotplugnodpc_aml_code;
-  }
-  else if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == TRUE &&
-      PciInfo->OscEnableBitmap.AllowNativeDpcControl == FALSE)
-  {
-    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
-                        ssdtpcieosctemplatehotplugnodpc_aml_code;
-  }
-  else if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == FALSE &&
-      PciInfo->OscEnableBitmap.AllowNativeDpcControl == TRUE)
-  {
-    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
-                        ssdtpcieosctemplatedpcnohotplug_aml_code;
-  }
-  else if (PciInfo->OscEnableBitmap.AllowNativeHotPlugControl == TRUE &&
-      PciInfo->OscEnableBitmap.AllowNativeDpcControl == TRUE)
-  {
-    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
-                        ssdtpcieosctemplatehotplugdpc_aml_code;
-  }
-  else
-  {
-    // Default allows native hot plug, disallows native DPC
-    SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
-                        ssdtpcieosctemplatehotplugnodpc_aml_code;
-  }
+  SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
+                      ssdtpcieosctemplate_aml_code;
 
   // Parse the Ssdt Pci Osc Template.
   OscNode         = NULL;
@@ -196,13 +168,49 @@ AddOscMethod (
     goto error_handler;
   }
 
+  // Get the CTRL NameOp object defined by the "Name ()" statement,
+  // and update its value.
+  Status = AmlFindNode (OscTemplateRoot, "\\_OSC.CTRL", &NameOpCtrlNode);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to find Ctrl NameOp"
+      " Status = %r\n",
+      Status
+      ));
+    goto error_handler;
+  }
+
+  Status = AmlNameOpUpdateInteger (NameOpCtrlNode, (UINT64)PciInfo->OscControlBitmap.AsUint32);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to update Ctrl Nameop value"
+      " Status = %r\n",
+      Status
+      ));
+    goto error_handler;
+  }
+
   Status = AmlDetachNode (OscNode);
   if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to detach"
+      " Status = %r\n",
+      Status
+      ));
     goto error_handler;
   }
 
   Status = AmlAttachNode (PciNode, OscNode);
   if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to attach"
+      " Status = %r\n",
+      Status
+      ));
     // Free the detached node.
     AmlDeleteTree (OscNode);
     goto error_handler;

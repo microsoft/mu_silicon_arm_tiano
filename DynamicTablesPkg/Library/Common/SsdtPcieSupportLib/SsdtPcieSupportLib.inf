@@ -17,10 +17,7 @@
 [Sources]
   SsdtPcieSupportLib.c
   SsdtPcieSupportLibPrivate.h
-  SsdtPcieOscTemplateHotPlugDpc.asl
-  SsdtPcieOscTemplateHotPlugNoDpc.asl
-  SsdtPcieOscTemplateDpcNoHotPlug.asl
-  SsdtPcieOscTemplateNoHotPlugNoDpc.asl
+  SsdtPcieOscTemplate.asl
 
 [Packages]
   DynamicTablesPkg/DynamicTablesPkg.dec

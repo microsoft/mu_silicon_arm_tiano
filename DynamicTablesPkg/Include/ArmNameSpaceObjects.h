@@ -420,18 +420,47 @@ typedef struct CmArmGenericWatchdogInfo {
   UINT32    Flags;
 } CM_ARM_GENERIC_WATCHDOG_INFO;
 
-/** The ARM_PCI_OSC_INFO struct describes the features that FW will
+/** The ARM_PCI_OSC_INFO union/struct describes the features that FW will
  * grant native control over via _OSC method.
 */
-typedef struct PciOscInfo {
-  /// Allow OS Native control of Hot Plug if set
-  UINT8     AllowNativeHotPlugControl : 1;
+typedef union PciOscControlBufferInfo {
+  struct {
+    /// Allow OS Native control of Hot Plug if set
+    UINT32     AllowNativeHotPlugControl : 1;
 
-  /// Allow OS Native control of Downstream Port Control if set
-  UINT8     AllowNativeDpcControl : 1;
+    /// Allow Native SHPC Control
+    UINT32     AllowNativeShpcControl : 1;
 
-  UINT8     Reserved6 : 6;
-} ARM_PCI_OSC_INFO;
+    /// Allow Native Power Management Events Control
+    UINT32     AllowNativePmeControl : 1;
+
+    /// Allow Native Advanced Error Reporting Control
+    UINT32     AllowNativeAerControl : 1;
+
+    /// Allow Native Capability Structure Control
+    UINT32     AllowNativeCapabilityControl : 1;
+
+    /// Allow Native Latency Tolerance Reporting Control
+    UINT32     AllowNativeLtrControl : 1;
+
+    /// Firmware sets this bit to 1 to indicate that it 
+    /// will suppress error notification caused by surprise hot remove
+    /// (Completion Time Out errors)
+    UINT32     SupressSurpriseHotRemoveErrors : 1;
+
+    /// Allow Native Downstream Port Containment Control
+    UINT32     AllowNativeDpcControl : 1;
+
+    /// Allow Native Completion Timeout Control
+    UINT32     AllowNativeCompletionTimeoutControl : 1;
+
+    /// Allow Native System Firmware Intermediary Configuration Control
+    UINT32     AllowNativeSfiControl : 1;
+
+    UINT32     Reserved22 : 22;
+  };
+  UINT32     AsUint32;
+} ARM_PCI_OSC_CONTROL_BUFFER_INFO;
 
 /** A structure that describes the
     PCI Configuration Space information for the Platform.
@@ -460,7 +489,7 @@ typedef struct CmArmPciConfigSpaceInfo {
   CM_OBJECT_TOKEN    InterruptMapToken;
 
   /// Bitmap to enable/disable native OS control of certain features
-  ARM_PCI_OSC_INFO  OscEnableBitmap;
+  ARM_PCI_OSC_CONTROL_BUFFER_INFO  OscControlBitmap;
 } CM_ARM_PCI_CONFIG_SPACE_INFO;
 
 /** A structure that describes the
