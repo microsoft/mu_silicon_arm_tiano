@@ -143,10 +143,10 @@ AddOscMethod (
 
   ASSERT (PciNode != NULL);
 
-  SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
-                      ssdtpcieosctemplate_aml_code;
-
   // Parse the Ssdt Pci Osc Template.
+  SsdtPcieOscTemplate = (EFI_ACPI_DESCRIPTION_HEADER *)
+                        ssdtpcieosctemplate_aml_code;
+
   OscNode         = NULL;
   OscTemplateRoot = NULL;
   Status          = AmlParseDefinitionBlock (
@@ -194,23 +194,11 @@ AddOscMethod (
 
   Status = AmlDetachNode (OscNode);
   if (EFI_ERROR (Status)) {
-    DEBUG ((
-      DEBUG_ERROR,
-      "ERROR: SSDT-PCI-OSC: Failed to detach"
-      " Status = %r\n",
-      Status
-      ));
     goto error_handler;
   }
 
   Status = AmlAttachNode (PciNode, OscNode);
   if (EFI_ERROR (Status)) {
-    DEBUG ((
-      DEBUG_ERROR,
-      "ERROR: SSDT-PCI-OSC: Failed to attach"
-      " Status = %r\n",
-      Status
-      ));
     // Free the detached node.
     AmlDeleteTree (OscNode);
     goto error_handler;

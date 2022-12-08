@@ -56,11 +56,6 @@ DefinitionBlock ("SsdtPciOsc.aml", "SSDT", 2, "ARMLTD", "PCI-OSC", 1) {
         And (CTRL, 0x9E, CTRL) // Mask bit 0 (and undefined bits)
       }
 
-      // Always allow native PME, AER (no dependencies)
-
-      // Never allow SHPC (no SHPC controller in this system)
-      And (CTRL, 0x9D, CTRL)
-
       If (LNotEqual (Arg1, One)) {  // Unknown revision
         Or (CDW1, 0x08, CDW1)
       }
