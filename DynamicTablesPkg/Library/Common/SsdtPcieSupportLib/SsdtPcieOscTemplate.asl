@@ -34,7 +34,9 @@ DefinitionBlock ("SsdtPciOsc.aml", "SSDT", 2, "ARMLTD", "PCI-OSC", 1) {
     // OS Control Handoff
     //
     Name (SUPP, Zero) // PCI _OSC Support Field value
-    Name (CTRL, Zero) // PCI _OSC Control Field value
+    // MU_CHANGE - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
+    // {template} updated using asl fixup in SsdtPcieSupportLib
+    Name (CTRL, Zero) // {template} PCI _OSC Control Field value
 
     // Create DWord-addressable fields from the Capabilities Buffer
     CreateDWordField (Arg3, 0, CDW1)
@@ -46,20 +48,29 @@ DefinitionBlock ("SsdtPciOsc.aml", "SSDT", 2, "ARMLTD", "PCI-OSC", 1) {
 
       // Save Capabilities DWord2 & 3
       Store (CDW2, SUPP)
-      Store (CDW3, CTRL)
+      // MU_CHANGE [BEGIN] - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
+      And (CTRL, CDW3, CTRL)
 
       // Only allow native hot plug control if OS supports:
       // * ASPM
       // * Clock PM
       // * MSI/MSI-X
       If (LNotEqual (And (SUPP, 0x16), 0x16)) {
-        And (CTRL, 0x1E, CTRL) // Mask bit 0 (and undefined bits)
+        And (CTRL, 0x3FE, CTRL) // Mask bit 0 (and undefined bits)
       }
 
-      // Always allow native PME, AER (no dependencies)
+      // Only allow native hot plug, SHPC, PME, AER, LTR, DPC, completion timeout
+      // if OS requests control of capability structure
+      If (LNotEqual (And (CTRL, 0x10), 0x10)) {
+        And (CTRL, 0x240, CTRL) // Mask control bits for above features
+      }
 
-      // Never allow SHPC (no SHPC controller in this system)
-      And (CTRL, 0x1D, CTRL)
+      // Only allow native DPC if OS requests control of AER
+      If (LNotEqual (And (CTRL, 0x8), 0x8)) {
+        And (CTRL, 0x37F, CTRL) // Mask bit 7 (and undefined bits)
+      }
+
+      // MU_CHANGE [END]
 
       If (LNotEqual (Arg1, One)) {  // Unknown revision
         Or (CDW1, 0x08, CDW1)
