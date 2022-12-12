@@ -420,6 +420,25 @@ typedef struct CmArmGenericWatchdogInfo {
   UINT32    Flags;
 } CM_ARM_GENERIC_WATCHDOG_INFO;
 
+// MU_CHANGE [BEGIN] - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
+
+/** These masks define the bit positions in the PCI OSC CTRL buffer
+    for the features that OS may requests control over. For firmware
+    to grant control of a specific feature, the bit must be set in the
+    CTRL buffer. For more info, see PCI FW Spec v3.3 section 4.5.1
+*/
+#define PCI_OSC_ALLOW_NATIVE_HOT_PLUG_CONTROL       0x0001
+#define PCI_OSC_ALLOW_NATIVE_SHPC_CONTROL           0x0002
+#define PCI_OSC_ALLOW_NATIVE_PME_CONTROL            0x0004
+#define PCI_OSC_ALLOW_NATIVE_AER_CONTROL            0x0008
+#define PCI_OSC_ALLOW_NATIVE_CAPABILITY_CONTROL     0x0010
+#define PCI_OSC_ALLOW_NATIVE_LTR_CONTROL            0x0020
+#define PCI_OSC_SUPRESS_HOT_REMOVE_ERRORS           0x0040
+#define PCI_OSC_ALLOW_NATIVE_DPC_CONTROL            0x0080
+#define PCI_OSC_ALLOW_NATIVE_COMPL_TIMEOUT_CONTROL  0x0100
+#define PCI_OSC_ALLOW_NATIVE_SFI_CONTROL            0x0200
+#define PCI_OSC_CTRL_BUFFER_VALID_BITS              0x03FF
+
 /** A structure that describes the
     PCI Configuration Space information for the Platform.
 
@@ -445,7 +464,12 @@ typedef struct CmArmPciConfigSpaceInfo {
   /// Optional field: Reference Token for interrupt mapping.
   /// Token identifying a CM_ARM_OBJ_REF structure.
   CM_OBJECT_TOKEN    InterruptMapToken;
+
+  /// Bits to enable/disable native OS control of certain features
+  UINT32             OscControlBuffer;
 } CM_ARM_PCI_CONFIG_SPACE_INFO;
+
+// MU_CHANGE [END]
 
 /** A structure that describes the
     Hypervisor Vendor ID information for the Platform.
