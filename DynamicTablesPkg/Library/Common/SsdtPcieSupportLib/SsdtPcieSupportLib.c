@@ -141,6 +141,7 @@ AddOscMethod (
   EFI_ACPI_DESCRIPTION_HEADER  *SsdtPcieOscTemplate;
   AML_ROOT_NODE_HANDLE         OscTemplateRoot;
   AML_OBJECT_NODE_HANDLE       OscNode;
+  AML_OBJECT_NODE_HANDLE       NameOpCtrlNode; // MU_CHANGE - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
 
   ASSERT (PciNode != NULL);
 
@@ -168,6 +169,35 @@ AddOscMethod (
   if (EFI_ERROR (Status)) {
     goto error_handler;
   }
+
+  // MU_CHANGE [BEGIN] - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
+
+  // Get the CTRL NameOp object defined by the "Name ()" statement,
+  // and update its value.
+  Status = AmlFindNode (OscTemplateRoot, "\\_OSC.CTRL", &NameOpCtrlNode);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to find Ctrl NameOp"
+      " Status = %r\n",
+      Status
+      ));
+    goto error_handler;
+  }
+
+  Status = AmlNameOpUpdateInteger (NameOpCtrlNode, 
+                                   (UINT64)(PciInfo->OscControlBuffer & PCI_OSC_CTRL_BUFFER_VALID_BITS));
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to update Ctrl Nameop value"
+      " Status = %r\n",
+      Status
+      ));
+    goto error_handler;
+  }
+
+  // MU_CHANGE [END]
 
   Status = AmlDetachNode (OscNode);
   if (EFI_ERROR (Status)) {
