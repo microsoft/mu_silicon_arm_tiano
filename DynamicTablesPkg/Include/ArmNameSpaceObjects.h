@@ -420,47 +420,22 @@ typedef struct CmArmGenericWatchdogInfo {
   UINT32    Flags;
 } CM_ARM_GENERIC_WATCHDOG_INFO;
 
-/** The ARM_PCI_OSC_INFO union/struct describes the features that FW will
- * grant native control over via _OSC method.
+/** These masks define the bit positions in the PCI OSC CTRL buffer
+    for the features that OS may requests control over. For firmware
+    to grant control of a specific feature, the bit must be set in the
+    CTRL buffer. For more info, see PCI FW Spec v3.3 section 4.5.1
 */
-typedef union PciOscControlBufferInfo {
-  struct {
-    /// Allow OS Native control of Hot Plug if set
-    UINT32     AllowNativeHotPlugControl : 1;
-
-    /// Allow Native SHPC Control
-    UINT32     AllowNativeShpcControl : 1;
-
-    /// Allow Native Power Management Events Control
-    UINT32     AllowNativePmeControl : 1;
-
-    /// Allow Native Advanced Error Reporting Control
-    UINT32     AllowNativeAerControl : 1;
-
-    /// Allow Native Capability Structure Control
-    UINT32     AllowNativeCapabilityControl : 1;
-
-    /// Allow Native Latency Tolerance Reporting Control
-    UINT32     AllowNativeLtrControl : 1;
-
-    /// Firmware sets this bit to 1 to indicate that it 
-    /// will suppress error notification caused by surprise hot remove
-    /// (Completion Time Out errors)
-    UINT32     SupressSurpriseHotRemoveErrors : 1;
-
-    /// Allow Native Downstream Port Containment Control
-    UINT32     AllowNativeDpcControl : 1;
-
-    /// Allow Native Completion Timeout Control
-    UINT32     AllowNativeCompletionTimeoutControl : 1;
-
-    /// Allow Native System Firmware Intermediary Configuration Control
-    UINT32     AllowNativeSfiControl : 1;
-
-    UINT32     Reserved22 : 22;
-  };
-  UINT32     AsUint32;
-} ARM_PCI_OSC_CONTROL_BUFFER_INFO;
+#define PCI_OSC_ALLOW_NATIVE_HOT_PLUG_CONTROL       0x0001
+#define PCI_OSC_ALLOW_NATIVE_SHPC_CONTROL           0x0002
+#define PCI_OSC_ALLOW_NATIVE_PME_CONTROL            0x0004
+#define PCI_OSC_ALLOW_NATIVE_AER_CONTROL            0x0008
+#define PCI_OSC_ALLOW_NATIVE_CAPABILITY_CONTROL     0x0010
+#define PCI_OSC_ALLOW_NATIVE_LTR_CONTROL            0x0020
+#define PCI_OSC_SUPRESS_HOT_REMOVE_ERRORS           0x0040
+#define PCI_OSC_ALLOW_NATIVE_DPC_CONTROL            0x0080
+#define PCI_OSC_ALLOW_NATIVE_COMPL_TIMEOUT_CONTROL  0x0100
+#define PCI_OSC_ALLOW_NATIVE_SFI_CONTROL            0x0200
+#define PCI_OSC_CTRL_BUFFER_VALID_BITS              0x03FF
 
 /** A structure that describes the
     PCI Configuration Space information for the Platform.
@@ -488,8 +463,8 @@ typedef struct CmArmPciConfigSpaceInfo {
   /// Token identifying a CM_ARM_OBJ_REF structure.
   CM_OBJECT_TOKEN    InterruptMapToken;
 
-  /// Bitmap to enable/disable native OS control of certain features
-  ARM_PCI_OSC_CONTROL_BUFFER_INFO  OscControlBitmap;
+  /// Bits to enable/disable native OS control of certain features
+  UINT32             OscControlBuffer;
 } CM_ARM_PCI_CONFIG_SPACE_INFO;
 
 /** A structure that describes the
