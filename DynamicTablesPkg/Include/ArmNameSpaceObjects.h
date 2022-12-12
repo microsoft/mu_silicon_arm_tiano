@@ -420,6 +420,8 @@ typedef struct CmArmGenericWatchdogInfo {
   UINT32    Flags;
 } CM_ARM_GENERIC_WATCHDOG_INFO;
 
+// MU_CHANGE [BEGIN] - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
+
 /** These masks define the bit positions in the PCI OSC CTRL buffer
     for the features that OS may requests control over. For firmware
     to grant control of a specific feature, the bit must be set in the
@@ -466,6 +468,8 @@ typedef struct CmArmPciConfigSpaceInfo {
   /// Bits to enable/disable native OS control of certain features
   UINT32             OscControlBuffer;
 } CM_ARM_PCI_CONFIG_SPACE_INFO;
+
+// MU_CHANGE [END]
 
 /** A structure that describes the
     Hypervisor Vendor ID information for the Platform.
