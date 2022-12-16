@@ -1059,6 +1059,13 @@ typedef struct CmArmPciInterruptMapInfo {
   /// Value on 5 bits (max 31).
   UINT8    PciDevice;
 
+  // MU_CHANGE [BEGIN] Allow user to specify PciFunction in InterruptMapInfo
+  /// Pci Function.
+  /// up to 3 bits (max 7)
+  /// Value of 0xFFFF implies all functions under device
+  UINT16   PciFunction;
+  // MU_CHANGE [END]
+
   /** PCI interrupt
 
   ACPI bindings are used:
