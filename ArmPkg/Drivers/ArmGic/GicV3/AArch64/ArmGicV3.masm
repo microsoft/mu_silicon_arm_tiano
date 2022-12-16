@@ -17,6 +17,7 @@
 
     EXPORT ArmGicV3GetControlSystemRegisterEnable
     EXPORT ArmGicV3SetControlSystemRegisterEnable
+    EXPORT ArmGicV3SendNsG1Sgi  // MU_CHANGE
     EXPORT ArmGicV3EnableInterruptInterface
     EXPORT ArmGicV3DisableInterruptInterface
     EXPORT ArmGicV3EndOfInterrupt
@@ -62,6 +63,19 @@ ArmGicV3SetControlSystemRegisterEnable PROC
     isb sy
         ret
 ArmGicV3SetControlSystemRegisterEnable ENDP
+
+// MU_CHANGE Starts: Add ArmGicV3SendNsG1Sgi, to allow sending SGI from one core to other cores on GICv3
+// VOID
+// ArmGicV3SendNsG1Sgi (
+//  IN UINT64          SgiVal
+//  );
+ArmGicV3SendNsG1Sgi PROC
+        dsb     ishst
+        msr     ICC_SGI1R, x0
+        isb
+        ret
+ArmGicV3SendNsG1Sgi ENDP
+// MU_CHANGE Ends
 
 //VOID
 //ArmGicV3EnableInterruptInterface (
