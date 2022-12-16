@@ -60,8 +60,8 @@ GeneratePciSlots (
   EFI_STATUS              Status;
   UINT32                  Index;
   UINT32                  LastIndex;
-  UINT8                   PciDevice;
-  UINT16                  PciFunction;
+  UINT8                   PciDevice;      // MU_CHANGE
+  UINT16                  PciFunction;    // MU_CHANGE 
   CHAR8                   AslName[AML_NAME_SEG_SIZE + 1];
   AML_OBJECT_NODE_HANDLE  DeviceNode;
 
