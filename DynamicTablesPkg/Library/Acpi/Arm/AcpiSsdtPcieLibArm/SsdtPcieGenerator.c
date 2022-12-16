@@ -377,7 +377,7 @@ GeneratePrt (
     }
 
     // Add the device to the DeviceTable.
-    MappingTableAdd (&Generator->DeviceTable, IrqMapInfo->PciDevice);
+    MappingTableAdd (&Generator->DeviceTable, (IrqMapInfo->PciDevice << 16) | IrqMapInfo->PciFunction); // MU_CHANGE
 
     /* Add a _PRT entry.
        ASL
@@ -395,7 +395,7 @@ GeneratePrt (
       Use the second model for _PRT object and describe a hardwired interrupt.
     */
     Status = AmlAddPrtEntry (
-               (IrqMapInfo->PciDevice << 16) | 0xFFFF,
+               (IrqMapInfo->PciDevice << 16) | IrqMapInfo->PciFunction, // MU_CHANGE
                IrqMapInfo->PciInterrupt,
                NULL,
                IrqMapInfo->IntcInterrupt.Interrupt,
