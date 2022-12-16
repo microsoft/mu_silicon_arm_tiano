@@ -118,7 +118,7 @@ GeneratePciSlots (
     */
     Status = AmlCodeGenNameInteger (
                "_ADR",
-               MappingTable->Table[Index],
+               MappingTable->Table[Index], // MU_CHANGE - Allow user to specify PciFunction in InterruptMapInfo
                DeviceNode,
                NULL
                );
