@@ -16,4 +16,4 @@ edk2-pytool-library~=0.12.1 # MU_CHANGE - update to 0.11.0 or later
 edk2-pytool-extensions~=0.17.2 # MU_CHANGE - update to 0.17.1 or later
 edk2-basetools==0.1.29 # MU_CHANGE - update to 0.1.13 or later
 antlr4-python3-runtime==4.11.1
-regex==2022.8.17
+regex==2022.10.31
