@@ -82,6 +82,8 @@
 // GIC SGI & PPI Redistributor frame
 #define ARM_GICR_ISENABLER  0x0100      // Interrupt Set-Enable Registers
 #define ARM_GICR_ICENABLER  0x0180      // Interrupt Clear-Enable Registers
+#define ARM_GICR_ISPENDR    0x0200      // Interrupt Set-Pending Registers
+#define ARM_GICR_ICPENDR    0x0280      // Interrupt Clear-Pending Registers
 
 // GIC Cpu interface
 #define ARM_GIC_ICCICR   0x00         // CPU Interface Control Register
@@ -171,6 +173,30 @@ VOID
 EFIAPI
 ArmGicDisableInterruptInterface (
   IN  INTN  GicInterruptInterfaceBase
+  );
+
+VOID
+EFIAPI
+ArmGicSetPendingInterrupt (
+  IN UINTN  GicDistributorBase,
+  IN UINTN  GicRedistributorBase,
+  IN UINTN  Source
+  );
+
+VOID
+EFIAPI
+ArmGicClearPendingInterrupt (
+  IN UINTN  GicDistributorBase,
+  IN UINTN  GicRedistributorBase,
+  IN UINTN  Source
+  );
+
+BOOLEAN
+EFIAPI
+ArmGicIsInterruptPending (
+  IN UINTN  GicDistributorBase,
+  IN UINTN  GicRedistributorBase,
+  IN UINTN  Source
   );
 
 VOID
