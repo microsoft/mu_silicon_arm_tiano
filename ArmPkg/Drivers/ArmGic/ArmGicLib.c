@@ -580,6 +580,7 @@ ArmGicIsInterruptPending (
 
   return ((Interrupts & (1 << RegShift)) != 0);
 }
+
 // MU_CHANGE Ends
 
 VOID

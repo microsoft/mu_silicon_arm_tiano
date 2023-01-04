@@ -199,6 +199,7 @@ ArmGicIsInterruptPending (
   IN UINTN  GicRedistributorBase,
   IN UINTN  Source
   );
+
 // MU_CHANGE Ends
 
 VOID
