@@ -450,7 +450,7 @@ ArmGicIsInterruptEnabled (
 // MU_CHANGE Starts: Added new interfaces to support pending interrupt manipulation
 VOID
 EFIAPI
-ArmGicSetInterruptPending (
+ArmGicSetPendingInterrupt (
   IN UINTN  GicDistributorBase,
   IN UINTN  GicRedistributorBase,
   IN UINTN  Source
@@ -536,7 +536,6 @@ ArmGicClearPendingInterrupt (
       );
   }
 }
-
 
 BOOLEAN
 EFIAPI
