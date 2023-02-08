@@ -288,11 +288,9 @@ RemapUnusedMemoryNx (
   MemoryMapEnd   = (EFI_MEMORY_DESCRIPTOR *)((UINT8 *)MemoryMap + MemoryMapSize);
   while ((UINTN)MemoryMapEntry < (UINTN)MemoryMapEnd) {
     if (MemoryMapEntry->Type == EfiConventionalMemory) {
-      ArmSetMemoryAttributes (
+      ArmSetMemoryRegionNoExec (
         MemoryMapEntry->PhysicalStart,
-        EFI_PAGES_TO_SIZE (MemoryMapEntry->NumberOfPages),
-        EFI_MEMORY_XP,
-        EFI_MEMORY_XP
+        EFI_PAGES_TO_SIZE (MemoryMapEntry->NumberOfPages)
         );
     }
 
@@ -323,9 +321,7 @@ CpuDxeInitialize (
   // fact that updating permissions on a newly allocated page table may trigger
   // a block entry split, which triggers a page table allocation, etc etc
   //
-  if (FeaturePcdGet (PcdRemapUnusedMemoryNx)) {
-    RemapUnusedMemoryNx ();
-  }
+  RemapUnusedMemoryNx ();
 
   Status = gBS->InstallMultipleProtocolInterfaces (
                   &mCpuHandle,
