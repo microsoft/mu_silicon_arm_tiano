@@ -5,6 +5,7 @@
 # Copyright (c) 2020 - 2021, ARM Limited. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
+import glob
 import os
 import logging
 import sys
@@ -17,15 +18,10 @@ from edk2toolext.invocables.edk2_pr_eval import PrEvalSettingsManager
 from edk2toollib.utility_functions import GetHostInfo
 from pathlib import Path
 
-
 try:
-    # Temporarily needed until edk2 can update to the latest edk2-pytools
-    # that has the CodeQL helpers.
-    #
-    # May not be present until submodules are populated.
-    #
-    root = Path(__file__).parent.parent.resolve()
-    sys.path.append(str(root/'BaseTools'/'Plugin'/'CodeQL'/'integration'))
+    # May not be present until submodules are populated
+    root = Path(__file__).parent.resolve()
+    sys.path.append(str(root/'Plugin'/'CodeQL'/'integration'))
     import stuart_codeql as codeql_helpers
 except ImportError:
     pass
@@ -62,6 +58,7 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
             self.UseBuiltInBaseTools = True
         if args.no_piptools:
             self.UseBuiltInBaseTools = False
+
         try:
             self.codeql = codeql_helpers.is_codeql_enabled_on_command_line(args)
         except NameError:
@@ -179,7 +176,7 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
                     scopes += ("gcc_arm_linux",)
                 if "RISCV64" in self.ActualArchitectures:
                     scopes += ("gcc_riscv64_unknown",)
-            self.ActualScopes = scopes
+
             try:
                 scopes += codeql_helpers.get_scopes(self.codeql)
 
@@ -188,9 +185,18 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
                         "STUART_CODEQL_AUDIT_ONLY",
                         "TRUE",
                         "Set in CISettings.py")
+                    codeql_filter_files = [str(n) for n in glob.glob(
+                        os.path.join(self.GetWorkspaceRoot(),
+                                     '**/CodeQlFilters.yml'),
+                        recursive=True)]
+                    shell_environment.GetBuildVars().SetValue(
+                        "STUART_CODEQL_FILTER_FILES",
+                        ','.join(codeql_filter_files),
+                        "Set in CISettings.py")
             except NameError:
                 pass
 
+            self.ActualScopes = scopes
         return self.ActualScopes
 
     def GetRequiredSubmodules(self):
