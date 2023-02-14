@@ -162,10 +162,13 @@
           "icdsgir",
           "icdspr",
           "icenabler",
+          "icpendr",    # MU_CHANGE: Fix spell check error
           "intid",
           "ipriority",
           "irouter",
           "isenabler",
+          "ishst",      # MU_CHANGE: Fix spell check error
+          "ispendr",    # MU_CHANGE: Fix spell check error
           "istatus",
           "itargets",
           "lable",
@@ -187,6 +190,7 @@
           "modsi",
           "mpcore",
           "mpidr",
+          "mstrict",    # MU_CHANGE: Fix spell check error
           "muldi",
           "mullu",
           "nonshareable",
