@@ -28,6 +28,7 @@ ArmPlatformGetVirtualMemoryMap (
 }
 
 // MU_CHANGE START
+
 /**
   Checks if the platform requires a special initial EFI memory region.
 
@@ -39,11 +40,12 @@ ArmPlatformGetVirtualMemoryMap (
 **/
 BOOLEAN
 EFIAPI
-ArmPlatformGetPeiMemory(
-  OUT UINTN *EfiMemoryBase,
-  OUT UINT32 *EfiMemorySize
-)
+ArmPlatformGetPeiMemory (
+  OUT UINTN   *EfiMemoryBase,
+  OUT UINT32  *EfiMemorySize
+  )
 {
   return FALSE;
 }
+
 // MU_CHANGE END

@@ -117,11 +117,10 @@ InitializeMemory (
 
   // MU_CHANGE START: Allow platform to customize initial memory region.
   UefiMemorySize = FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
-  if (ArmPlatformGetPeiMemory(&UefiMemoryBase, &UefiMemorySize)) {
+  if (ArmPlatformGetPeiMemory (&UefiMemoryBase, &UefiMemorySize)) {
     // Check the Firmware does not intersect with the provided memory region.
     ASSERT ((FdBase < UefiMemoryBase) || (FdBase >= (UefiMemoryBase + UefiMemorySize)));
     ASSERT ((FdTop <= UefiMemoryBase) || (FdTop > (UefiMemoryBase + UefiMemorySize)));
-
   } else if ((FdBase >= SystemMemoryBase) && (FdTop <= SystemMemoryTop)) {
     // In case the firmware has been shadowed in the System Memory
     // MU_CHANGE END
