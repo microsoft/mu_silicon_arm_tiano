@@ -137,6 +137,7 @@ ArmPlatformGetPlatformPpiList (
   );
 
 // MU_CHANGE START: Allow platform to customize initial memory region.
+
 /**
   Checks if the platform requires a special initial EFI memory region.
 
@@ -152,6 +153,7 @@ ArmPlatformGetPeiMemory (
   OUT UINTN   *EfiMemoryBase,
   OUT UINT32  *EfiMemorySize
   );
+
 // MU_CHANGE END
 
 #endif
