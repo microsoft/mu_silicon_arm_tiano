@@ -32,11 +32,11 @@ ArmPlatformGetVirtualMemoryMap (
 /**
   Checks if the platform requires a special initial EFI memory region.
 
-  @param[out]  EfiMemoryBase  The custom memory base, should be unchanged if FALSE is returned.
-  @param[out]  EfiMemorySize  The custom memory size, should be unchanged if FALSE is returned.
+  @param[out]  EfiMemoryBase  The custom memory base, will be unchanged if FALSE is returned.
+  @param[out]  EfiMemorySize  The custom memory size, will be unchanged if FALSE is returned.
 
   @retval   TRUE    A custom memory region was set.
-  @retval   TRUE    A custom memory region was not set.
+  @retval   FALSE   A custom memory region was not set.
 **/
 BOOLEAN
 EFIAPI
