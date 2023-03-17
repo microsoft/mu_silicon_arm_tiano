@@ -126,7 +126,7 @@
 #define SGIR_IRM_SHIFT    40
 #define SGIR_IRM_MASK     ((UINT64)0x1)
 #define SGIR_AFF3_SHIFT   48
-#define SGIR_AFF_MASK     ((UINT64)0xf)
+#define SGIR_AFF_MASK     ((UINT64)0xff)
 
 #define SGIR_IRM_TO_AFF     0
 #define SGIR_IRM_TO_OTHERS  1
