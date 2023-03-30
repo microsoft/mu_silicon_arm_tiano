@@ -23,7 +23,7 @@
 #define ICC_IAR1_EL1            S3_0_C12_C12_0
 #define ICC_PMR_EL1             S3_0_C4_C6_0
 #define ICC_BPR1_EL1            S3_0_C12_C12_3
-#define ICC_SGI1R               S3_0_C12_C11_5  // MU_CHANGE
+#define ICC_SGI1R_EL1           S3_0_C12_C11_5  // MU_CHANGE
 
 #endif
 
@@ -63,7 +63,7 @@ ASM_FUNC(ArmGicV3SetControlSystemRegisterEnable)
 //  );
 ASM_FUNC(ArmGicV3SendNsG1Sgi)
         dsb     ishst
-        msr     ICC_SGI1R, x0
+        msr     ICC_SGI1R_EL1, x0
         isb
         ret
 // MU_CHANGE Ends
