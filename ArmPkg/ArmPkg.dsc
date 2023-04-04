@@ -95,6 +95,7 @@
 
   ArmSvcLib|ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf              # MU_CHANGE
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf   # MU_CHANGE
+  DxeMemoryProtectionHobLib|MdeModulePkg/Library/MemoryProtectionHobLibNull/DxeMemoryProtectionHobLibNull.inf # MU_CHANGE
   NULL|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf # MU_CHANGE: /GS and -fstack-protector support
 
 [LibraryClasses.common.PEIM]
