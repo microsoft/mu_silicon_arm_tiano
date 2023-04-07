@@ -90,6 +90,7 @@ SetGcdMemorySpaceAttributes (
   UINTN                 EndIndex;
   EFI_PHYSICAL_ADDRESS  RegionStart;
   UINT64                RegionLength;
+  UINT64                Capabilities; // MU_CHANGE: Sync AARCH64 GCD Capabilities with Page Table
 
   DEBUG ((
     DEBUG_GCD,
@@ -146,14 +147,60 @@ SetGcdMemorySpaceAttributes (
       RegionLength = MemorySpaceMap[Index].BaseAddress + MemorySpaceMap[Index].Length - RegionStart;
     }
 
+    // MU_CHANGE START: Sync AARCH64 GCD Capabilities with Page Table
+    // Always add RO, RP, and XP, as all memory is able to support these types and they are critical
+    // to maintaining a security boundary. Also ensure that any attributes that are already set in
+    // the page table get set in the GCD capabilities and attributes to ensure we don't incorrectly
+    // sync.
+    Capabilities  = MemorySpaceMap[Index].Capabilities | EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP;
+    Capabilities |= Attributes & ~EFI_MEMORY_CACHETYPE_MASK;
+
+    // Update GCD capabilities as these may have changed in the page table from the original GCD setting
+    // this follows the same pattern as x86 GCD and Page Table syncing
+    Status = gDS->SetMemorySpaceCapabilities (
+                    RegionStart,
+                    RegionLength,
+                    Capabilities
+                    );
+
+    if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a - failed to update GCD capabilities: 0x%llx on memory region: 0x%llx length: 0x%llx Status: %r\n",
+        __FUNCTION__,
+        Capabilities,
+        RegionStart,
+        RegionLength,
+        Status
+        ));
+      ASSERT_EFI_ERROR (Status);
+      continue;
+    }
+
     //
     // Set memory attributes according to MTRR attribute and the original attribute of descriptor
     //
-    gDS->SetMemorySpaceAttributes (
-           RegionStart,
-           RegionLength,
-           (MemorySpaceMap[Index].Attributes & ~EFI_MEMORY_CACHETYPE_MASK) | (MemorySpaceMap[Index].Capabilities & Attributes)
-           );
+    Status = gDS->SetMemorySpaceAttributes (
+                    RegionStart,
+                    RegionLength,
+                    (MemorySpaceMap[Index].Attributes & ~EFI_MEMORY_CACHETYPE_MASK) | (Attributes & Capabilities)
+                    );
+
+    if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a - failed to update GCD attributes: 0x%llx on memory region: 0x%llx length: 0x%llx Status: %r\n",
+        __FUNCTION__,
+        Attributes,
+        RegionStart,
+        RegionLength,
+        Status
+        ));
+      ASSERT_EFI_ERROR (Status);
+      continue;
+    }
+
+    // MU_CHANGE END
   }
 
   return EFI_SUCCESS;
