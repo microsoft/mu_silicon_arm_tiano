@@ -397,9 +397,9 @@ GeneratePrt (
        use a function number of FFFF).
     */
     Status = AmlAddPrtEntry (
-               (IrqMapInfo->PciDevice << 16) | IrqMapInfo->PciFunction, // MU_CHANGE
+               (IrqMapInfo->PciDevice << 16) | 0xFFFF,
                IrqMapInfo->PciInterrupt,
-               NULL,
+               &(IrqMapInfo->PciIntLinkName[0]),
                IrqMapInfo->IntcInterrupt.Interrupt,
                PrtNode
                );

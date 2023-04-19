@@ -1053,6 +1053,11 @@ typedef struct CmArmPciInterruptMapInfo {
   */
   UINT8                       PciInterrupt;
 
+  // MU_CHANGE [BEGIN] Allow user to specify Legacy INT object 
+  /// Pci Int Link Name
+  CHAR8   *PciIntLinkName;
+  // MU_CHANGE [END]
+
   /** Interrupt controller interrupt.
 
   Cf Devicetree Specification - Release v0.3
