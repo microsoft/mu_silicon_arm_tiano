@@ -149,11 +149,8 @@ SetGcdMemorySpaceAttributes (
 
     // MU_CHANGE START: Sync AARCH64 GCD Capabilities with Page Table
     // Always add RO, RP, and XP, as all memory is able to support these types and they are critical
-    // to maintaining a security boundary. Also ensure that any attributes that are already set in
-    // the page table get set in the GCD capabilities and attributes to ensure we don't incorrectly
-    // sync.
+    // to maintaining a security boundary.
     Capabilities  = MemorySpaceMap[Index].Capabilities | EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP;
-    Capabilities |= Attributes & ~EFI_MEMORY_CACHETYPE_MASK;
 
     // Update GCD capabilities as these may have changed in the page table from the original GCD setting
     // this follows the same pattern as x86 GCD and Page Table syncing
