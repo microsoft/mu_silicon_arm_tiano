@@ -1055,6 +1055,8 @@ typedef struct CmArmPciInterruptMapInfo {
 
   // MU_CHANGE [BEGIN] Allow user to specify Legacy INT object 
   /// Pci Int Link Name
+  // ACPI 6.4 6.2.13 _PRT (PCI Routing Table) 
+  // "Field: Source : "NamePath"
   CHAR8   *PciIntLinkName;
   // MU_CHANGE [END]
 
