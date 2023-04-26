@@ -317,13 +317,13 @@ LibRtcInitialize (
                   EfiGcdMemoryTypeMemoryMappedIo,
                   mPL031RtcBase,
                   SIZE_4KB,
-                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME
+                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME | EFI_MEMORY_XP // MU_CHANGE: Allocate RTC memory XP by default
                   );
   if (EFI_ERROR (Status)) {
     return Status;
   }
 
-  Status = gDS->SetMemorySpaceAttributes (mPL031RtcBase, SIZE_4KB, EFI_MEMORY_UC | EFI_MEMORY_RUNTIME);
+  Status = gDS->SetMemorySpaceAttributes (mPL031RtcBase, SIZE_4KB, EFI_MEMORY_UC | EFI_MEMORY_RUNTIME | EFI_MEMORY_XP); // MU_CHANGE: Allocate RTC memory XP by default
   if (EFI_ERROR (Status)) {
     return Status;
   }
