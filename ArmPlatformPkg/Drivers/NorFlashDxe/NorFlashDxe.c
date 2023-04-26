@@ -427,14 +427,14 @@ NorFlashFvbInitialize (
                   EfiGcdMemoryTypeMemoryMappedIo,
                   Instance->DeviceBaseAddress,
                   RuntimeMmioRegionSize,
-                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME
+                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME | EFI_MEMORY_XP // MU_CHANGE: Set Runtime flash MMIO as XP by default
                   );
   ASSERT_EFI_ERROR (Status);
 
   Status = gDS->SetMemorySpaceAttributes (
                   Instance->DeviceBaseAddress,
                   RuntimeMmioRegionSize,
-                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME
+                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME | EFI_MEMORY_XP // MU_CHANGE: Set Runtime flash MMIO as XP by default
                   );
   ASSERT_EFI_ERROR (Status);
 
