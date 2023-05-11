@@ -11,51 +11,55 @@ Ubuntu_GCC5_                  |UbuntuCiBuild|   |UbuntuCiTest|  |UbuntuCiCoverag
 
 This repository is part of Project Mu.  Please see Project Mu for details https://microsoft.github.io/mu
 
-Branch Status - release/202208
+Branch Status - release/202308
 ==============================
 
 :Status:
   In Development
 
 :Entered Development:
-  Sep 2022
+  Oct 2023
 
 :Anticipated Stabilization:
-  Nov 2022
+  Feb 2024
 
-Branch Changes - release/202208
+Branch Changes - release/202308
 ===============================
 
 Breaking Changes-dev
 --------------------
 
-- None
+- Moved to using generic function to update memory attributes
 
 Main Changes-dev
 ----------------
 
-- None
+- Moved to using generic function to update memory attributes
+- Introduced region types for RO/XP WB cached memory
+- Implemented the memory attributes ppi
 
 Bug Fixes-dev
 -------------
 
-- None
+- Fixed data type used for several Gic functions
+- Fixed ArmGicAcknowledgeInterrupt for GICv3
 
-2208_RefBoot Changes
+
+2308_RefBoot Changes
 --------------------
 
 - Incomplete
 
-2208_CIBuild Changes
+2308_CIBuild Changes
 --------------------
 
 - Incomplete
 
-2208_Rebase Changes
+2308_Rebase Changes
 -------------------
 
-Source Commit from release/202202: 87faec5856a90c271b2630e9df998d099b4c91f5
-Destination Commit from upstream edk2: ba0e0e4c6a174b71b18ccd6e47319cc45878893c (tag: 2208_Upstream)
+Source Commit from release/202302: fba97b49ca5679af2a3e09b998312b2d8db8f8f3
+Destination Commit from upstream edk2: 819cfc6b42a68790a23509e4fcc58ceb70e1965e (tag: 2308_Upstream)
 
 - Incomplete
 
@@ -141,12 +145,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 .. CoreCI
 
-.. _Windows_VS2019: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202208
-.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20VS2019?branchName=release%2F202208
+.. _Windows_VS2019: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202308
+.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20VS2019?branchName=release%2F202308
 .. |WindowsCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/51.svg
 .. |WindowsCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
 
-.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202208
-.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?branchName=release%2F202208
+.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202308
+.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?branchName=release%2F202308
 .. |UbuntuCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/52.svg
 .. |UbuntuCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
