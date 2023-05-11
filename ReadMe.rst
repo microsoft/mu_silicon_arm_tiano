@@ -11,19 +11,19 @@ Ubuntu_GCC5_                  |UbuntuCiBuild|   |UbuntuCiTest|  |UbuntuCiCoverag
 
 This repository is part of Project Mu.  Please see Project Mu for details https://microsoft.github.io/mu
 
-Branch Status - release/202208
+Branch Status - release/202302
 ==============================
 
 :Status:
   In Development
 
 :Entered Development:
-  Sep 2022
+  May 2023
 
 :Anticipated Stabilization:
-  Nov 2022
+  Aug 2023
 
-Branch Changes - release/202208
+Branch Changes - release/202302
 ===============================
 
 Breaking Changes-dev
@@ -41,21 +41,21 @@ Bug Fixes-dev
 
 - None
 
-2208_RefBoot Changes
+2302_RefBoot Changes
 --------------------
 
 - Incomplete
 
-2208_CIBuild Changes
+2302_CIBuild Changes
 --------------------
 
 - Incomplete
 
-2208_Rebase Changes
+2302_Rebase Changes
 -------------------
 
-Source Commit from release/202202: 87faec5856a90c271b2630e9df998d099b4c91f5
-Destination Commit from upstream edk2: ba0e0e4c6a174b71b18ccd6e47319cc45878893c (tag: 2208_Upstream)
+Source Commit from release/202208: 7234a95cabddcac15df66cd4e46bd9141011ebc9
+Destination Commit from upstream edk2: f80f052277c88a67c55e107b550f504eeea947d3 (tag: 2302_Upstream)
 
 - Incomplete
 
@@ -141,12 +141,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 .. CoreCI
 
-.. _Windows_VS2019: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202208
-.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20VS2019?branchName=release%2F202208
+.. _Windows_VS2019: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202302
+.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20VS2019?branchName=release%2F202302
 .. |WindowsCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/51.svg
 .. |WindowsCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
 
-.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202208
-.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?branchName=release%2F202208
+.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202302
+.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status/CI/Mu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?branchName=release%2F202302
 .. |UbuntuCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/52.svg
 .. |UbuntuCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
