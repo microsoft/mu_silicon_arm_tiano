@@ -349,9 +349,10 @@ ArmConfigureMmu (
 VOID
 EFIAPI
 ArmReplaceLiveTranslationEntry (
-  IN  UINT64  *Entry,
-  IN  UINT64  Value,
-  IN  UINT64  RegionStart
+  IN  UINT64   *Entry,
+  IN  UINT64   Value,
+  IN  UINT64   RegionStart,
+  IN  BOOLEAN  DisableMmu
   )
 {
   DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
