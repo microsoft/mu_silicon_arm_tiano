@@ -54,7 +54,6 @@
 
 #define POLL_INTERVAL_US  50000
 
-
 STATIC CPU_MP_DATA  mCpuMpData;
 STATIC BOOLEAN      mNonBlockingModeAllowed;
 UINT64              *gApStacksBase;
@@ -102,7 +101,6 @@ DispatchCpu (
 
   Args.Arg1 = gProcessorIDs[ProcessorIndex];
   Args.Arg2 = (UINTN)ApEntryPoint;
-
 
   ArmCallSmc (&Args);
 
@@ -1363,9 +1361,9 @@ MpServicesInitialize (
   }
 
   gProcessorIDs[Index] = MAX_UINT64;
-  gTcr   = ArmGetTCR ();
-  gMair  = ArmGetMAIR ();
-  gTtbr0 = ArmGetTTBR0BaseAddress ();
+  gTcr                 = ArmGetTCR ();
+  gMair                = ArmGetMAIR ();
+  gTtbr0               = ArmGetTTBR0BaseAddress ();
 
   //
   // The global pointer variables as well as the gProcessorIDs array contents
@@ -1436,7 +1434,6 @@ ArmPsciMpServicesDxeInitialize (
   CONST ARM_CORE_INFO        *CoreInfo;
 
   MaxCpus = 1;
-
 
   Status = gBS->HandleProtocol (
                   ImageHandle,
