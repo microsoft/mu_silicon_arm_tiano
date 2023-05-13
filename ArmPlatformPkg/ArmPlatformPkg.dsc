@@ -55,7 +55,6 @@
   LzmaDecompressLib|MdeModulePkg/Library/LzmaCustomDecompressLib/LzmaCustomDecompressLib.inf
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
   MemoryInitPeiLib|ArmPlatformPkg/MemoryInitPei/MemoryInitPeiLib.inf
-  NorFlashPlatformLib|ArmPlatformPkg/Library/NorFlashPlatformNullLib/NorFlashPlatformNullLib.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
   PeCoffExtraActionLib|MdePkg/Library/BasePeCoffExtraActionLibNull/BasePeCoffExtraActionLibNull.inf
   PeCoffLib|MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
@@ -104,7 +103,6 @@
 
 [Components.common]
   ArmPlatformPkg/Drivers/LcdGraphicsOutputDxe/LcdGraphicsOutputDxe.inf
-  ArmPlatformPkg/Drivers/NorFlashDxe/NorFlashDxe.inf
   ArmPlatformPkg/Drivers/PL061GpioDxe/PL061GpioDxe.inf
   ArmPlatformPkg/Drivers/SP805WatchdogDxe/SP805WatchdogDxe.inf
 
@@ -113,7 +111,6 @@
   ArmPlatformPkg/Library/HdLcd/HdLcd.inf
   ArmPlatformPkg/Library/LcdHwNullLib/LcdHwNullLib.inf
   ArmPlatformPkg/Library/LcdPlatformNullLib/LcdPlatformNullLib.inf
-  ArmPlatformPkg/Library/NorFlashPlatformNullLib/NorFlashPlatformNullLib.inf
   ArmPlatformPkg/Library/PL011SerialPortLib/PL011SerialPortLib.inf
   ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
   ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
@@ -140,6 +137,3 @@
   ArmPlatformPkg/Drivers/HestMmErrorSources/HestErrorSourceDxe.inf
   ArmPlatformPkg/Drivers/HestMmErrorSources/HestErrorSourceStandaloneMm.inf
   # MU_CHANGE [END] - CI Fixes
-
-[Components.AARCH64]
-  ArmPlatformPkg/Drivers/NorFlashDxe/NorFlashStandaloneMm.inf
