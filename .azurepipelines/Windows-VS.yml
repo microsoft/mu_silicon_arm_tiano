@@ -14,22 +14,47 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 
-resources:
-  repositories:
-    - repository: mu_devops
-      type: github
-      endpoint: microsoft
-      name: microsoft/mu_devops
-      ref: refs/tags/v2.5.1
-
 variables:
 - group: architectures-x86-64
 - group: tool-chain-windows-visual-studio-latest
 
-jobs:
-- template: Matrix-Build-Job.yml
+extends:
+  template: MuDevOpsSync.yml
   parameters:
-    arch_list: $(arch_list)
-    extra_build_args: CODE_COVERAGE=TRUE
-    tool_chain_tag: $(tool_chain_tag)
-    vm_image: $(vm_image)
+    do_ci_build: true
+    do_ci_setup: true
+    do_non_ci_build: false
+    do_non_ci_setup: true
+    do_pr_eval: true
+    os_type: Windows_NT
+    build_matrix:
+      TARGET_ARMPKG:
+        Pkgs: 'ArmPkg'
+        Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
+        ArchList: $(arch_list)
+        SelfHostAgent: false
+      TARGET_ARMPLATFORMPKG:
+        Pkgs: 'ArmPlatformPkg'
+        Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
+        ArchList: $(arch_list)
+        SelfHostAgent: false
+      TARGET_PLATFORMS:
+        Pkgs: 'ArmVirtPkg'
+        Targets: 'NO-TARGET,NOOPT'
+        ArchList: $(arch_list)
+        SelfHostAgent: false
+      TARGET_ARMPKG_ARM:
+        Pkgs: 'ArmPkg'
+        Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
+        ArchList: $(arch_list)
+        SelfHostAgent: true
+      TARGET_ARMPLATFORMPKG_ARM:
+        Pkgs: 'ArmPlatformPkg'
+        Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
+        ArchList: $(arch_list)
+        SelfHostAgent: true
+      TARGET_PLATFORMS_ARM:
+        Pkgs: 'ArmVirtPkg'
+        Targets: 'NO-TARGET,NOOPT'
+        ArchList: $(arch_list)
+        SelfHostAgent: true
