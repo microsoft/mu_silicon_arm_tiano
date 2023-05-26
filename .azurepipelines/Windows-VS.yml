@@ -32,17 +32,14 @@ extends:
         Pkgs: 'ArmPkg'
         Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
         ArchList: $(arch_list)
-        SelfHostAgent: false
       TARGET_ARMPLATFORMPKG:
         Pkgs: 'ArmPlatformPkg'
         Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
         ArchList: $(arch_list)
-        SelfHostAgent: false
       TARGET_PLATFORMS:
         Pkgs: 'ArmVirtPkg'
         Targets: 'NO-TARGET,NOOPT'
         ArchList: $(arch_list)
-        SelfHostAgent: false
       TARGET_ARMPKG_ARM:
         Pkgs: 'ArmPkg'
         Targets: 'DEBUG,RELEASE,NO-TARGET,NOOPT'
