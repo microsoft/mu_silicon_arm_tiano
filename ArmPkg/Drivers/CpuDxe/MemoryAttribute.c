@@ -84,6 +84,13 @@ GetMemoryAttributes (
   EFI_STATUS  Status;
 
   if ((Length == 0) || (Attributes == NULL)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a invalid length 0x%llx or attributes %p are null\n",
+      __func__,
+      (UINT64)RegionLength,
+      Attributes
+      )); // MU_CHANGE: Better memory attributes protocol logging
     return EFI_INVALID_PARAMETER;
   }
 
@@ -199,6 +206,13 @@ SetMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a invalid length: 0x%llx or attributes 0x%llx\n",
+      __func__,
+      Length,
+      Attributes
+      )); // MU_CHANGE: Better memory attributes protocol logging
     return EFI_INVALID_PARAMETER;
   }
 
@@ -262,6 +276,13 @@ ClearMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a invalid length: 0x%llx or attributes 0x%llx\n",
+      __func__,
+      Length,
+      Attributes
+      )); // MU_CHANGE: Better memory attributes protocol logging
     return EFI_INVALID_PARAMETER;
   }
 
