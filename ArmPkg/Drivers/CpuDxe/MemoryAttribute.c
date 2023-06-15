@@ -84,6 +84,13 @@ GetMemoryAttributes (
   EFI_STATUS  Status;
 
   if ((Length == 0) || (Attributes == NULL)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a invalid length 0x%llx or attributes %p are null\n",
+      __func__,
+      (UINT64)RegionLength,
+      Attributes
+      )); // MU_CHANGE: Better memory attributes protocol logging
     return EFI_INVALID_PARAMETER;
   }
 
@@ -201,6 +208,13 @@ SetMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a invalid length: 0x%llx or attributes 0x%llx\n",
+      __func__,
+      Length,
+      Attributes
+      )); // MU_CHANGE: Better memory attributes protocol logging
     return EFI_INVALID_PARAMETER;
   }
 
@@ -213,6 +227,14 @@ SetMemoryAttributes (
   if ((Attributes & EFI_MEMORY_RP) != 0) {
     Status = ArmSetMemoryRegionNoAccess (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a failed to set EFI_MEMORY_RP on BaseAddress 0x%llx of length 0x%llx with status %r!\n",
+        __func__,
+        BaseAddress,
+        Length,
+        Status
+        )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
   }
@@ -220,6 +242,14 @@ SetMemoryAttributes (
   if ((Attributes & EFI_MEMORY_RO) != 0) {
     Status = ArmSetMemoryRegionReadOnly (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a failed to set EFI_MEMORY_RO on BaseAddress 0x%llx of length 0x%llx with status %r!\n",
+        __func__,
+        BaseAddress,
+        Length,
+        Status
+        )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
   }
@@ -227,6 +257,14 @@ SetMemoryAttributes (
   if ((Attributes & EFI_MEMORY_XP) != 0) {
     Status = ArmSetMemoryRegionNoExec (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a failed to set EFI_MEMORY_XP on BaseAddress 0x%llx of length 0x%llx with status %r!\n",
+        __func__,
+        BaseAddress,
+        Length,
+        Status
+        )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
   }
@@ -287,6 +325,13 @@ ClearMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a invalid length: 0x%llx or attributes 0x%llx\n",
+      __func__,
+      Length,
+      Attributes
+      )); // MU_CHANGE: Better memory attributes protocol logging
     return EFI_INVALID_PARAMETER;
   }
 
@@ -299,6 +344,14 @@ ClearMemoryAttributes (
   if ((Attributes & EFI_MEMORY_RP) != 0) {
     Status = ArmClearMemoryRegionNoAccess (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a failed to clear EFI_MEMORY_RP from BaseAddress 0x%llx of length 0x%llx with status %r!\n",
+        __func__,
+        BaseAddress,
+        Length,
+        Status
+        )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
   }
@@ -306,6 +359,14 @@ ClearMemoryAttributes (
   if ((Attributes & EFI_MEMORY_RO) != 0) {
     Status = ArmClearMemoryRegionReadOnly (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a failed to clear EFI_MEMORY_RO from BaseAddress 0x%llx of length 0x%llx with status %r!\n",
+        __func__,
+        BaseAddress,
+        Length,
+        Status
+        )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
   }
@@ -313,6 +374,14 @@ ClearMemoryAttributes (
   if ((Attributes & EFI_MEMORY_XP) != 0) {
     Status = ArmClearMemoryRegionNoExec (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a failed to clear EFI_MEMORY_XP from BaseAddress 0x%llx of length 0x%llx with status %r!\n",
+        __func__,
+        BaseAddress,
+        Length,
+        Status
+        )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
   }
