@@ -380,7 +380,7 @@ UpdateRegionMapping (
       "%a RegionStart: 0x%llx or RegionLength: 0x%llx are not page aligned!\n",
       __func__,
       RegionStart,
-      RegionLength 
+      RegionLength
       )); // MU_CHANGE: Better memory attribute protocol logging
     return EFI_INVALID_PARAMETER;
   }

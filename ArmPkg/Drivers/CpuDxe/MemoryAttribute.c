@@ -86,8 +86,10 @@ GetMemoryAttributes (
   if ((Length == 0) || (Attributes == NULL)) {
     DEBUG ((
       DEBUG_ERROR,
-      "%a invalid length is 0 or attributes are null\n",
-      __func__
+      "%a invalid length 0x%llx or attributes %p are null\n",
+      __func__,
+      (UINT64)RegionLength,
+      Attributes
       )); // MU_CHANGE: Better memory attributes protocol logging
     return EFI_INVALID_PARAMETER;
   }
@@ -227,10 +229,11 @@ SetMemoryAttributes (
     if (EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_ERROR,
-        "%a failed to set EFI_MEMORY_RP on BaseAddress 0x%llx of length 0x%llx!\n",
+        "%a failed to set EFI_MEMORY_RP on BaseAddress 0x%llx of length 0x%llx with status %r!\n",
         __func__,
         BaseAddress,
-        Length
+        Length,
+        Status
         )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
@@ -241,10 +244,11 @@ SetMemoryAttributes (
     if (EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_ERROR,
-        "%a failed to set EFI_MEMORY_RO on BaseAddress 0x%llx of length 0x%llx!\n",
+        "%a failed to set EFI_MEMORY_RO on BaseAddress 0x%llx of length 0x%llx with status %r!\n",
         __func__,
         BaseAddress,
-        Length
+        Length,
+        Status
         )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
@@ -255,10 +259,11 @@ SetMemoryAttributes (
     if (EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_ERROR,
-        "%a failed to set EFI_MEMORY_XP on BaseAddress 0x%llx of length 0x%llx!\n",
+        "%a failed to set EFI_MEMORY_XP on BaseAddress 0x%llx of length 0x%llx with status %r!\n",
         __func__,
         BaseAddress,
-        Length
+        Length,
+        Status
         )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
@@ -341,10 +346,11 @@ ClearMemoryAttributes (
     if (EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_ERROR,
-        "%a failed to clear EFI_MEMORY_RP from BaseAddress 0x%llx of length 0x%llx!\n",
+        "%a failed to clear EFI_MEMORY_RP from BaseAddress 0x%llx of length 0x%llx with status %r!\n",
         __func__,
         BaseAddress,
-        Length
+        Length,
+        Status
         )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
@@ -355,10 +361,11 @@ ClearMemoryAttributes (
     if (EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_ERROR,
-        "%a failed to clear EFI_MEMORY_RO from BaseAddress 0x%llx of length 0x%llx!\n",
+        "%a failed to clear EFI_MEMORY_RO from BaseAddress 0x%llx of length 0x%llx with status %r!\n",
         __func__,
         BaseAddress,
-        Length
+        Length,
+        Status
         )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
@@ -369,10 +376,11 @@ ClearMemoryAttributes (
     if (EFI_ERROR (Status)) {
       DEBUG ((
         DEBUG_ERROR,
-        "%a failed to clear EFI_MEMORY_XP from BaseAddress 0x%llx of length 0x%llx!\n",
+        "%a failed to clear EFI_MEMORY_XP from BaseAddress 0x%llx of length 0x%llx with status %r!\n",
         __func__,
         BaseAddress,
-        Length
+        Length,
+        Status
         )); // MU_CHANGE: Better memory attribute protocol logging
       return EFI_UNSUPPORTED;
     }
