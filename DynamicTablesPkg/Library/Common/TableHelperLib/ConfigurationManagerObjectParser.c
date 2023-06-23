@@ -836,7 +836,7 @@ PrintCmObjDesc (
   IN        UINT32         IndentLevel
   )
 {
-  UINT32  Index;
+  UINTN   Index;
   UINT32  IndentIndex;
   INTN    SubStructSize;
 
