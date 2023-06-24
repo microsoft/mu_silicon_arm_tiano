@@ -836,7 +836,8 @@ PrintCmObjDesc (
   IN        UINT32         IndentLevel
   )
 {
-  UINTN   Index;
+  // UINT32 Index; // MU_CHANGE: Fixing CodeQL issue
+  UINTN   Index; 
   UINT32  IndentIndex;
   INTN    SubStructSize;
 
