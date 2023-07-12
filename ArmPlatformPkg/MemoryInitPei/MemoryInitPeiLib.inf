@@ -39,6 +39,7 @@
 [FixedPcd]
   gArmTokenSpaceGuid.PcdFdBaseAddress
   gArmTokenSpaceGuid.PcdFdSize
+  gArmTokenSpaceGuid.PcdFdMemoryType # MU_CHANGE
 
   gArmPlatformTokenSpaceGuid.PcdSystemMemoryUefiRegionSize
 
