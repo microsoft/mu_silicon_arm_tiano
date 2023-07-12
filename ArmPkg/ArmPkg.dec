@@ -202,6 +202,9 @@
   #
   gArmTokenSpaceGuid.PcdFdSize|0|UINT32|0x0000002C
   gArmTokenSpaceGuid.PcdFvSize|0|UINT32|0x0000002E
+
+
+  # MU_CHANGE: PCD To configure memory type used for FD region allocation. Defaults to EfiBootServicesData
   gArmTokenSpaceGuid.PcdFdMemoryType|4|UINT32|0x1000046 # MU_CHANGE
 
   #
