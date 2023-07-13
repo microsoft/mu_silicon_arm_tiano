@@ -181,7 +181,7 @@ MemoryPeim (
         BuildMemoryAllocationHob (
           PcdGet64 (PcdFdBaseAddress),
           PcdGet32 (PcdFdSize),
-          EfiBootServicesData
+          PcdGet32 (PcdFdMemoryType) // MU_CHANGE
           );
 
         Found = TRUE;
