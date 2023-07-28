@@ -38,11 +38,16 @@
 [Guids]
   gArmVirtSystemMemorySizeGuid
 
+# MU_CHANGE [BEGIN] - Allow PcdSystemMemorySize to be referenced per allowed (i.e. DEC declaration) PCD types
+[Pcd]
+  gArmTokenSpaceGuid.PcdSystemMemorySize
+# MU_CHANGE [END] -  Allow PcdSystemMemorySize to be referenced per allowed (i.e. DEC declaration) PCD types
+
 [FixedPcd]
   gArmTokenSpaceGuid.PcdFdBaseAddress
   gArmTokenSpaceGuid.PcdFvBaseAddress
   gArmTokenSpaceGuid.PcdSystemMemoryBase
-  gArmTokenSpaceGuid.PcdSystemMemorySize
+  # gArmTokenSpaceGuid.PcdSystemMemorySize  # MU_CHANGE - Allow the PCD to be referenced per allowed PCD types
   gArmTokenSpaceGuid.PcdFdSize
   gArmTokenSpaceGuid.PcdFvSize
   gUefiOvmfPkgTokenSpaceGuid.PcdDeviceTreeInitialBaseAddress
