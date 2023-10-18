@@ -37,6 +37,8 @@ BuildMemoryTypeInformationHob (
   VOID
   )
 {
+  // MU_CHANGE [BEGIN] - Remove non-RT types from Mem Type Info Settings
+
   EFI_MEMORY_TYPE_INFORMATION  Info[6];
 
   Info[0].Type          = EfiACPIReclaimMemory;
@@ -52,6 +54,8 @@ BuildMemoryTypeInformationHob (
   // Terminator for the list
   Info[5].Type          = EfiMaxMemoryType;
   Info[5].NumberOfPages = 0;
+
+  // MU_CHANGE [END] - Remove non-RT types from Mem Type Info Settings
 
   BuildGuidDataHob (&gEfiMemoryTypeInformationGuid, &Info, sizeof (Info));
 }
