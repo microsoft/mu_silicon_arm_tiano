@@ -48,10 +48,12 @@
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiReservedMemoryType
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiRuntimeServicesData
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiRuntimeServicesCode
-  gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiBootServicesCode
-  gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiBootServicesData
-  gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiLoaderCode
-  gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiLoaderData
+  # MU_CHANGE [BEGIN] - Remove non-RT types from Mem Type Info Settings
+  # gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiBootServicesCode
+  # gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiBootServicesData
+  # gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiLoaderCode
+  # gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiLoaderData
+  # MU_CHANGE [END] - Remove non-RT types from Mem Type Info Settings
 
 [Pcd]
   gArmTokenSpaceGuid.PcdSystemMemoryBase
