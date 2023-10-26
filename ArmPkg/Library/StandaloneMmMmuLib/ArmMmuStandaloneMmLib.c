@@ -19,6 +19,7 @@
 
 #include <Library/ArmLib.h>
 #include <Library/ArmMmuLib.h>
+#include <Library/ArmStandaloneMmMmuLib.h>
 #include <Library/ArmSvcLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -363,7 +364,8 @@ EFI_STATUS
 ArmSetMemoryAttributes (
   IN EFI_PHYSICAL_ADDRESS  BaseAddress,
   IN UINT64                Length,
-  IN UINT64                Attributes
+  IN UINT64                Attributes,
+  IN UINT64                AttributeMask  // MU_CHANGE - Added missing input variable
   )
 {
   DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
