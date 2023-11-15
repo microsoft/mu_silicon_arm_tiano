@@ -20,11 +20,13 @@
   CONSTRUCTOR                    = ArmMmuBaseLibConstructor
 
 [Sources.AARCH64]
+  ArmMmuLibInternal.h                 # MU_CHANGE: Add function pointer type
   AArch64/ArmMmuLibCore.c
   AArch64/ArmMmuLibReplaceEntry.S    | GCC
   AArch64/ArmMmuLibReplaceEntry.masm | MSFT
 
 [Sources.ARM]
+  ArmMmuLibInternal.h                 # MU_CHANGE: Add function pointer type
   Arm/ArmMmuLibConvert.c
   Arm/ArmMmuLibCore.c
   Arm/ArmMmuLibUpdate.c
