@@ -18,6 +18,12 @@
 #include <Library/ArmMmuLib.h>
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
+#include <Library/HobLib.h>
+#include "ArmMmuLibInternal.h"    // MU_CHANGE: Add function pointer type
+
+// MU_CHANGE [BEGIN]: Add function pointer type
+STATIC  ARM_REPLACE_LIVE_TRANSLATION_ENTRY  mReplaceLiveEntryFunc = ArmReplaceLiveTranslationEntry;
+// MU_CHANGE [END]: Add function pointer type
 
 STATIC
 UINT64
@@ -645,12 +651,19 @@ ArmMmuBaseLibConstructor (
 {
   extern UINT32 ArmReplaceLiveTranslationEntrySize;
 
-  //
-  // The ArmReplaceLiveTranslationEntry () helper function may be invoked
-  // with the MMU off so we have to ensure that it gets cleaned to the PoC
-  //
-  WriteBackDataCacheRange ((VOID *)(UINTN)ArmReplaceLiveTranslationEntry,
-    ArmReplaceLiveTranslationEntrySize);
+  Hob = GetFirstGuidHob (&gArmMmuReplaceLiveTranslationEntryFuncGuid);
+  if (Hob != NULL) {
+    mReplaceLiveEntryFunc = *(ARM_REPLACE_LIVE_TRANSLATION_ENTRY *)GET_GUID_HOB_DATA (Hob); // MU_CHANGE: Add function pointer type
+  } else {
+    //
+    // The ArmReplaceLiveTranslationEntry () helper function may be invoked
+    // with the MMU off so we have to ensure that it gets cleaned to the PoC
+    //
+    WriteBackDataCacheRange (
+      (VOID *)(UINTN)ArmReplaceLiveTranslationEntry,
+      ArmReplaceLiveTranslationEntrySize
+      );
+  }
 
   return RETURN_SUCCESS;
 }
