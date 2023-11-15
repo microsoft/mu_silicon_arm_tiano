@@ -13,6 +13,7 @@
 #include <Library/CacheMaintenanceLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
+#include "ArmMmuLibInternal.h"  // MU_CHANGE: Add function pointer type
 
 EFI_STATUS
 EFIAPI
@@ -21,14 +22,21 @@ ArmMmuPeiLibConstructor (
   IN CONST EFI_PEI_SERVICES     **PeiServices
   )
 {
-  extern UINT32  ArmReplaceLiveTranslationEntrySize;
-  VOID           *ArmReplaceLiveTranslationEntryFunc;
-  VOID           *Hob;
+  // MU_CHANGE [BEGIN]: Add function pointer type
+  extern UINT32                       ArmReplaceLiveTranslationEntrySize;
+  ARM_REPLACE_LIVE_TRANSLATION_ENTRY  ArmReplaceLiveTranslationEntryFunc;
+  VOID                                *Hob;
+  // MU_CHANGE [END]: Add function pointer type
 
   EFI_FV_FILE_INFO  FileInfo;
   EFI_STATUS        Status;
 
-  ASSERT (FileHandle != NULL);
+  // MU_CHANGE [BEGIN]: Add basic function parameter validation
+  if ((FileHandle == NULL) || (PeiServices == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // MU_CHANGE [END]: Add basic function parameter validation
 
   Status = (*PeiServices)->FfsGetFileInfo (FileHandle, &FileInfo);
   ASSERT_EFI_ERROR (Status);
