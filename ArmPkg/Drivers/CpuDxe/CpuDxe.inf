@@ -49,6 +49,7 @@
   DxeServicesTableLib
   HobLib
   PeCoffGetEntryPointLib
+  SafeIntLib                # MU_CHANGE: Convert integers safely
   UefiDriverEntryPoint
   UefiLib
 
