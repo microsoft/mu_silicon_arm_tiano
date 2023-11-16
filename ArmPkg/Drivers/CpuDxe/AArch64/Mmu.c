@@ -11,6 +11,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 
 #include <Library/MemoryAllocationLib.h>
+#include <Library/SafeIntLib.h>         // MU_CHANGE: Convert integers safely
+#include <Chipset/AArch64Mmu.h>         // MU_CHANGE: Include header used in file
 #include "CpuDxe.h"
 
 #define INVALID_ENTRY  ((UINT32)~0)
@@ -184,19 +186,32 @@ GetNextEntryAttribute (
   // Get the memory space map from GCD
   MemorySpaceMap = NULL;
   Status         = gDS->GetMemorySpaceMap (&NumberOfDescriptors, &MemorySpaceMap);
-
+  // MU_CHANGE [BEGIN]: Check if the memory space map is valid
   if (EFI_ERROR (Status) || (TableLevel > 3)) {
+    // This function needs to define what is returned when an error occurs.
+    // Callers need to actually check the return value and add error handling.
     ASSERT_EFI_ERROR (Status);
-    ASSERT (TableLevel <= 3);
+	ASSERT (TableLevel <= 3);
     return 0;
   }
+
+  // MU_CHANGE [END]: Check if the memory space map is valid
 
   // While the top level table might not contain TT_ENTRY_COUNT entries;
   // the subsequent ones should be filled up
   for (Index = 0; Index < EntryCount; Index++) {
-    Entry          = TableAddress[Index];
-    EntryType      = Entry & TT_TYPE_MASK;
-    EntryAttribute = Entry & TT_ATTRIBUTES_MASK;
+    Entry = TableAddress[Index];
+
+    // MU_CHANGE [BEGIN]: Convert integers safely
+    Status = SafeUint64ToUint32 (Entry, &EntryType);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "[%a] - Table address entry exceeds 32-bit.\n", __func__));
+      return 0;
+    }
+
+    EntryAttribute = EntryType & TT_ATTRIBUTES_MASK;  // MU_CHANGE: Return all attributes from page table
+    EntryType     &= TT_TYPE_MASK;
+    // MU_CHANGE [END]: Convert integers safely
 
     // If Entry is a Table Descriptor type entry then go through the sub-level table
     if ((EntryType == TT_TYPE_BLOCK_ENTRY) ||
