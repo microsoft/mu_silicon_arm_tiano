@@ -11,7 +11,6 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 
 #include <Library/MemoryAllocationLib.h>
-#include <Library/SafeIntLib.h>         // MU_CHANGE: Convert integers safely
 #include <Chipset/AArch64Mmu.h>         // MU_CHANGE: Include header used in file
 #include "CpuDxe.h"
 
@@ -168,16 +167,10 @@ GetNextEntryAttribute (
   for (Index = 0; Index < EntryCount; Index++) {
     Entry = TableAddress[Index];
 
-    // MU_CHANGE [BEGIN]: Convert integers safely
-    Status = SafeUint64ToUint32 (Entry, &EntryType);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "[%a] - Table address entry exceeds 32-bit.\n", __func__));
-      return 0;
-    }
-
-    EntryAttribute = EntryType & TT_ATTRIBUTES_MASK;  // MU_CHANGE: Return all attributes from page table
-    EntryType     &= TT_TYPE_MASK;
-    // MU_CHANGE [END]: Convert integers safely
+    // MU_CHANGE [BEGIN]: Add UINT32 cast
+    EntryType      = (UINT32)(Entry & TT_TYPE_MASK);
+    EntryAttribute = (UINT32)(Entry & TT_ATTRIBUTES_MASK);  // MU_CHANGE: Return all attributes from page table
+    // MU_CHANGE [END]: Add UINT32 cast
 
     // If Entry is a Table Descriptor type entry then go through the sub-level table
     if ((EntryType == TT_TYPE_BLOCK_ENTRY) ||
