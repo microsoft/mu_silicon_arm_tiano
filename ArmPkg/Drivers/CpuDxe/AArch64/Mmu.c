@@ -14,7 +14,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Chipset/AArch64Mmu.h>         // MU_CHANGE: Include header used in file
 #include "CpuDxe.h"
 
-#define INVALID_ENTRY  ((UINT32)~0)
+#define INVALID_ENTRY  ((UINT64)~0)     // MU_CHANGE: Use 64-bit entry value
 
 #define MIN_T0SZ        16
 #define BITS_PER_LEVEL  9
@@ -134,13 +134,13 @@ GetNextEntryAttribute (
   IN     UINTN   EntryCount,
   IN     UINTN   TableLevel,
   IN     UINT64  BaseAddress,
-  IN OUT UINT32  *PrevEntryAttribute,
+  IN OUT UINT64  *PrevEntryAttribute, // MU_CHANGE: Use 64-bit entry value
   IN OUT UINT64  *StartGcdRegion
   )
 {
   UINTN                            Index;
   UINT64                           Entry;
-  UINT32                           EntryAttribute;
+  UINT64                           EntryAttribute;  // MU_CHANGE: Use 64-bit entry value
   UINT32                           EntryType;
   EFI_STATUS                       Status;
   UINTN                            NumberOfDescriptors;
@@ -169,7 +169,8 @@ GetNextEntryAttribute (
 
     // MU_CHANGE [BEGIN]: Add UINT32 cast
     EntryType      = (UINT32)(Entry & TT_TYPE_MASK);
-    EntryAttribute = (UINT32)(Entry & TT_ATTRIBUTES_MASK);  // MU_CHANGE: Return all attributes from page table
+    EntryAttribute = Entry & TT_ATTRIBUTES_MASK;  // MU_CHANGE: Return all attributes from page table
+                                                  // MU_CHANGE: Use 64-bit entry value
     // MU_CHANGE [END]: Add UINT32 cast
 
     // If Entry is a Table Descriptor type entry then go through the sub-level table
@@ -236,7 +237,7 @@ SyncCacheConfig (
   )
 {
   EFI_STATUS                       Status;
-  UINT32                           PageAttribute;
+  UINT64                           PageAttribute;           // MU_CHANGE: Use 64-bit entry value
   UINT64                           *FirstLevelTableAddress;
   UINTN                            TableLevel;
   UINTN                            TableCount;
@@ -275,7 +276,7 @@ SyncCacheConfig (
   GetRootTranslationTableInfo (T0SZ, &TableLevel, &TableCount);
 
   // First Attribute of the Page Tables
-  PageAttribute = (UINT32)GetFirstPageAttribute (FirstLevelTableAddress, TableLevel);
+  PageAttribute = GetFirstPageAttribute (FirstLevelTableAddress, TableLevel); // MU_CHANGE: Use 64-bit entry value
 
   // We scan from the start of the memory map (ie: at the address 0x0)
   BaseAddressGcdRegion = 0x0;
