@@ -50,7 +50,6 @@
   HobLib
   MemoryAllocationLib
   PeCoffGetEntryPointLib
-  SafeIntLib                # MU_CHANGE: Convert integers safely
   UefiDriverEntryPoint
   UefiLib
   DxeMemoryProtectionHobLib # MU_CHANGE
