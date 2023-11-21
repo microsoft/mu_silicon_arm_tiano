@@ -177,7 +177,7 @@ GetNextEntryAttribute (
   UINTN                            Index;
   UINT64                           Entry;
   UINT64                           EntryAttribute;  // MU_CHANGE: Use 64-bit entry value
-  UINT32                           EntryType;
+  UINT64                           EntryType;       // MU_CHANGE: Remove EntryType cast
   EFI_STATUS                       Status;
   UINTN                            NumberOfDescriptors;
   EFI_GCD_MEMORY_SPACE_DESCRIPTOR  *MemorySpaceMap;
@@ -201,11 +201,9 @@ GetNextEntryAttribute (
   for (Index = 0; Index < EntryCount; Index++) {
     Entry = TableAddress[Index];
 
-    // MU_CHANGE [BEGIN]: Add UINT32 cast
-    EntryType      = (UINT32)(Entry & TT_TYPE_MASK);
+    EntryType      = Entry & TT_TYPE_MASK;        // MU_CHANGE: Remove EntryType cast
     EntryAttribute = Entry & TT_ATTRIBUTES_MASK;  // MU_CHANGE: Return all attributes from page table
                                                   // MU_CHANGE: Use 64-bit entry value
-    // MU_CHANGE [END]: Add UINT32 cast
 
     // If Entry is a Table Descriptor type entry then go through the sub-level table
     if ((EntryType == TT_TYPE_BLOCK_ENTRY) ||
