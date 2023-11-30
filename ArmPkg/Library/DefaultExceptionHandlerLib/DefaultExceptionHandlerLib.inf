@@ -14,7 +14,7 @@
   FILE_GUID                      = EACDB354-DF1A-4AF9-A171-499737ED818F
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
-  LIBRARY_CLASS                  = DefaultExceptionHandlerLib|DXE_CORE DXE_DRIVER
+  LIBRARY_CLASS                  = DefaultExceptionHandlerLib|DXE_CORE DXE_DRIVER UEFI_APPLICATION
 
 [Sources.common]
   DefaultExceptionHandlerUefi.c
