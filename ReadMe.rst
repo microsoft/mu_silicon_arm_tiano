@@ -34,12 +34,15 @@ Breaking Changes-dev
 Main Changes-dev
 ----------------
 
-- Incomplete
+- Added EL2 virtual timer interrupt PCD
+- Hid LibRtcVirtualNotifyEvent
+- Added Graphics and Input in ArmVirtQemu
 
 Bug Fixes-dev
 -------------
 
-- Incomplete
+- Dropped buggy secure memory check
+- Fixed and improved text handling
 
 
 2311_RefBoot Changes
