@@ -238,6 +238,54 @@ RequestMemoryPermissionChange (
   return SendMemoryPermissionRequest (&SvcArgs, &Ret);
 }
 
+// MU_CHANGE: Add ArmSetMemoryRegionNoAccess function
+EFI_STATUS
+ArmSetMemoryRegionNoAccess (
+  IN  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  IN  UINT64                Length
+  )
+{
+  EFI_STATUS  Status;
+  UINT32      MemoryAttributes;
+  UINT32      CodePermission;
+
+  Status = GetMemoryPermissions (BaseAddress, &MemoryAttributes);
+  if (!EFI_ERROR (Status)) {
+    CodePermission = SET_MEM_ATTR_DATA_PERM_NO_ACCESS << SET_MEM_ATTR_CODE_PERM_SHIFT;
+    return RequestMemoryPermissionChange (
+             BaseAddress,
+             Length,
+             MemoryAttributes | CodePermission
+             );
+  }
+
+  return Status;
+}
+
+// MU_CHANGE: Add ArmClearMemoryRegionNoAccess function
+EFI_STATUS
+ArmClearMemoryRegionNoAccess (
+  IN  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  IN  UINT64                Length
+  )
+{
+  EFI_STATUS  Status;
+  UINT32      MemoryAttributes;
+  UINT32      CodePermission;
+
+  Status = GetMemoryPermissions (BaseAddress, &MemoryAttributes);
+  if (!EFI_ERROR (Status)) {
+    CodePermission = SET_MEM_ATTR_DATA_PERM_NO_ACCESS << SET_MEM_ATTR_CODE_PERM_SHIFT;
+    return RequestMemoryPermissionChange (
+             BaseAddress,
+             Length,
+             MemoryAttributes & ~CodePermission
+             );
+  }
+
+  return Status;
+}
+
 EFI_STATUS
 ArmSetMemoryRegionNoExec (
   IN  EFI_PHYSICAL_ADDRESS  BaseAddress,
@@ -368,9 +416,51 @@ ArmSetMemoryAttributes (
   IN UINT64                AttributeMask  // MU_CHANGE - Added missing input variable
   )
 {
-  DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
-  ASSERT (FALSE);
-  return EFI_UNSUPPORTED;
+  // MU_CHANGE [START] - Add ArmSetMemoryAttributes functionality
+  EFI_STATUS  Status;
+
+  DEBUG ((
+    DEBUG_INFO,
+    "%a: BaseAddress == 0x%lx, Length == 0x%lx, Attributes == 0x%lx\n",
+    __FUNCTION__,
+    (UINTN)BaseAddress,
+    (UINTN)Length,
+    (UINTN)Attributes
+    ));
+
+  if ((Length == 0) ||
+      ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
+  {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (!RegionIsSystemMemory (BaseAddress, Length)) {
+    return EFI_UNSUPPORTED;
+  }
+
+  if ((Attributes & EFI_MEMORY_RP) != 0) {
+    Status = ArmSetMemoryRegionNoAccess (BaseAddress, Length);
+    if (EFI_ERROR (Status)) {
+      return EFI_UNSUPPORTED;
+    }
+  }
+
+  if ((Attributes & EFI_MEMORY_RO) != 0) {
+    Status = ArmSetMemoryRegionReadOnly (BaseAddress, Length);
+    if (EFI_ERROR (Status)) {
+      return EFI_UNSUPPORTED;
+    }
+  }
+
+  if ((Attributes & EFI_MEMORY_XP) != 0) {
+    Status = ArmSetMemoryRegionNoExec (BaseAddress, Length);
+    if (EFI_ERROR (Status)) {
+      return EFI_UNSUPPORTED;
+    }
+  }
+
+  return EFI_SUCCESS;
+  // MU_CHANGE [END] - Add ArmSetMemoryAttributes functionality
 }
 
 // MU_CHANGE [END] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
