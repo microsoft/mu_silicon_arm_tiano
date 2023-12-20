@@ -407,7 +407,6 @@ ArmReplaceLiveTranslationEntry (
   DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
   ASSERT (FALSE);
 }
-volatile BOOLEAN loop = TRUE;
 EFI_STATUS
 ArmSetMemoryAttributes (
   IN EFI_PHYSICAL_ADDRESS  BaseAddress,
