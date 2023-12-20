@@ -407,7 +407,7 @@ ArmReplaceLiveTranslationEntry (
   DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
   ASSERT (FALSE);
 }
-
+volatile BOOLEAN loop = TRUE;
 EFI_STATUS
 ArmSetMemoryAttributes (
   IN EFI_PHYSICAL_ADDRESS  BaseAddress,
@@ -418,48 +418,65 @@ ArmSetMemoryAttributes (
 {
   // MU_CHANGE [START] - Add ArmSetMemoryAttributes functionality
   EFI_STATUS  Status;
+  UINT64      NeededAttributes;
 
   DEBUG ((
     DEBUG_INFO,
-    "%a: BaseAddress == 0x%lx, Length == 0x%lx, Attributes == 0x%lx\n",
+    "%a: BaseAddress == 0x%llx, Length == 0x%llx, Attributes == 0x%llx, Mask == 0x%llx\n",
     __FUNCTION__,
-    (UINTN)BaseAddress,
-    (UINTN)Length,
-    (UINTN)Attributes
+    BaseAddress,
+    Length,
+    Attributes,
+    AttributeMask
     ));
 
+  NeededAttributes = Attributes & AttributeMask;
+
   if ((Length == 0) ||
-      ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
+      ((NeededAttributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
-    return EFI_INVALID_PARAMETER;
+    Status = EFI_INVALID_PARAMETER;
+    goto Done;
   }
 
-  if (!RegionIsSystemMemory (BaseAddress, Length)) {
-    return EFI_UNSUPPORTED;
-  }
-
-  if ((Attributes & EFI_MEMORY_RP) != 0) {
+  if ((NeededAttributes & EFI_MEMORY_RP) != 0) {
     Status = ArmSetMemoryRegionNoAccess (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
+      goto Done;
+    }
+  } else {
+    Status = ArmClearMemoryRegionNoAccess (BaseAddress, Length);
+    if (EFI_ERROR (Status)) {
+      goto Done;
     }
   }
 
-  if ((Attributes & EFI_MEMORY_RO) != 0) {
+  if ((NeededAttributes & EFI_MEMORY_RO) != 0) {
     Status = ArmSetMemoryRegionReadOnly (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
+      goto Done;
+    }
+  } else {
+    Status = ArmClearMemoryRegionReadOnly (BaseAddress, Length);
+    if (EFI_ERROR (Status)) {
+      goto Done;
     }
   }
 
-  if ((Attributes & EFI_MEMORY_XP) != 0) {
+  if ((NeededAttributes & EFI_MEMORY_XP) != 0) {
     Status = ArmSetMemoryRegionNoExec (BaseAddress, Length);
     if (EFI_ERROR (Status)) {
-      return EFI_UNSUPPORTED;
+      goto Done;
+    }
+  } else {
+    Status = ArmClearMemoryRegionNoExec (BaseAddress, Length);
+    if (EFI_ERROR (Status)) {
+      goto Done;
     }
   }
 
-  return EFI_SUCCESS;
+Done:
+  return Status;
   // MU_CHANGE [END] - Add ArmSetMemoryAttributes functionality
 }
 
