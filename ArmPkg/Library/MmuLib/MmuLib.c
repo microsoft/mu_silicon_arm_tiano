@@ -41,25 +41,22 @@ MmuSetAttributes (
 
   Status = EFI_UNSUPPORTED;
 
-  if (Attributes & EFI_MEMORY_XP) {
-    Status = ArmSetMemoryAttributes (BaseAddress, Length, EFI_MEMORY_XP, EFI_MEMORY_XP);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a - Failed to set NX.  Status = %r\n", __FUNCTION__, Status));
-    }
+  // MU_CHANGE - START
+  // Ensure that the attributes are valid
+  ASSERT ((Attributes & ~(EFI_MEMORY_XP | EFI_MEMORY_RO)) == 0);
 
-    Attributes &= ~EFI_MEMORY_XP;
+  // Use ArmSetMemoryAttributes because the individually called attribute updates have been removed
+  Status = ArmSetMemoryAttributes (
+              BaseAddress,
+              Length,
+              Attributes,
+              (EFI_MEMORY_XP | EFI_MEMORY_RO)
+              );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a - Failed to clear attributes - 0x%llx.  Status = %r\n", __FUNCTION__, Attributes, Status));
   }
 
-  if (Attributes & EFI_MEMORY_RO) {
-    Status = ArmSetMemoryAttributes (BaseAddress, Length, EFI_MEMORY_RO, EFI_MEMORY_RO);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a - Failed to set RO.  Status = %r\n", __FUNCTION__, Status));
-    }
-
-    Attributes &= ~EFI_MEMORY_RO;
-  }
-
-  ASSERT (Attributes == 0);
+  // MU_CHANGE - END
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -88,41 +85,25 @@ MmuClearAttributes (
 
   Status = EFI_UNSUPPORTED;
 
-  if (Attributes & EFI_MEMORY_XP) {
-    // MU_CHANGE - START
-    // Use ArmSetMemoryAttributes because the individually called attribute updates have been removed
-    Status = ArmSetMemoryAttributes (
-               BaseAddress,
-               Length,
-               0,
-               Attributes
-               );
-    // MU_CHANGE - END
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a - Failed to clear NX.  Status = %r\n", __FUNCTION__, Status));
-    }
+  // MU_CHANGE - START
+  // Ensure that the attributes are valid
+  ASSERT ((Attributes & ~(EFI_MEMORY_XP | EFI_MEMORY_RO)) == 0);
 
-    Attributes &= ~EFI_MEMORY_XP;
+  // As we clear the attributes, we need to "set" the inverse of the attributes
+  Attributes = (~Attributes) & (EFI_MEMORY_XP | EFI_MEMORY_RO);
+
+  // Use ArmSetMemoryAttributes because the individually called attribute updates have been removed
+  Status = ArmSetMemoryAttributes (
+              BaseAddress,
+              Length,
+              Attributes,
+              (EFI_MEMORY_XP | EFI_MEMORY_RO)
+              );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a - Failed to clear attributes - 0x%llx.  Status = %r\n", __FUNCTION__, Attributes, Status));
   }
 
-  if (Attributes & EFI_MEMORY_RO) {
-    // MU_CHANGE - START
-    // Use ArmSetMemoryAttributes because the individually called attribute updates have been removed
-    Status = ArmSetMemoryAttributes (
-               BaseAddress,
-               Length,
-               0,
-               Attributes
-               );
-    // MU_CHANGE - END
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a - Failed to clear RO.  Status = %r\n", __FUNCTION__, Status));
-    }
-
-    Attributes &= ~EFI_MEMORY_RO;
-  }
-
-  ASSERT (Attributes == 0);
+  // MU_CHANGE - END
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
