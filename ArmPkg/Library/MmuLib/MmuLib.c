@@ -59,7 +59,7 @@ MmuSetAttributes (
     Attributes &= ~EFI_MEMORY_RO;
   }
 
-  ASSERT (Attributes == 0);
+  // MU_CHANGE - END
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
