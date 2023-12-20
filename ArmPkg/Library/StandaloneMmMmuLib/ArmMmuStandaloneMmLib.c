@@ -407,6 +407,7 @@ ArmReplaceLiveTranslationEntry (
   DEBUG ((DEBUG_ERROR, "%a() interface not implemented!\n", __FUNCTION__));
   ASSERT (FALSE);
 }
+
 EFI_STATUS
 ArmSetMemoryAttributes (
   IN EFI_PHYSICAL_ADDRESS  BaseAddress,
