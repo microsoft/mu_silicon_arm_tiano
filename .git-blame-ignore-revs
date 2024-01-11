@@ -1,0 +1,29 @@
+###################################################
+# Line Ending Only Changes                        #
+###################################################
+# Convert line endings from LF to CRLF
+bb0004b35a10882e355889df37e2ecdcc8b5fcc7
+# ArmPlatformPkg: convert LFs to CRLF, expand hard TABs
+e63d54db952634c2a3a6a24b6c2a4c6ff66f22bd
+# ArmVirtPkg: convert LFs to CRLF
+a5c2ce7cd136ee959951c5f220ff5d3018d4ac3b
+# ArmPkg: convert LFs to CRLF, expand hard TABs
+11ceb258f36fa5669badbac44ae4755d9885796a
+# ArmPlatformPkg: CRLF fixups for Juno ACPI
+ae52e921c493666014166682e24654e9df5b1457
+# ArmPlatformPkg/ArmVExpressPkg: Fixed line endings to be CRLF
+f66eab9b9c9ef78e74658e087fe9f711a62fd401
+# ARM Packages: CRLF fixup
+e6f3ed43400bc9d02ff3e2728579cc9f35f71405
+
+###################################################
+# Code Formatting (Uncrustify) Only Changes       #
+###################################################
+# DynamicTablesPkg: Apply uncrustify changes
+731c67e1d77b7741a91762d17659fc9fbcb9e305
+# ArmVirtPkg: Apply uncrustify changes
+2b16a4fb91b9b31c0d152588f5ac51080c6c0763
+# ArmPlatformPkg: Apply uncrustify changes
+40b0b23ed34f48c26d711d3e4613a4bb35eeadff
+# ArmPkg: Apply uncrustify changes
+429309e0c6b74792d679681a8edd0d5ae0ff850c
