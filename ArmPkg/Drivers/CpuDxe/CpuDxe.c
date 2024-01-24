@@ -336,6 +336,7 @@ CpuDxeInitialize (
                   // &mMemoryAttribute,
                   NULL
                   );
+  ASSERT_EFI_ERROR (Status);
 
   if (gDxeMps.InstallMemoryAttributeProtocol) {
     Status = gBS->InstallMultipleProtocolInterfaces (
@@ -344,6 +345,9 @@ CpuDxeInitialize (
                     &mMemoryAttribute,
                     NULL
                     );
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "Failed to install Memory Attribute Protocol!\n"));
+    }
   }
 
   // MU_CHANGE [END]
