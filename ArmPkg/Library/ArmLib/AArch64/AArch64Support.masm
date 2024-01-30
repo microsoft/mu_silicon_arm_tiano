@@ -61,7 +61,11 @@
     EXPORT ArmReadHcr
     EXPORT ArmReadCurrentEL
     EXPORT ArmWriteCntHctl
+    EXPORT ArmReadIdAA64Dfr0 // MS_CHANGE
+    EXPORT ArmReadIdAA64Dfr1 // MS_CHANGE
     EXPORT ArmReadIdMmfr0
+    EXPORT ArmReadIdAA64Mmfr0 // MS_CHANGE
+    EXPORT ArmReadIdAA64Mmfr1 // MS_CHANGE
     EXPORT ArmReadIdAA64Mmfr2 // MS_CHANGE
 
 #define CTRL_M_BIT       (1 << 0)
@@ -710,6 +714,20 @@ ArmWriteCntHctl PROC
   ret
 ArmWriteCntHctl ENDP
 
+// MS_CHANGE [BEGIN]
+//UINTN ArmReadIdAA64Dfr0(VOID)
+ArmReadIdAA64Dfr0 PROC
+  mrs   x0, ID_AA64DFR0_EL1
+  ret
+ArmReadIdAA64Dfr0 ENDP
+
+//UINTN ArmReadIdAA64Dfr1(VOID)
+ArmReadIdAA64Dfr1 PROC
+  mrs   x0, ID_AA64DFR1_EL1
+  ret
+ArmReadIdAA64Dfr1 ENDP
+// MS_CHANGE [END]
+
 //UINTN ArmReadIdMmfr0(VOID)
 ArmReadIdMmfr0 PROC
   mrs   x0, id_aa64mmfr0_el1
@@ -717,6 +735,18 @@ ArmReadIdMmfr0 PROC
 ArmReadIdMmfr0 ENDP
 
 // MS_CHANGE [BEGIN]
+//UINTN ArmReadIdAA64Mmfr0(VOID)
+ArmReadIdAA64Mmfr0 PROC
+  mrs   x0, ID_AA64MMFR0_EL1
+  ret
+ArmReadIdAA64Mmfr0 ENDP
+
+//UINTN ArmReadIdAA64Mmfr1(VOID)
+ArmReadIdAA64Mmfr1 PROC
+  mrs   x0, ID_AA64MMFR1_EL1
+  ret
+ArmReadIdAA64Mmfr1 ENDP
+
 //UINTN ArmReadIdAA64Mmfr2(VOID)
 ArmReadIdAA64Mmfr2 PROC
   mrs   x0, ID_AA64MMFR2_EL1
