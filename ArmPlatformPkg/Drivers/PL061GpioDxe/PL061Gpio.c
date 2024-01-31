@@ -34,7 +34,7 @@ PL061Locate (
   OUT UINTN              *RegisterBase
   )
 {
-  UINT32  Index;
+  UINTN  Index; // MU_CHANGE CodeQL
 
   for (Index = 0; Index < mPL061PlatformGpio->GpioControllerCount; Index++) {
     if (  (Gpio >= mPL061PlatformGpio->GpioController[Index].GpioIndex)
