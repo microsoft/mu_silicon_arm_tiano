@@ -420,16 +420,6 @@ ArmSetMemoryAttributes (
   EFI_STATUS  Status;
   UINT64      NeededAttributes;
 
-  DEBUG ((
-    DEBUG_INFO,
-    "%a: BaseAddress == 0x%llx, Length == 0x%llx, Attributes == 0x%llx, Mask == 0x%llx\n",
-    __FUNCTION__,
-    BaseAddress,
-    Length,
-    Attributes,
-    AttributeMask
-    ));
-
   NeededAttributes = Attributes & AttributeMask;
 
   if ((Length == 0) ||
