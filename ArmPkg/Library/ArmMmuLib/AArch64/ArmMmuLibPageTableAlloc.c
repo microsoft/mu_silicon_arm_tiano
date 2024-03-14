@@ -12,11 +12,15 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/MemoryAllocationLib.h>
 #include <Library/ArmMmuLib.h>
 
+#pragma pack(1)
+
 typedef struct {
   VOID     *NextPool;
   UINTN    Offset;
   UINTN    FreePages;
 } PAGE_TABLE_POOL;
+
+#pragma pack()
 
 PAGE_TABLE_POOL  *mPageTablePool    = NULL;
 BOOLEAN          mPageTablePoolLock = FALSE;
@@ -76,7 +80,7 @@ InitializePageTablePool (
   // Reserve one page for pool header.
   //
   mPageTablePool->FreePages = PoolPages - 1;
-  mPageTablePool->Offset    = EFI_PAGES_TO_SIZE (1);
+  mPageTablePool->Offset    = EFI_PAGE_SIZE;
 
 Done:
   mPageTablePoolLock = FALSE;
@@ -89,33 +93,48 @@ Done:
   @param[in]  Pages  The number of pages to allocate
 
   @return A pointer to the allocated buffer or NULL if allocation fails
-
 **/
 VOID *
 AllocatePageTableMemory (
   IN UINTN  Pages
   )
 {
-  VOID  *Buffer;
+  VOID             *Buffer;
+  PAGE_TABLE_POOL  *CurrentPool;
 
   if (Pages == 0) {
     return NULL;
   }
 
-  //
-  // Renew the pool if necessary.
-  //
-  if ((mPageTablePool == NULL) ||
-      (Pages > mPageTablePool->FreePages))
-  {
-    if (EFI_ERROR (InitializePageTablePool (Pages))) {
-      return NULL;
+  CurrentPool = mPageTablePool;
+  if (CurrentPool != NULL) {
+    while (CurrentPool->NextPool != mPageTablePool) {
+      if (Pages <= CurrentPool->FreePages) {
+        break;
+      }
+
+      if (CurrentPool->NextPool == mPageTablePool) {
+        break;
+      }
+
+      CurrentPool = CurrentPool->NextPool;
     }
   }
 
-  Buffer                     = (UINT8 *)mPageTablePool + mPageTablePool->Offset;
-  mPageTablePool->Offset    += EFI_PAGES_TO_SIZE (Pages);
-  mPageTablePool->FreePages -= Pages;
+  if ((CurrentPool == NULL) ||
+      (Pages > CurrentPool->FreePages))
+  {
+    DEBUG ((DEBUG_INFO, "%a - Allocating page table memory.\n", __func__));
+    if (EFI_ERROR (InitializePageTablePool (Pages))) {
+      return NULL;
+    }
+
+    CurrentPool = mPageTablePool;
+  }
+
+  Buffer                  = (UINT8 *)CurrentPool + CurrentPool->Offset;
+  CurrentPool->Offset    += EFI_PAGES_TO_SIZE (Pages);
+  CurrentPool->FreePages -= Pages;
 
   return Buffer;
 }
