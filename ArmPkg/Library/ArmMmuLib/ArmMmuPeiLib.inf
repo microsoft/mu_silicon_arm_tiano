@@ -22,6 +22,7 @@
   AArch64/ArmMmuPeiLibConstructor.c
   AArch64/ArmMmuLibReplaceEntry.S       | GCC
   AArch64/ArmMmuLibReplaceEntry.masm    | MSFT
+  AArch64/ArmMmuPeiLibPageTableAlloc.c # MU_CHANGE
 
 [Packages]
   ArmPkg/ArmPkg.dec
