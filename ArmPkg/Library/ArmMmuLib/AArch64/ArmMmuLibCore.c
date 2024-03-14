@@ -26,6 +26,38 @@
 STATIC  ARM_REPLACE_LIVE_TRANSLATION_ENTRY  mReplaceLiveEntryFunc = ArmReplaceLiveTranslationEntry;
 // MU_CHANGE [END]: Add function pointer type
 
+// MU_CHANGE START: Add functionality for pre-allocating memory for page table entries
+
+/**
+  Allocates pages for the page table from a reserved pool.
+
+  @param[in]  Pages  The number of pages to allocate
+
+  @return A pointer to the allocated buffer or NULL if allocation fails
+**/
+VOID *
+AllocatePageTableMemory (
+  IN UINTN  Pages
+  );
+
+/**
+  Initializes the reserved pool used to allocate pages for page table memory.
+
+  @param[in] PoolPages The number of pages to initialize for the reserve pool. The actual number of pages
+                       reserved will be at least 512 - the number of pages required to describe a
+                       fully split 2MB region.
+
+  @retval EFI_SUCCESS             Reserved pool initialized successfully
+  @retval EFI_INVALID_PARAMETER   PoolPages is zero
+  @retval EFI_OUT_OF_RESOURCES    Unable to allocate pages
+**/
+EFI_STATUS
+InitializePageTablePool (
+  IN  UINTN  PoolPages
+  );
+
+// MU_CHANGE END
+
 STATIC
 UINT64
 ArmMemoryAttributeToPageAttribute (
@@ -274,7 +306,10 @@ UpdateRegionMappingRecursive (
         // No table entry exists yet, so we need to allocate a page table
         // for the next level.
         //
-        TranslationTable = AllocatePages (1);
+        // MU_CHANGE START: Use reserved page table memory pool
+        // TranslationTable = AllocatePages (1);
+        TranslationTable = AllocatePageTableMemory (1);
+        // MU_CHANGE END
         if (TranslationTable == NULL) {
           return EFI_OUT_OF_RESOURCES;
         }
@@ -667,7 +702,10 @@ ArmConfigureMmu (
   ArmSetTCR (TCR);
 
   // Allocate pages for translation table
-  TranslationTable = AllocatePages (1);
+  // MU_CHANGE START: Use reserved page table memory pool
+  // TranslationTable = AllocatePages (1);
+  TranslationTable = AllocatePageTableMemory (1);
+  // MU_CHANGE END
   if (TranslationTable == NULL) {
     return EFI_OUT_OF_RESOURCES;
   }
@@ -756,5 +794,6 @@ ArmMmuBaseLibConstructor (
       );
   }
 
+  InitializePageTablePool (1); // MU_CHANGE
   return RETURN_SUCCESS;
 }
