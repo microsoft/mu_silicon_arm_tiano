@@ -78,14 +78,6 @@ InitializePageTablePool (
   mPageTablePool->FreePages = PoolPages - 1;
   mPageTablePool->Offset    = EFI_PAGES_TO_SIZE (1);
 
-  // Mark the region as XN
-  ArmSetMemoryAttributes (
-    (PHYSICAL_ADDRESS)(UINTN)Buffer,
-    EFI_PAGES_TO_SIZE (PoolPages),
-    EFI_MEMORY_XP,
-    EFI_MEMORY_XP | EFI_MEMORY_RP | EFI_MEMORY_RO
-    );
-
 Done:
   mPageTablePoolLock = FALSE;
   return Status;
