@@ -62,7 +62,7 @@ InitializePageTablePool (
   PoolPages = ALIGN_VALUE (PoolPages, EFI_SIZE_TO_PAGES (SIZE_2MB)); // Add one page for the header
   Buffer    = AllocateAlignedPages (PoolPages, BASE_2MB);
   if (Buffer == NULL) {
-    DEBUG ((DEBUG_ERROR, "ERROR: Out of aligned pages\r\n"));
+    DEBUG ((DEBUG_ERROR, "ERROR: Out of aligned pages\n"));
     Status = EFI_OUT_OF_RESOURCES;
     goto Done;
   }
