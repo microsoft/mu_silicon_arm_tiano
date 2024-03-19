@@ -24,6 +24,7 @@
   CpuMmuCommon.c
   Exception.c
   MemoryAttribute.c
+  PageTableMemoryAllocation.c
 
 [Sources.ARM]
   Arm/Mmu.c
@@ -57,6 +58,7 @@
 [Protocols]
   gEfiCpuArchProtocolGuid
   gEfiMemoryAttributeProtocolGuid
+  gArmPageTableMemoryAllocationProtocolGuid ## MU_CHANGE: PRODUCES
 
 [Guids]
   gEfiDebugImageInfoTableGuid

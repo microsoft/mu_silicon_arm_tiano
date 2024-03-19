@@ -24,6 +24,7 @@
   AArch64/ArmMmuLibCore.c
   AArch64/ArmMmuLibReplaceEntry.S    | GCC
   AArch64/ArmMmuLibReplaceEntry.masm | MSFT
+  AArch64/ArmMmuLibPageTableAlloc.c # MU_CHANGE
 
 [Sources.ARM]
   ArmMmuLibInternal.h                 # MU_CHANGE: Add function pointer type
