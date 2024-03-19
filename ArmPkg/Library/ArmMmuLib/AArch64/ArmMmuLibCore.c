@@ -40,22 +40,6 @@ AllocatePageTableMemory (
   IN UINTN  Pages
   );
 
-/**
-  Initializes the reserved pool used to allocate pages for page table memory.
-
-  @param[in] PoolPages The number of pages to initialize for the reserve pool. The actual number of pages
-                       reserved will be at least 512 - the number of pages required to describe a
-                       fully split 2MB region.
-
-  @retval EFI_SUCCESS             Reserved pool initialized successfully
-  @retval EFI_INVALID_PARAMETER   PoolPages is zero
-  @retval EFI_OUT_OF_RESOURCES    Unable to allocate pages
-**/
-EFI_STATUS
-InitializePageTablePool (
-  IN  UINTN  PoolPages
-  );
-
 // MU_CHANGE END
 
 STATIC
@@ -794,6 +778,5 @@ ArmMmuBaseLibConstructor (
       );
   }
 
-  InitializePageTablePool (1); // MU_CHANGE
   return RETURN_SUCCESS;
 }
