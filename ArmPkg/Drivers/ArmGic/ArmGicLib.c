@@ -150,7 +150,7 @@ EFIAPI
 ArmGicSendSgiTo (
   IN  UINTN  GicDistributorBase,
   IN  UINT8  TargetListFilter,
-  IN  UINT8  CPUTargetList,
+  IN  UINTN  CPUTargetList, // MU_CHANGE: Changed from UINT8 to UINTN to support GIC v3+
   IN  UINT8  SgiId
   )
 {
