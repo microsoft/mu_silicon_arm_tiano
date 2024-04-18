@@ -339,10 +339,13 @@ CpuDxeInitialize (
   // MU_CHANGE END
 
   // MU_CHANGE [START]: Only install Memory Attribute Protocol if policy is enabled
+  // and install Page Table Memory Allocation Protocol
   Status = gBS->InstallMultipleProtocolInterfaces (
                   &mCpuHandle,
                   &gEfiCpuArchProtocolGuid,
                   &mCpu,
+                  &gArmPageTableMemoryAllocationProtocolGuid,
+                  &mPageTableMemAllocProtocol,
                   // &gEfiMemoryAttributeProtocolGuid,
                   // &mMemoryAttribute,
                   NULL

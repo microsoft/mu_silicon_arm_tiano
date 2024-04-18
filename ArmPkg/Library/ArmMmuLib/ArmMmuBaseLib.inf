@@ -14,7 +14,7 @@
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
   # MU_CHANGE - Can't be fully BASE, because it doesn't work in MM_STANDALONE.
-  LIBRARY_CLASS                  = ArmMmuLib | DXE_DRIVER PEIM PEI_CORE DXE_CORE DXE_RUNTIME_DRIVER SEC
+  LIBRARY_CLASS                  = ArmMmuLib | DXE_DRIVER DXE_CORE DXE_RUNTIME_DRIVER
 
 [Defines.AARCH64]
   CONSTRUCTOR                    = ArmMmuBaseLibConstructor

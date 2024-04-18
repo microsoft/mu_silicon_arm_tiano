@@ -31,10 +31,13 @@
 #include <Protocol/DebugSupport.h>
 #include <Protocol/LoadedImage.h>
 #include <Protocol/MemoryAttribute.h>
+#include <Protocol/ArmPageTableMemoryAllocation.h> // MU_CHANGE
 
 extern BOOLEAN  mIsFlushingGCD;
 
 extern EFI_MEMORY_ATTRIBUTE_PROTOCOL  mMemoryAttribute;
+
+extern PAGE_TABLE_MEM_ALLOC_PROTOCOL  mPageTableMemAllocProtocol; // MU_CHANGE
 
 /**
   This function registers and enables the handler specified by InterruptHandler for a processor

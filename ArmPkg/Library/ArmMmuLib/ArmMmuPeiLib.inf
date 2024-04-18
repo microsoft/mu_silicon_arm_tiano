@@ -13,7 +13,7 @@
   FILE_GUID                      = b50d8d53-1ad1-44ea-9e69-8c89d4a6d08b
   MODULE_TYPE                    = PEIM
   VERSION_STRING                 = 1.0
-  LIBRARY_CLASS                  = ArmMmuLib|PEIM
+  LIBRARY_CLASS                  = ArmMmuLib|PEIM PEI_CORE
   CONSTRUCTOR                    = ArmMmuPeiLibConstructor
 
 [Sources.AARCH64]

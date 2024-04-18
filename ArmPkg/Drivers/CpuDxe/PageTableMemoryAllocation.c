@@ -22,6 +22,9 @@ typedef struct {
 
 #pragma pack()
 
+#define MIN_PAGES_AVAILABLE  5
+
+UINTN            TotalFreePages     = 0;
 PAGE_TABLE_POOL  *mPageTablePool    = NULL;
 BOOLEAN          mPageTablePoolLock = FALSE;
 
@@ -49,15 +52,6 @@ GetMorePages (
     return EFI_INVALID_PARAMETER;
   }
 
-  //
-  // Avoid an infinite loop by bailing if we are nested in another call
-  // to this function
-  //
-  if (mPageTablePoolLock) {
-    return EFI_ABORTED;
-  }
-
-  mPageTablePoolLock = TRUE;
   PoolPages++;
   PoolPages = ALIGN_VALUE (PoolPages, EFI_SIZE_TO_PAGES (SIZE_2MB)); // Add one page for the header
   Buffer    = AllocateAlignedPages (PoolPages, BASE_2MB);
@@ -81,9 +75,9 @@ GetMorePages (
   //
   mPageTablePool->FreePages = PoolPages - 1;
   mPageTablePool->Offset    = EFI_PAGE_SIZE;
+  TotalFreePages           += mPageTablePool->FreePages;
 
 Done:
-  mPageTablePoolLock = FALSE;
   return Status;
 }
 
@@ -105,6 +99,20 @@ AllocatePageTableMemory (
 
   if (Pages == 0) {
     return NULL;
+  }
+
+  // If we are running low on free pages, allocate more while we
+  // still have enough pages to accomodate a potential split. Hold
+  // a lock during this because the AllocatePages() call in GetMorePages()
+  // may call this function recursively. In that recursive call, it should
+  // pull from the existing pool rather than allocating more pages.
+  if (  ((TotalFreePages < Pages) ||
+         ((TotalFreePages - Pages) <= MIN_PAGES_AVAILABLE))
+     && !mPageTablePoolLock)
+  {
+    mPageTablePoolLock = TRUE;
+    GetMorePages (1);
+    mPageTablePoolLock = FALSE;
   }
 
   CurrentPool = mPageTablePool;
@@ -136,6 +144,7 @@ AllocatePageTableMemory (
   Buffer                  = (UINT8 *)CurrentPool + CurrentPool->Offset;
   CurrentPool->Offset    += EFI_PAGES_TO_SIZE (Pages);
   CurrentPool->FreePages -= Pages;
+  TotalFreePages         -= Pages;
 
   return Buffer;
 }
