@@ -102,7 +102,7 @@ AllocatePageTableMemory (
   }
 
   // If we are running low on free pages, allocate more while we
-  // still have enough pages to accomodate a potential split. Hold
+  // still have enough pages to accommodate a potential split. Hold
   // a lock during this because the AllocatePages() call in GetMorePages()
   // may call this function recursively. In that recursive call, it should
   // pull from the existing pool rather than allocating more pages.

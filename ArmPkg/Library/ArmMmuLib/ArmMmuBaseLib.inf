@@ -43,6 +43,7 @@
   CacheMaintenanceLib
   HobLib
   MemoryAllocationLib
+  UefiBootServicesTableLib # MU_CHANGE: Add UefiBootServicesTableLib to get page table allocation service
 
 [Guids]
   gArmMmuReplaceLiveTranslationEntryFuncGuid
