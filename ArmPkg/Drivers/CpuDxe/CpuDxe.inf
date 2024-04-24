@@ -24,6 +24,7 @@
   CpuMmuCommon.c
   Exception.c
   MemoryAttribute.c
+  PageTableMemoryAllocation.c # MU_CHANGE
 
 [Sources.ARM]
   Arm/Mmu.c
@@ -53,10 +54,12 @@
   UefiDriverEntryPoint
   UefiLib
   DxeMemoryProtectionHobLib # MU_CHANGE
+  BaseLib # MU_CHANGE
 
 [Protocols]
   gEfiCpuArchProtocolGuid
   gEfiMemoryAttributeProtocolGuid
+  gArmPageTableMemoryAllocationProtocolGuid ## MU_CHANGE: PRODUCES
 
 [Guids]
   gEfiDebugImageInfoTableGuid

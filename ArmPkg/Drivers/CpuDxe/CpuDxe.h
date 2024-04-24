@@ -31,10 +31,13 @@
 #include <Protocol/DebugSupport.h>
 #include <Protocol/LoadedImage.h>
 #include <Protocol/MemoryAttribute.h>
+#include <Protocol/ArmPageTableMemoryAllocation.h> // MU_CHANGE
 
 extern BOOLEAN  mIsFlushingGCD;
 
 extern EFI_MEMORY_ATTRIBUTE_PROTOCOL  mMemoryAttribute;
+
+extern PAGE_TABLE_MEM_ALLOC_PROTOCOL  mPageTableMemAllocProtocol; // MU_CHANGE
 
 /**
   This function registers and enables the handler specified by InterruptHandler for a processor
@@ -142,5 +145,24 @@ UINT64
 RegionAttributeToGcdAttribute (
   IN UINTN  PageAttributes
   );
+
+// MU_CHANGE START: Add functionality for keeping a reserved pool of page table memory
+
+/**
+  Initialize the page table memory pool and produce the page table memory allocation
+  protocol.
+
+  @param[in] ImageHandle  Handle on which to install the protocol.
+
+  @retval EFI_SUCCESS           The page table pool was initialized and protocol produced.
+  @retval Others                The driver returned an error while initializing.
+**/
+EFI_STATUS
+EFIAPI
+InitializePageTableMemory (
+  IN EFI_HANDLE  ImageHandle
+  );
+
+// MU_CHANGE END
 
 #endif // CPU_DXE_H_
