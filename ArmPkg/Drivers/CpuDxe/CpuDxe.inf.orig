@@ -59,8 +59,11 @@
 [Protocols]
   gEfiCpuArchProtocolGuid
   gEfiMemoryAttributeProtocolGuid
+<<<<<<< HEAD
   gHardwareInterruptProtocolGuid
+=======
   gArmPageTableMemoryAllocationProtocolGuid ## MU_CHANGE: PRODUCES
+>>>>>>> bc92f0a676 (Pre-Allocate Page Table Memory in ArmMmuLib (#220))
 
 [Guids]
   gEfiDebugImageInfoTableGuid
