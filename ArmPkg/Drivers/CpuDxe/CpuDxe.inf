@@ -60,6 +60,7 @@
   gEfiCpuArchProtocolGuid
   gEfiMemoryAttributeProtocolGuid
   gArmPageTableMemoryAllocationProtocolGuid ## MU_CHANGE: PRODUCES
+  gEdkiiGcdSyncCompleteProtocolGuid         ## MU_CHANGE: PRODUCES
 
 [Guids]
   gEfiDebugImageInfoTableGuid
