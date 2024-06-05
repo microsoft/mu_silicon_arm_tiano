@@ -103,13 +103,24 @@ bgt    %b6                  __CR__ \
 
 #if !defined (_MSC_VER)
 
+#ifndef __clang__ // MU_CHANGE
 #define _ASM_FUNC(Name, Section)    \
   .global   Name                  ; \
   .section  #Section, "ax"        ; \
   .type     Name, %function       ; \
   Name:                           ; \
   AARCH64_BTI(c)
+// MU_CHANGE Starts: CLANGPDB support
+#else
+#define _ASM_FUNC(Name, Section)    \
+  .global   Name                  ; \
+  .section  #Section, "ax"        ; \
+  Name:                           ; \
+  AARCH64_BTI(c)
+#endif
+// MU_CHANGE Ends
 
+#ifndef __clang__ // MU_CHANGE
 #define _ASM_FUNC_ALIGN(Name, Section, Align)       \
   .global   Name                                  ; \
   .section  #Section, "ax"                        ; \
@@ -117,6 +128,16 @@ bgt    %b6                  __CR__ \
   .balign   Align                                 ; \
   Name:                                           ; \
   AARCH64_BTI(c)
+// MU_CHANGE Starts: CLANGPDB support
+#else
+#define _ASM_FUNC_ALIGN(Name, Section, Align)       \
+  .global   Name                                  ; \
+  .section  #Section, "ax"                        ; \
+  .balign   Align                                 ; \
+  Name:                                           ; \
+  AARCH64_BTI(c)
+#endif
+// MU_CHANGE Ends
 
 #define ASM_FUNC(Name)  _ASM_FUNC(ASM_PFX(Name), .text. ## Name)
 
