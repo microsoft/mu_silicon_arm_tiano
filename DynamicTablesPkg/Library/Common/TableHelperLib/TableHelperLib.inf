@@ -25,3 +25,7 @@
 
 [LibraryClasses]
   BaseLib
+# MU_CHANGE Starts
+  AmlLib
+  MemoryAllocationLib
+# MU_CHANGE Ends
