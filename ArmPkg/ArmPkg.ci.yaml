@@ -5,6 +5,11 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 {
+    # MU_CHANGE begin
+    "PrEval": {
+        "DscPath": "ArmPkg.dsc",
+    },
+    # MU_CHANGE end
     ## options defined .pytool/Plugin/LicenseCheck
     "LicenseCheck": {
         "IgnoreFiles": []
@@ -49,7 +54,8 @@
             "EmbeddedPkg/EmbeddedPkg.dec",
             "MdeModulePkg/MdeModulePkg.dec",
             "MdePkg/MdePkg.dec",
-            "ShellPkg/ShellPkg.dec"
+            "ShellPkg/ShellPkg.dec",
+            "StandaloneMmPkg/StandaloneMmPkg.dec"       # MU_CHANGE
         ],
         # For host based unit tests
         "AcceptableDependencies-HOST_APPLICATION":[
@@ -79,6 +85,14 @@
         "IgnoreFoldersAndFiles": [],
         "IgnoreDuplicates": [],
     },
+    # MU_CHANGE [BEGIN]
+    "MarkdownLintCheck": {
+        "AuditOnly": False,          # If True, log all errors and then mark as skipped
+        "IgnoreFiles": [
+            "Library/ArmSoftFloatLib/berkeley-softfloat-3",
+        ]            # package root relative file, folder, or glob pattern to ignore
+    },
+    # MU_CHANGE [END]
 
     ## options defined .pytool/Plugin/LibraryClassCheck
     "LibraryClassCheck": {
@@ -154,10 +168,13 @@
           "icdsgir",
           "icdspr",
           "icenabler",
+          "icpendr",    # MU_CHANGE: Fix spell check error
           "intid",
           "ipriority",
           "irouter",
           "isenabler",
+          "ishst",      # MU_CHANGE: Fix spell check error
+          "ispendr",    # MU_CHANGE: Fix spell check error
           "istatus",
           "itargets",
           "lable",
@@ -179,6 +196,7 @@
           "modsi",
           "mpcore",
           "mpidr",
+          "mstrict",    # MU_CHANGE: Fix spell check error
           "muldi",
           "mullu",
           "nonshareable",
@@ -232,7 +250,29 @@
           "umodsi",
           "usada",
           "vlpis",
-          "writec"
+          "writec",
+          # MU_CHANGE [BEGIN]
+          "abi's",
+          "cachelevel",
+          "cachelines",
+          "civac",
+          "cntfrq",
+          "cntkctl",
+          "cntpct",
+          "cntvct",
+          "cntvoff",
+          "comms",
+          "cseteq",
+          "ctval",
+          "daifclr",
+          "daifset",
+          "iallu",
+          "igrpen",
+          "nshst",
+          "tpidr",
+          "vmalle",
+          "mschange"
+          # MU_CHANGE [END]
         ],                          # words to extend to the dictionary for this package
         "IgnoreStandardPaths": [    # Standard Plugin defined paths that
             "*.asm", "*.s"          # should be ignore

@@ -5,6 +5,11 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 {
+    # MU_CHANGE begin
+    "PrEval": {
+        "DscPath": "ArmPlatformPkg.dsc",
+    },
+    # MU_CHANGE end
     ## options defined .pytool/Plugin/LicenseCheck
     "LicenseCheck": {
         "IgnoreFiles": []
@@ -46,7 +51,8 @@
             "ArmPkg/ArmPkg.dec",
             "EmbeddedPkg/EmbeddedPkg.dec",
             "MdeModulePkg/MdeModulePkg.dec",
-            "MdePkg/MdePkg.dec"
+            "MdePkg/MdePkg.dec",
+            "StandaloneMmPkg/StandaloneMmPkg.dec"       # MU_CHANGE
         ],
         # For host based unit tests
         "AcceptableDependencies-HOST_APPLICATION":[
