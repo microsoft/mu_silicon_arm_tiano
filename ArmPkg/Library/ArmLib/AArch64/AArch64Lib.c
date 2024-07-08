@@ -109,7 +109,7 @@ ArmHasCcidx (
   Checks whether the CPU implements the Virtualization Host Extensions.
 
   @retval TRUE  FEAT_VHE is implemented.
-  @retval FALSE FEAT_VHE is not mplemented.
+  @retval FALSE FEAT_VHE is not implemented.  # MU_CHANGE: Fix typo
 **/
 BOOLEAN
 EFIAPI
@@ -124,7 +124,7 @@ ArmHasVhe (
   Checks whether the CPU implements the Trace Buffer Extension.
 
   @retval TRUE  FEAT_TRBE is implemented.
-  @retval FALSE FEAT_TRBE is not mplemented.
+  @retval FALSE FEAT_TRBE is not implemented.  # MU_CHANGE: Fix typo
 **/
 BOOLEAN
 EFIAPI
@@ -139,7 +139,7 @@ ArmHasTrbe (
   Checks whether the CPU implements the Embedded Trace Extension.
 
   @retval TRUE  FEAT_ETE is implemented.
-  @retval FALSE FEAT_ETE is not mplemented.
+  @retval FALSE FEAT_ETE is not implemented.  # MU_CHANGE: Fix typo
 **/
 BOOLEAN
 EFIAPI
