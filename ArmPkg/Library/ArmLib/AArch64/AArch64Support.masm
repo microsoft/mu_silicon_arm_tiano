@@ -31,6 +31,7 @@
     EXPORT ArmEnableMmu
     EXPORT ArmDisableMmu
     EXPORT ArmDisableCachesAndMmu
+    EXPORT ArmEnableCachesAndMmu // MU_CHANGE - Support virtual machines on MS toolchain
     EXPORT ArmMmuEnabled
     EXPORT ArmEnableDataCache
     EXPORT ArmDisableDataCache
@@ -54,12 +55,18 @@
     EXPORT ArmReadTpidrurw
     EXPORT ArmWriteTpidrurw
     EXPORT ArmIsArchTimerImplemented
-    EXPORT ArmReadIdPfr0
+    EXPORT ArmReadIdAA64Pfr0 // MU_CHANGE
     EXPORT ArmReadIdPfr1
     EXPORT ArmWriteHcr
     EXPORT ArmReadHcr
     EXPORT ArmReadCurrentEL
     EXPORT ArmWriteCntHctl
+    EXPORT ArmReadIdAA64Dfr0 // MU_CHANGE
+    EXPORT ArmReadIdAA64Dfr1 // MU_CHANGE
+    EXPORT ArmReadIdMmfr0
+    EXPORT ArmReadIdAA64Mmfr0 // MU_CHANGE
+    EXPORT ArmReadIdAA64Mmfr1 // MU_CHANGE
+    EXPORT ArmReadIdAA64Mmfr2 // MU_CHANGE
 
 #define CTRL_M_BIT       (1 << 0)
 #define CTRL_A_BIT       (1 << 1)
@@ -137,7 +144,7 @@ ArmEnableMmu PROC
     orr     x0, x0, #CTRL_M_BIT // Set MMU enable bit
     EL1_OR_EL2_OR_EL3(x1)
 1
-    tlbi    vmalle1      
+    tlbi    vmalle1
     dsb     nsh
     isb sy
     msr     sctlr_el1, x0       // Write back
@@ -174,7 +181,7 @@ ArmDisableMmu PROC
     EL1_OR_EL2_OR_EL3(x1)
 1
     msr     sctlr_el1, x0        // Write back
-    tlbi    vmalle1    
+    tlbi    vmalle1
     b       %f4
 2
     msr     sctlr_el2, x0        // Write back
@@ -217,6 +224,36 @@ ArmDisableCachesAndMmu PROC
     isb sy
     ret
 ArmDisableCachesAndMmu ENDP
+
+// MU_CHANGE [BEGIN] - Support virtual machines on MS toolchain
+ArmEnableCachesAndMmu PROC
+    EL1_OR_EL2_OR_EL3(x1)
+1
+    mrs     x0, sctlr_el1        // Get control register EL1
+    b       %f4
+2
+    mrs     x0, sctlr_el2        // Get control register EL2
+    b       %f4
+3
+    mrs     x0, sctlr_el3        // Get control register EL3
+4
+    mov     x1, #(CTRL_M_BIT :OR: CTRL_C_BIT :OR: CTRL_I_BIT)  // Enable MMU, D & I caches
+    orr     x0, x0, x1
+    EL1_OR_EL2_OR_EL3(x1)
+1
+    msr     sctlr_el1, x0        // Write back control register
+    b       %f4
+2
+    msr     sctlr_el2, x0        // Write back control register
+    b       %f4
+3
+    msr     sctlr_el3, x0        // Write back control register
+4
+    dsb     sy
+    isb
+    ret
+ArmEnableCachesAndMmu ENDP
+// MU_CHANGE [END] - Support virtual machines on MS toolchain
 
 
 ArmMmuEnabled PROC
@@ -568,11 +605,14 @@ ArmReadVBar ENDP
 ArmEnableVFP PROC
     // Check whether floating-point is implemented in the processor.
     mov   x1, x30                 // Save LR
-    bl    ArmReadIdPfr0           // Read EL1 Processor Feature Register (PFR0)
+    bl    ArmReadIdAA64Pfr0       // Read EL1 Processor Feature Register (PFR0) // MU_CHANGE
     mov   x30, x1                 // Restore LR
     ands  x0, x0, #AARCH64_PFR0_FP// Extract bits indicating VFP implementation
-    cmp   x0, #0                  // VFP is implemented if '0'.
-    bne   %f4                      // Exit if VFP not implemented.
+// MU_CHANGE [BEGIN] - Correctly query VFP on aarch64 systems
+    mov   x1, #AARCH64_PFR0_FP
+    cmp   x0, x1                  // VFP is not implemented if all FP bits are 1 ('0b1111').
+    beq   %f4                     // Exit if VFP not implemented.
+// MU_CHANGE [END] - Correctly query VFP on aarch64 systems
     // FVP is implemented.
     // Make sure VFP exceptions are not trapped (to any exception level).
     mrs   x0, cpacr_el1           // Read EL1 Coprocessor Access Control Register (CPACR)
@@ -608,14 +648,14 @@ ArmReadMpidr PROC
 ArmReadMpidr ENDP
 
 
-// Keep old function names for C compatibilty for now. Change later?
+// Keep old function names for C compatibility for now. Change later?
 ArmReadTpidrurw PROC
   mrs   x0, tpidr_el0           // read tpidr_el0 (v7 TPIDRURW) -> (v8 TPIDR_EL0)
   ret
 ArmReadTpidrurw ENDP
 
 
-// Keep old function names for C compatibilty for now. Change later?
+// Keep old function names for C compatibility for now. Change later?
 ArmWriteTpidrurw PROC
   msr   tpidr_el0, x0           // write tpidr_el0 (v7 TPIDRURW) -> (v8 TPIDR_EL0)
   ret
@@ -629,13 +669,13 @@ ArmIsArchTimerImplemented PROC
 ArmIsArchTimerImplemented ENDP
 
 
-ArmReadIdPfr0 PROC
+ArmReadIdAA64Pfr0 PROC  // MU_CHANGE
   mrs   x0, id_aa64pfr0_el1   // Read ID_AA64PFR0 Register
   ret
-ArmReadIdPfr0 ENDP
+ArmReadIdAA64Pfr0 ENDP  // MU_CHANGE
 
 
-// Q: id_aa64pfr1_el1 not defined yet. What does this funtion want to access?
+// Q: id_aa64pfr1_el1 not defined yet. What does this function want to access?
 // A: used to setup arch timer. Check if we have security extensions, permissions to set stuff.
 //    See: ArmPkg/Library/ArmArchTimerLib/AArch64/ArmArchTimerLib.c
 //    Not defined yet, but stick in here for now, should read all zeros.
@@ -674,6 +714,45 @@ ArmWriteCntHctl PROC
   ret
 ArmWriteCntHctl ENDP
 
+// MU_CHANGE [BEGIN]
+//UINTN ArmReadIdAA64Dfr0(VOID)
+ArmReadIdAA64Dfr0 PROC
+  mrs   x0, ID_AA64DFR0_EL1
+  ret
+ArmReadIdAA64Dfr0 ENDP
+
+//UINTN ArmReadIdAA64Dfr1(VOID)
+ArmReadIdAA64Dfr1 PROC
+  mrs   x0, ID_AA64DFR1_EL1
+  ret
+ArmReadIdAA64Dfr1 ENDP
+// MU_CHANGE [END]
+
+//UINTN ArmReadIdMmfr0(VOID)
+ArmReadIdMmfr0 PROC
+  mrs   x0, id_aa64mmfr0_el1
+  ret
+ArmReadIdMmfr0 ENDP
+
+// MU_CHANGE [BEGIN]
+//UINTN ArmReadIdAA64Mmfr0(VOID)
+ArmReadIdAA64Mmfr0 PROC
+  mrs   x0, ID_AA64MMFR0_EL1
+  ret
+ArmReadIdAA64Mmfr0 ENDP
+
+//UINTN ArmReadIdAA64Mmfr1(VOID)
+ArmReadIdAA64Mmfr1 PROC
+  mrs   x0, ID_AA64MMFR1_EL1
+  ret
+ArmReadIdAA64Mmfr1 ENDP
+
+//UINTN ArmReadIdAA64Mmfr2(VOID)
+ArmReadIdAA64Mmfr2 PROC
+  mrs   x0, ID_AA64MMFR2_EL1
+  ret
+ArmReadIdAA64Mmfr2 ENDP
+// MU_CHANGE [END]
 
     END
 
