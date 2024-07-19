@@ -84,6 +84,13 @@ GetMemoryAttributes (
   EFI_STATUS  Status;
 
   if ((Length == 0) || (Attributes == NULL)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: BaseAddress 0x%llx Length 0x%llx is zero or Attributes is NULL\n",
+      __func__,
+      BaseAddress,
+      Length
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -199,6 +206,13 @@ SetMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: BaseAddress 0x%llx Length is zero or Attributes (0x%llx) is invalid\n",
+      __func__,
+      BaseAddress,
+      Attributes
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -262,6 +276,13 @@ ClearMemoryAttributes (
   if ((Length == 0) ||
       ((Attributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: BaseAddress 0x%llx Length is zero or Attributes (0x%llx) is invalid\n",
+      __func__,
+      BaseAddress,
+      Attributes
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
