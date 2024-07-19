@@ -82,6 +82,11 @@
 
   ArmSvcLib|ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf                              # MU_CHANGE
 
+# MU_CHANGE [BEGIN]: Use the PEI ARM Mmu Lib for PEIMs and PEI_CORE
+[LibraryClasses.common.PEIM, LibraryClasses.common.PEI_CORE, LibraryClasses.common.SEC]
+  ArmMmuLib|ArmPkg/Library/ArmMmuLib/ArmMmuPeiLib.inf
+# MU_CHANGE [END]
+
 [LibraryClasses.common.PEIM]
   HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
   MemoryAllocationLib|MdePkg/Library/PeiMemoryAllocationLib/PeiMemoryAllocationLib.inf
