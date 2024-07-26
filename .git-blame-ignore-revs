@@ -15,6 +15,8 @@ ae52e921c493666014166682e24654e9df5b1457
 f66eab9b9c9ef78e74658e087fe9f711a62fd401
 # ARM Packages: CRLF fixup
 e6f3ed43400bc9d02ff3e2728579cc9f35f71405
+# Convert remaining files from LF to CRLF
+b6ff4c72f98ae33e41d7c1375d2c5dc4616858a7
 
 ###################################################
 # Code Formatting (Uncrustify) Only Changes       #
