@@ -395,7 +395,7 @@ GeneratePrt (
       Use the second model for _PRT object and describe a hardwired interrupt.
     */
     Status = AmlAddPrtEntry (
-               (IrqMapInfo->PciDevice << 16) | IrqMapInfo->PciFunction, // MU_CHANGE
+               (IrqMapInfo->PciDevice << 16) | 0xFFFF,
                IrqMapInfo->PciInterrupt,
                NULL,
                IrqMapInfo->IntcInterrupt.Interrupt,
