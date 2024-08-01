@@ -140,10 +140,10 @@ VideoCopyHorizontalOverlap (
   UINT16  *SourcePixel16bit;
   UINT16  *DestinationPixel16bit;
 
-  UINT32  SourcePixelY;
-  UINT32  DestinationPixelY;
-  UINTN   SizeIn32Bits;
-  UINTN   SizeIn16Bits;
+  UINTN  SourcePixelY;      // MU_CHANGE - CodeQL Change
+  UINTN  DestinationPixelY; // MU_CHANGE - CodeQL Change
+  UINTN  SizeIn32Bits;
+  UINTN  SizeIn16Bits;
 
   Status = EFI_SUCCESS;
 
@@ -271,8 +271,8 @@ BltVideoFill (
   VOID               *DestinationAddr;
   UINT16             *DestinationPixel16bit;
   UINT16             Pixel16bit;
-  UINT32             DestinationPixelX;
-  UINT32             DestinationLine;
+  UINTN              DestinationPixelX; // MU_CHANGE - CodeQL Change
+  UINTN              DestinationLine;   // MU_CHANGE - CodeQL Change
   UINTN              WidthInBytes;
 
   Status               = EFI_SUCCESS;
@@ -420,11 +420,11 @@ BltVideoToBltBuffer (
   VOID                           *DestinationAddr;
   UINT16                         *SourcePixel16bit;
   UINT16                         Pixel16bit;
-  UINT32                         SourcePixelX;
-  UINT32                         SourceLine;
-  UINT32                         DestinationPixelX;
-  UINT32                         DestinationLine;
-  UINT32                         BltBufferHorizontalResolution;
+  UINTN                          SourcePixelX;                  // MU_CHANGE - CodeQL Change
+  UINTN                          SourceLine;                    // MU_CHANGE - CodeQL Change
+  UINTN                          DestinationPixelX;             // MU_CHANGE - CodeQL Change
+  UINTN                          DestinationLine;               // MU_CHANGE - CodeQL Change
+  UINTN                          BltBufferHorizontalResolution; // MU_CHANGE - CodeQL Change
   UINTN                          WidthInBytes;
 
   Status               = EFI_SUCCESS;
@@ -583,11 +583,11 @@ BltBufferToVideo (
   VOID                           *SourceAddr;
   VOID                           *DestinationAddr;
   UINT16                         *DestinationPixel16bit;
-  UINT32                         SourcePixelX;
-  UINT32                         SourceLine;
-  UINT32                         DestinationPixelX;
-  UINT32                         DestinationLine;
-  UINT32                         BltBufferHorizontalResolution;
+  UINTN                          SourcePixelX;                  // MU_CHANGE - CodeQL Change
+  UINTN                          SourceLine;                    // MU_CHANGE - CodeQL Change
+  UINTN                          DestinationPixelX;             // MU_CHANGE - CodeQL Change
+  UINTN                          DestinationLine;               // MU_CHANGE - CodeQL Change
+  UINTN                          BltBufferHorizontalResolution; // MU_CHANGE - CodeQL Change
   UINTN                          WidthInBytes;
 
   Status               = EFI_SUCCESS;

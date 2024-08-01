@@ -79,7 +79,7 @@ SecondaryMain (
   ASSERT (Index != ArmCoreCount);
 
   // Clear Secondary cores MailBox
-  MmioWrite32 (ArmCoreInfoTable[Index].MailboxClearAddress, ArmCoreInfoTable[Index].MailboxClearValue);
+  MmioWrite32 (ArmCoreInfoTable[Index].MailboxClearAddress, (UINT32)ArmCoreInfoTable[Index].MailboxClearValue); // MU_CHANGE - CodeQL Change
 
   do {
     ArmCallWFI ();
@@ -124,7 +124,7 @@ PrimaryMain (
   // If ArmVe has not been built as Standalone then we need to wake up the secondary cores
   if (FeaturePcdGet (PcdSendSgiToBringUpSecondaryCores)) {
     // Sending SGI to all the Secondary CPU interfaces
-    ArmGicSendSgiTo (PcdGet64 (PcdGicDistributorBase), ARM_GIC_ICDSGIR_FILTER_EVERYONEELSE, 0x0E, PcdGet32 (PcdGicSgiIntId));
+    ArmGicSendSgiTo (PcdGet64 (PcdGicDistributorBase), (UINT8)ARM_GIC_ICDSGIR_FILTER_EVERYONEELSE, (UINT8)0x0E, (UINT8)PcdGet32 (PcdGicSgiIntId));
   }
 
   // Adjust the Temporary Ram as the new Ppi List (Common + Platform Ppi Lists) is created at
