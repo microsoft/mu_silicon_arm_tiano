@@ -259,8 +259,17 @@ GetMmCompatibility (
 
   MmVersion = MmVersionArgs.Arg0;
 
+  // MU_CHANGE - CodeQL Change - unsigned-comparison-zero
+  // Make MM_CALLER_MINOR_VER more restrictive. Rquire
+  //  exact minor version match rather than >=.
+  // Add static_assert to check if/when verison change
+  // occurs.
+  STATIC_ASSERT (
+    MM_CALLER_MINOR_VER == 0,
+    "MM_CALLER_MINOR_VERSION has changed!"
+    );
   if ((MM_MAJOR_VER (MmVersion) == MM_CALLER_MAJOR_VER) &&
-      (MM_MINOR_VER (MmVersion) >= MM_CALLER_MINOR_VER))
+      (MM_MINOR_VER (MmVersion) == MM_CALLER_MINOR_VER))
   {
     DEBUG ((
       DEBUG_INFO,

@@ -246,7 +246,7 @@ ArmGicSetInterruptPriority (
     MmioAndThenOr32 (
       GicDistributorBase + ARM_GIC_ICDIPR + (4 * RegOffset),
       ~(0xff << RegShift),
-      Priority << RegShift
+      (UINT32)(Priority << RegShift) // MU_CHANGE - CodeQL Change
       );
   } else {
     GicCpuRedistributorBase = GicGetCpuRedistributorBase (
@@ -260,7 +260,7 @@ ArmGicSetInterruptPriority (
     MmioAndThenOr32 (
       IPRIORITY_ADDRESS (GicCpuRedistributorBase, RegOffset),
       ~(0xff << RegShift),
-      Priority << RegShift
+      (UINT32)(Priority << RegShift) // MU_CHANGE - CodeQL Change
       );
   }
 }
