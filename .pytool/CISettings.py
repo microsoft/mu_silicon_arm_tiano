@@ -146,10 +146,6 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
                 scopes += codeql_helpers.get_scopes(self.codeql)
 
                 if self.codeql:
-                    shell_environment.GetBuildVars().SetValue(
-                        "STUART_CODEQL_AUDIT_ONLY",
-                        "TRUE",
-                        "Set in CISettings.py")
                     codeql_filter_files = [str(n) for n in glob.glob(
                         os.path.join(self.GetWorkspaceRoot(),
                                      '**/CodeQlFilters.yml'),
