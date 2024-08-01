@@ -25,7 +25,7 @@ PrimaryMain (
   // In some cases, the secondary cores are waiting for an SGI from the next stage boot loader to resume their initialization
   if (!FixedPcdGet32 (PcdSendSgiToBringUpSecondaryCores)) {
     // Sending SGI to all the Secondary CPU interfaces
-    ArmGicSendSgiTo (PcdGet64 (PcdGicDistributorBase), ARM_GIC_ICDSGIR_FILTER_EVERYONEELSE, 0x0E, PcdGet32 (PcdGicSgiIntId));
+    ArmGicSendSgiTo (PcdGet64 (PcdGicDistributorBase), ARM_GIC_ICDSGIR_FILTER_EVERYONEELSE, 0x0E, (UINT8)PcdGet32 (PcdGicSgiIntId)); // MU_CHANGE - CodeQL Change
   }
 
   PrePiMain (UefiMemoryBase, StacksBase, StartTimeStamp);
