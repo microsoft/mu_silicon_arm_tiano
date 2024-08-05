@@ -112,6 +112,7 @@
   MemoryAllocationLib|MdePkg/Library/PeiMemoryAllocationLib/PeiMemoryAllocationLib.inf
   PeiServicesLib|MdePkg/Library/PeiServicesLib/PeiServicesLib.inf
   PeiServicesTablePointerLib|MdePkg/Library/PeiServicesTablePointerLib/PeiServicesTablePointerLib.inf
+  ArmFfaLib|ArmPkg/Library/ArmFfaLib/ArmFfaPeiLib.inf
 
 [LibraryClasses.ARM, LibraryClasses.AARCH64]
   #NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf          # MU_CHANGE
@@ -161,6 +162,7 @@
   ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf
   ArmPkg/Library/OpteeLib/OpteeLib.inf
   ArmPkg/Library/ArmTransferListLib/ArmTransferListLib.inf
+  ArmPkg/Library/ArmFfaLib/ArmFfaPeiLib.inf
   ArmPkg/Library/ArmFfaLib/ArmFfaDxeLib.inf
 
   ArmPkg/Filesystem/SemihostFs/SemihostFs.inf
