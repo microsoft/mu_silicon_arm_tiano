@@ -71,7 +71,7 @@ ArmGicV3SetControlSystemRegisterEnable ENDP
 //  );
 ArmGicV3SendNsG1Sgi PROC
         dsb     ishst
-        msr     ICC_SGI1R_EL1, x0
+        msr     ICC_SGI1R, x0
         isb
         ret
 ArmGicV3SendNsG1Sgi ENDP
