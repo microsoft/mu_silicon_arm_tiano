@@ -35,14 +35,13 @@ Breaking Changes-dev
 - ArmPlatformPkg/Drivers/HestMmErrorSources/HestErrorSourceDxe.inf has been dropped.
 - ArmPlatformPkg/Include/Protocol/HestErrorSourceInfo.h has been dropped.
 - ArmPlatformPkg/Include/Protocol/HestTable.h has been dropped.
-- ArmVirtPkg/Include/Library/FdtSerialPortAddressLib.h has been dropped.
-- ArmVirtPkg/Library/FdtSerialPortAddressLib/FdtSerialPortAddressLib.inf has been dropped.
-- ArmVirtPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf has been dropped. 
+- ArmVirtPkg has been dropped.
 - ArmPkg/Drivers/ArmGic/ArmGicLib.inf has changed. Modifications for ArmGicV3SendNsG1Sgi have been moved to mu_plus MsCorePkg/Library/MuArmGicExLib.inf.
 
 Main Changes-dev
 ----------------
-- Improvements to DynamicsTablePkg.
+- Improvements to DynamicTablePkg.
+
 
 Platform Integration Reference
 ------------------------------
@@ -67,7 +66,7 @@ For documentation:
 Copyright & License
 ===================
 
-| Copyright (C) Microsoft Corporation
+| Copyright (c) Microsoft Corporation
 | SPDX-License-Identifier: BSD-2-Clause-Patent
 
 Upstream License (TianoCore)
