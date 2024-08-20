@@ -51,6 +51,7 @@
   # MU_CHANGE [END] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
   ArmSvcLib
   ArmTransferListLib
+  ArmFfaLib
 
 [Guids]
   gMpInformationHobGuid
@@ -62,6 +63,7 @@
 
 [Protocols.ARM, Protocols.AARCH64]
   gEdkiiPiMmCpuDriverEpProtocolGuid
+  gEfiMmCommunication2ProtocolGuid
 
 #
 # This configuration fails for CLANGPDB, which does not support PIE in the GCC
