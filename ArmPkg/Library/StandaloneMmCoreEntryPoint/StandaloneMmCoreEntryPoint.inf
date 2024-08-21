@@ -26,7 +26,6 @@
 [Sources.AARCH64, Sources.ARM]
   Arm/StandaloneMmCoreEntryPoint.c
   Arm/SetPermissions.c
-  Arm/CreateHobList.c
 
 # MU_CHANGE [BEGIN]
 # [Sources.X64]
@@ -51,11 +50,15 @@
   ArmMmuLib
   # MU_CHANGE [END] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
   ArmSvcLib
+  ArmTransferListLib
 
 [Guids]
   gMpInformationHobGuid
   gEfiMmPeiMmramMemoryReserveGuid
   gEfiStandaloneMmNonSecureBufferGuid
+
+[Guids.ARM, Guids.AARCH64]
+  gEfiHobListGuid
 
 [Protocols.ARM, Protocols.AARCH64]
   gEdkiiPiMmCpuDriverEpProtocolGuid
