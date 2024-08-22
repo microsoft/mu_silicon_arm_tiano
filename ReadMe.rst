@@ -9,7 +9,7 @@ Windows_VS2022_               |WindowsCiBuild|  |WindowsCiTest| |WindowsCiCovera
 Ubuntu_GCC5_                  |UbuntuCiBuild|   |UbuntuCiTest|  |UbuntuCiCoverage|
 ============================= ================= =============== ===================
 
-This repository is part of Project Mu.  Please see Project Mu for details https://microsoft.github.io/mu
+This repository is part of Project Mu.  Please see Project Mu for details https://microsoft.github.io/mu.
 
 Branch Status - release/202405
 ==============================
@@ -18,44 +18,34 @@ Branch Status - release/202405
   In Development
 
 :Entered Development:
-  Todo
+  2023/11/24 (Date Edk2 started accepting changes which were not in a previous release)
 
 :Anticipated Stabilization:
-  Todo
+  Nov 2024
 
 Branch Changes - release/202405
 ===============================
 
+202405 is a larger deviation than previous releases. As part of upstreaming changes to EDK2, the commits were reviewed, squashed, and some were dropped.
+Due to these changes, there may be more work required to bring an existing platform up to 202405 compatibility. 
+
 Breaking Changes-dev
 --------------------
-
-- Todo
+- ArmPlatformPkg/Drivers/Apei/HestDxe/HestDxe.inf has been dropped.
+- ArmPlatformPkg/Drivers/HestMmErrorSources/HestErrorSourceDxe.inf has been dropped.
+- ArmPlatformPkg/Include/Protocol/HestErrorSourceInfo.h has been dropped.
+- ArmPlatformPkg/Include/Protocol/HestTable.h has been dropped.
+- ArmVirtPkg has been dropped.
+- ArmPkg/Drivers/ArmGic/ArmGicLib.inf has changed. Modifications for ArmGicV3SendNsG1Sgi have been moved to mu_plus MsCorePkg/Library/MuArmGicExLib.inf.
 
 Main Changes-dev
 ----------------
-
-- Todo
-
-Bug Fixes-dev
--------------
-
-- Todo
+- Improvements to DynamicTablePkg.
 
 
-2405_RefBoot Changes
---------------------
-
-- Todo
-
-2405_CIBuild Changes
---------------------
-
-- Todo
-
-2405_Rebase Changes
--------------------
-
-Todo
+Platform Integration Reference
+------------------------------
+Reference platforms which consume release/202405 are available in [mu_tiano_platforms](https://github.com/microsoft/mu_tiano_platforms).
 
 Code of Conduct
 ===============
@@ -71,11 +61,12 @@ Contributions
 Contributions are always welcome and encouraged!
 Please open any issues in the Project Mu GitHub tracker and read https://microsoft.github.io/mu/How/contributing/
 
+For documentation:
 
 Copyright & License
 ===================
 
-| Copyright (C) Microsoft Corporation
+| Copyright (c) Microsoft Corporation
 | SPDX-License-Identifier: BSD-2-Clause-Patent
 
 Upstream License (TianoCore)
