@@ -55,8 +55,7 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
         These should be edk2 workspace relative paths '''
 
         return ("ArmPkg",
-                "ArmPlatformPkg",
-                "ArmVirtPkg"
+                "ArmPlatformPkg"
                 )
 
     def GetArchitecturesSupported(self):
