@@ -15,9 +15,9 @@ BuildConfig.conf
 # Packages not ignored:
 # ArmPkg
 # ArmPlatformPkg
-# ArmVirtPkg
 
 # Ignore unused UDK PKGs.
+/ArmVirtPkg/
 /BaseTools/
 /Conf/
 /CryptoPkg/
