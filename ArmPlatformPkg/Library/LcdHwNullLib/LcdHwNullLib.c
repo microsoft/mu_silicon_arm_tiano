@@ -23,7 +23,7 @@ LcdIdentify (
   VOID
   )
 {
-  return EFI_NOT_FOUND;   // MU_CHANGE TCBZ3351 - Prevent further LCD init.
+  return EFI_SUCCESS;
 }
 
 /**
