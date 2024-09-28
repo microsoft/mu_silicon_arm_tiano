@@ -423,7 +423,7 @@ GicV3DxeInitialize (
       for (Index = 8; Index < (mGicNumInterrupts / 4); Index++) {
         MmioWrite32 (
           mGicDistributorBase + ARM_GIC_ICDIPTR + (Index * 4),
-          (UINT32)CpuTarget      // MU_CHANGE - ARM64 VS change
+          CpuTarget
           );
       }
     }
@@ -463,7 +463,7 @@ GicV3DxeInitialize (
     for (Index = 32; Index < mGicNumInterrupts; Index++) {
       MmioWrite64 (
         mGicDistributorBase + ARM_GICD_IROUTER + (Index * 8),
-        (UINT32)CpuTarget   // MU_CHANGE - ARM64 VS change
+        CpuTarget
         );
     }
   }
