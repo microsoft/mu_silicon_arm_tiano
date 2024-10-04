@@ -138,7 +138,7 @@ InitializeCpuPeim (
   ArmEnableBranchPrediction ();
 
   // Publish the CPU memory and io spaces sizes
-  BuildCpuHob ((UINT8)ArmGetPhysicalAddressBits (), PcdGet8 (PcdPrePiCpuIoSize)); // MU_CHANGE Add typecast
+  BuildCpuHob (ArmGetPhysicalAddressBits (), PcdGet8 (PcdPrePiCpuIoSize));
 
 
   // Only MP Core platform need to produce gArmMpCoreInfoPpiGuid

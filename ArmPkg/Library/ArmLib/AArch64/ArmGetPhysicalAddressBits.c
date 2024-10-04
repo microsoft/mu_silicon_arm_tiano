@@ -11,7 +11,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Uefi.h>
 #include <Library/ArmLib.h>
 
-UINTN
+UINT8  // MU_CHANGE
 EFIAPI
 ArmGetPhysicalAddressBits (
   VOID
@@ -29,5 +29,5 @@ ArmGetPhysicalAddressBits (
     physicalAddressWidth = aw[regValue & 0xF];
   }
 
-  return (UINTN)physicalAddressWidth;
+  return physicalAddressWidth;  // MU_CHANGE
 }
