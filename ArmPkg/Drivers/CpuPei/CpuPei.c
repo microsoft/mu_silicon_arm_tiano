@@ -140,7 +140,6 @@ InitializeCpuPeim (
   // Publish the CPU memory and io spaces sizes
   BuildCpuHob (ArmGetPhysicalAddressBits (), PcdGet8 (PcdPrePiCpuIoSize));
 
-
   // Only MP Core platform need to produce gArmMpCoreInfoPpiGuid
   Status = PeiServicesLocatePpi (&gArmMpCoreInfoPpiGuid, 0, NULL, (VOID **)&ArmMpCoreInfoPpi);
   if (!EFI_ERROR (Status)) {
