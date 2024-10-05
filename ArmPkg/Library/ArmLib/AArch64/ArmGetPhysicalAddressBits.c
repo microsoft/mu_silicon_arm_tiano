@@ -29,5 +29,5 @@ ArmGetPhysicalAddressBits (
     physicalAddressWidth = aw[regValue & 0xF];
   }
 
-  return physicalAddressWidth;  // MU_CHANGE
+  return (UINTN)physicalAddressWidth;
 }
