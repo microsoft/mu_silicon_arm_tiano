@@ -731,7 +731,7 @@ ArmWriteCntvOff (
   UINT64  Val
   );
 
-UINT8 // MU_CHANGE
+UINTN
 EFIAPI
 ArmGetPhysicalAddressBits (
   VOID
