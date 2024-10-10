@@ -377,7 +377,7 @@ GeneratePrt (
     }
 
     // Add the device to the DeviceTable.
-    MappingTableAdd (&Generator->DeviceTable, IrqMapInfo->PciDevice);
+    MappingTableAdd (&Generator->DeviceTable, (IrqMapInfo->PciDevice << 16) | IrqMapInfo->PciFunction); // MU_CHANGE
 
     /* Add a _PRT entry.
        ASL

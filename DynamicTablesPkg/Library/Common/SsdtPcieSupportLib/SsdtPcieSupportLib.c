@@ -62,15 +62,19 @@ GeneratePciSlots (
   EFI_STATUS              Status;
   UINT32                  Index;
   UINT32                  LastIndex;
-  UINT32                  DeviceId;
+  UINT8                   PciDevice;      // MU_CHANGE
+  UINT16                  PciFunction;    // MU_CHANGE 
   CHAR8                   AslName[AML_NAME_SEG_SIZE + 1];
   AML_OBJECT_NODE_HANDLE  DeviceNode;
 
   ASSERT (MappingTable != NULL);
   ASSERT (PciNode != NULL);
 
-  // Generic device name is "Dxx".
-  CopyMem (AslName, "Dxx_", AML_NAME_SEG_SIZE + 1);
+  // MU_CHANGE [BEGIN] Allow user to specify PciFunction in InterruptMapInfo
+  // Generic device name is "DXXx" where:
+  // XX == Device #
+  // x  == Function # or "_" if referring to all functions
+  CopyMem (AslName, "Dxxx", AML_NAME_SEG_SIZE + 1);
 
   LastIndex = MappingTable->LastIndex;
 
@@ -81,9 +85,23 @@ GeneratePciSlots (
   }
 
   for (Index = 0; Index < LastIndex; Index++) {
-    DeviceId                       = MappingTable->Table[Index];
-    AslName[AML_NAME_SEG_SIZE - 3] = AsciiFromHex (DeviceId & 0xF);
-    AslName[AML_NAME_SEG_SIZE - 2] = AsciiFromHex ((DeviceId >> 4) & 0xF);
+    PciDevice                      = (MappingTable->Table[Index] >> 16) & 0xFF;
+    PciFunction                    = MappingTable->Table[Index] & 0xFFFF;
+    AslName[AML_NAME_SEG_SIZE - 3] = AsciiFromHex (PciDevice & 0xF);
+    AslName[AML_NAME_SEG_SIZE - 2] = AsciiFromHex ((PciDevice >> 4) & 0xF);
+    if (PciFunction == 0xFFFF) {
+      AslName[AML_NAME_SEG_SIZE - 1] = '_';
+    }
+    else if (PciFunction < 0x8) {
+      AslName[AML_NAME_SEG_SIZE - 1] = AsciiFromHex ((PciFunction) & 0xF);
+    }
+    else {
+      ASSERT(0);
+      return EFI_INVALID_PARAMETER;
+    }
+
+    // MU_CHANGE [END]
+    
 
     // ASL:
     // Device (Dxx) {
@@ -102,7 +120,7 @@ GeneratePciSlots (
     */
     Status = AmlCodeGenNameInteger (
                "_ADR",
-               (DeviceId << 16) | 0xFFFF,
+               MappingTable->Table[Index], // MU_CHANGE - Allow user to specify PciFunction in InterruptMapInfo
                DeviceNode,
                NULL
                );
@@ -141,6 +159,7 @@ AddOscMethod (
   EFI_ACPI_DESCRIPTION_HEADER  *SsdtPcieOscTemplate;
   AML_ROOT_NODE_HANDLE         OscTemplateRoot;
   AML_OBJECT_NODE_HANDLE       OscNode;
+  AML_OBJECT_NODE_HANDLE       NameOpCtrlNode; // MU_CHANGE - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
 
   ASSERT (PciNode != NULL);
 
@@ -168,6 +187,35 @@ AddOscMethod (
   if (EFI_ERROR (Status)) {
     goto error_handler;
   }
+
+  // MU_CHANGE [BEGIN] - Set OSC Ctrl Bits based on EArmObjPciConfigSpaceInfo
+
+  // Get the CTRL NameOp object defined by the "Name ()" statement,
+  // and update its value.
+  Status = AmlFindNode (OscTemplateRoot, "\\_OSC.CTRL", &NameOpCtrlNode);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to find Ctrl NameOp"
+      " Status = %r\n",
+      Status
+      ));
+    goto error_handler;
+  }
+
+  Status = AmlNameOpUpdateInteger (NameOpCtrlNode, 
+                                   (UINT64)(PciInfo->OscControlBuffer & PCI_OSC_CTRL_BUFFER_VALID_BITS));
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "ERROR: SSDT-PCI-OSC: Failed to update Ctrl Nameop value"
+      " Status = %r\n",
+      Status
+      ));
+    goto error_handler;
+  }
+
+  // MU_CHANGE [END]
 
   Status = AmlDetachNode (OscNode);
   if (EFI_ERROR (Status)) {
