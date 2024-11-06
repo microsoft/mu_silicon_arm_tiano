@@ -23,6 +23,9 @@
 [Sources]
   ArmSmc.c
 
+[FixedPcd]
+  gArmTokenSpaceGuid.PcdSxcUse18Registers # MU_CHANGE - 18 registers
+
 [Packages]
   MdePkg/MdePkg.dec
   ArmPkg/ArmPkg.dec
