@@ -23,6 +23,18 @@ typedef struct {
   UINTN    Arg5;
   UINTN    Arg6;
   UINTN    Arg7;
+  // MU_CHANGE Starts: Support 18 arguments for AArch64
+  UINTN    Arg8;
+  UINTN    Arg9;
+  UINTN    Arg10;
+  UINTN    Arg11;
+  UINTN    Arg12;
+  UINTN    Arg13;
+  UINTN    Arg14;
+  UINTN    Arg15;
+  UINTN    Arg16;
+  UINTN    Arg17;
+  // MU_CHANGE Ends
 } ARM_SMC_ARGS;
 
 /**
