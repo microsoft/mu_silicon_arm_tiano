@@ -1,7 +1,7 @@
 ## @file
 # Module entry point library for DXE core.
 #
-# Copyright (c) 2017 - 2021, Arm Ltd. All rights reserved.<BR>
+# Copyright (c) 2024, Arm Ltd. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -10,47 +10,39 @@
 
 [Defines]
   INF_VERSION                    = 0x0001001A
-  # MU_CHANGE [BEGIN]
   BASE_NAME                      = ArmStandaloneMmCoreEntryPoint
-  FILE_GUID                      = 0D7C6883-E1A8-4A7A-A35C-E0C200775B43
-  # MU_CHANGE [END]
+  FILE_GUID                      = 16d7b2e4-a025-11ef-8931-6b032fa329a6
   MODULE_TYPE                    = MM_CORE_STANDALONE
   VERSION_STRING                 = 1.0
   PI_SPECIFICATION_VERSION       = 0x00010032
   LIBRARY_CLASS                  = StandaloneMmCoreEntryPoint|MM_CORE_STANDALONE
 
 #
-#  VALID_ARCHITECTURES           = IA32 X64 IPF EBC (EBC is for build only)
+#  VALID_ARCHITECTURES           = ARM AARCH64
 #
 
-[Sources.AARCH64, Sources.ARM]
-  Arm/StandaloneMmCoreEntryPoint.c
-  Arm/SetPermissions.c
+[Sources]
+  ArmStandaloneMmCoreEntryPoint.c
+  SetPermissions.c
 
 [Sources.AARCH64]
-  Arm/ModuleEntryPoint64.S
+  AArch64/ModuleEntryPoint.S
 
 [Sources.ARM]
-  Arm/ModuleEntryPoint32.S
-
-# MU_CHANGE [BEGIN]
-# [Sources.X64]
-#   X64/StandaloneMmCoreEntryPoint.c
-# MU_CHANGE [END]
+  Arm/ModuleEntryPoint.S
 
 [Packages]
+  ArmPkg/ArmPkg.dec
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   StandaloneMmPkg/StandaloneMmPkg.dec
 
-# [Packages.ARM, Packages.AARCH64] # MU_CHANGE: Make StandaloneMmCpu.h available to all archs
+[Packages]
   ArmPkg/ArmPkg.dec
 
 [LibraryClasses]
   BaseLib
   DebugLib
-
-[LibraryClasses.ARM, LibraryClasses.AARCH64]
   # MU_CHANGE [BEGIN] - Nerf StandaloneMmMmuLib. It's just ArmMmuLib.
   # StandaloneMmMmuLib
   ArmMmuLib
@@ -63,15 +55,13 @@
   gMpInformationHobGuid
   gEfiMmPeiMmramMemoryReserveGuid
   gEfiStandaloneMmNonSecureBufferGuid
-
-[Guids.ARM, Guids.AARCH64]
   gEfiHobListGuid
 
-[Protocols.ARM, Protocols.AARCH64]
+[Protocols]
   gEdkiiPiMmCpuDriverEpProtocolGuid
   gEfiMmCommunication2ProtocolGuid
 
-[FixedPcd.ARM, FixedPcd.AARCH64]
+[Pcd]
   gArmTokenSpaceGuid.PcdStMmStackSize
 
 #

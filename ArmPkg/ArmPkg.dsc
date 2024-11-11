@@ -121,13 +121,15 @@
   # Add support for GCC stack protector
   # NULL|MdePkg/Library/BaseStackCheckLib/BaseStackCheckLib.inf               # MU_CHANGE
 
-# MU_CHANGE [BEGIN]
-[LibraryClasses.common.MM_STANDALONE]
+[LibraryClasses.common.MM_CORE_STANDALONE]
+  StandaloneMmCoreEntryPoint|ArmPkg/Library/ArmStandaloneMmCoreEntryPoint/ArmStandaloneMmCoreEntryPoint.inf
   HobLib|StandaloneMmPkg/Library/StandaloneMmHobLib/StandaloneMmHobLib.inf
-  MemoryAllocationLib|StandaloneMmPkg/Library/StandaloneMmMemoryAllocationLib/StandaloneMmMemoryAllocationLib.inf
-  MmServicesTableLib|MdePkg/Library/StandaloneMmServicesTableLib/StandaloneMmServicesTableLib.inf
+
+[LibraryClasses.common.MM_STANDALONE]
   StandaloneMmDriverEntryPoint|MdePkg/Library/StandaloneMmDriverEntryPoint/StandaloneMmDriverEntryPoint.inf
-# MU_CHANGE [END]
+  HobLib|StandaloneMmPkg/Library/StandaloneMmHobLib/StandaloneMmHobLib.inf
+  MmServicesTableLib|MdePkg/Library/StandaloneMmServicesTableLib/StandaloneMmServicesTableLib.inf
+  MemoryAllocationLib|StandaloneMmPkg/Library/StandaloneMmMemoryAllocationLib/StandaloneMmMemoryAllocationLib.inf  # MU_CHANGE
 
 [Components.common]
   ArmPkg/Library/ArmCacheMaintenanceLib/ArmCacheMaintenanceLib.inf
@@ -189,14 +191,16 @@
   ArmPkg/Universal/Smbios/ProcessorSubClassDxe/ProcessorSubClassDxe.inf
   ArmPkg/Universal/Smbios/SmbiosMiscDxe/SmbiosMiscDxe.inf
   ArmPkg/Universal/Smbios/OemMiscLibNull/OemMiscLibNull.inf
-  # MU_CHANGE [BEGIN]
-  ArmPkg/Drivers/StandaloneMmCpu/StandaloneMmCpu.inf
-  ArmPkg/Library/StandaloneMmCoreEntryPoint/StandaloneMmCoreEntryPoint.inf
-  # MU_CHANGE [END]
   ArmPkg/Drivers/MmCommunicationPei/MmCommunicationPei.inf
   # MU_CHANGE [BEGIN]
   ArmPkg/Drivers/SmmuDxe/SmmuDxe.inf
   # MU_CHANGE [END]
+
+# [Components.common.MM_CORE_STANALONE] MU_CHANGE
+  ArmPkg/Library/ArmStandaloneMmCoreEntryPoint/ArmStandaloneMmCoreEntryPoint.inf
+
+# [Components.common.MM_STANDALONE] MU_CHANGE
+  ArmPkg/Drivers/StandaloneMmCpu/StandaloneMmCpu.inf
 
 [Components.AARCH64]
   ArmPkg/Drivers/ArmPsciMpServicesDxe/ArmPsciMpServicesDxe.inf
