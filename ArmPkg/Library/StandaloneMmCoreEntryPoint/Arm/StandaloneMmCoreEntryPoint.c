@@ -144,10 +144,10 @@ DelegatedEventLoop (
     FfaEnabled = FeaturePcdGet (PcdFfaEnable);
     if (FfaEnabled) {
       Status = CpuDriverEntryPoint (
-                 EventCompleteSvcArgs->Arg0,
-                 EventCompleteSvcArgs->Arg6,
-                 EventCompleteSvcArgs->Arg3
-                 );
+                  EventCompleteSvcArgs->Arg0,
+                  EventCompleteSvcArgs->Arg6,
+                  EventCompleteSvcArgs->Arg3
+                  );
       if (EFI_ERROR (Status)) {
         DEBUG ((
           DEBUG_ERROR,
@@ -158,10 +158,10 @@ DelegatedEventLoop (
       }
     } else {
       Status = CpuDriverEntryPoint (
-                 EventCompleteSvcArgs->Arg0,
-                 EventCompleteSvcArgs->Arg3,
-                 EventCompleteSvcArgs->Arg1
-                 );
+                  EventCompleteSvcArgs->Arg0,
+                  EventCompleteSvcArgs->Arg3,
+                  EventCompleteSvcArgs->Arg1
+                  );
       if (EFI_ERROR (Status)) {
         DEBUG ((
           DEBUG_ERROR,
@@ -171,38 +171,38 @@ DelegatedEventLoop (
           ));
       }
     }
-  }
 
-  switch (Status) {
-    case EFI_SUCCESS:
-      SvcStatus = ARM_SVC_SPM_RET_SUCCESS;
-      break;
-    case EFI_INVALID_PARAMETER:
-      SvcStatus = ARM_SVC_SPM_RET_INVALID_PARAMS;
-      break;
-    case EFI_ACCESS_DENIED:
-      SvcStatus = ARM_SVC_SPM_RET_DENIED;
-      break;
-    case EFI_OUT_OF_RESOURCES:
-      SvcStatus = ARM_SVC_SPM_RET_NO_MEMORY;
-      break;
-    case EFI_UNSUPPORTED:
-      SvcStatus = ARM_SVC_SPM_RET_NOT_SUPPORTED;
-      break;
-    default:
-      SvcStatus = ARM_SVC_SPM_RET_NOT_SUPPORTED;
-      break;
-  }
+    switch (Status) {
+      case EFI_SUCCESS:
+        SvcStatus = ARM_SVC_SPM_RET_SUCCESS;
+        break;
+      case EFI_INVALID_PARAMETER:
+        SvcStatus = ARM_SVC_SPM_RET_INVALID_PARAMS;
+        break;
+      case EFI_ACCESS_DENIED:
+        SvcStatus = ARM_SVC_SPM_RET_DENIED;
+        break;
+      case EFI_OUT_OF_RESOURCES:
+        SvcStatus = ARM_SVC_SPM_RET_NO_MEMORY;
+        break;
+      case EFI_UNSUPPORTED:
+        SvcStatus = ARM_SVC_SPM_RET_NOT_SUPPORTED;
+        break;
+      default:
+        SvcStatus = ARM_SVC_SPM_RET_NOT_SUPPORTED;
+        break;
+    }
 
-  if (FfaEnabled) {
-    EventCompleteSvcArgs->Arg0 = ARM_SVC_ID_FFA_MSG_SEND_DIRECT_RESP;
-    EventCompleteSvcArgs->Arg1 = 0;
-    EventCompleteSvcArgs->Arg2 = 0;
-    EventCompleteSvcArgs->Arg3 = ARM_SVC_ID_SP_EVENT_COMPLETE;
-    EventCompleteSvcArgs->Arg4 = SvcStatus;
-  } else {
-    EventCompleteSvcArgs->Arg0 = ARM_SVC_ID_SP_EVENT_COMPLETE;
-    EventCompleteSvcArgs->Arg1 = SvcStatus;
+    if (FfaEnabled) {
+      EventCompleteSvcArgs->Arg0 = ARM_SVC_ID_FFA_MSG_SEND_DIRECT_RESP;
+      EventCompleteSvcArgs->Arg1 = 0;
+      EventCompleteSvcArgs->Arg2 = 0;
+      EventCompleteSvcArgs->Arg3 = ARM_SVC_ID_SP_EVENT_COMPLETE;
+      EventCompleteSvcArgs->Arg4 = SvcStatus;
+    } else {
+      EventCompleteSvcArgs->Arg0 = ARM_SVC_ID_SP_EVENT_COMPLETE;
+      EventCompleteSvcArgs->Arg1 = SvcStatus;
+    }
   }
 }
 
