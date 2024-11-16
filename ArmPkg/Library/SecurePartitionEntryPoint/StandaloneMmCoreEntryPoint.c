@@ -330,7 +330,6 @@ ModuleEntryPoint (
   INT32                           Ret;
   UINT32                          SectionHeaderOffset;
   UINT16                          NumberOfSections;
-  VOID                            *HobStart;
   VOID                            *TeData;
   UINTN                           TeDataSize;
   EFI_PHYSICAL_ADDRESS            ImageBase;
@@ -417,12 +416,12 @@ ModuleEntryPoint (
   // Update the global copy now that the image has been relocated.
   mUseOnlyFfaAbis = UseOnlyFfaAbis;
 
-  ProcessLibraryConstructorList (NULL, NULL);
+  ProcessLibraryConstructorList (DtbAddress, NULL);
 
   //
   // Call the MM Core entry point
   //
-  ProcessModuleEntryPointList (HobStart);
+  ProcessModuleEntryPointList (DtbAddress);
 
 finish:
   if (Status == RETURN_UNSUPPORTED) {
