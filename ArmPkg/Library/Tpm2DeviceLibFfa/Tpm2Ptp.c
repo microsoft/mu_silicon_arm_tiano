@@ -208,9 +208,9 @@ PtpCrbTpmCommand (
   //
   MmioWrite32 ((UINTN)&CrbReg->CrbControlStart, PTP_CRB_CONTROL_START);
   Status = Tpm2ServiceStart (
-            TPM2_FFA_START_FUNC_QUALIFIER_COMMAND,
-            0
-            );
+             TPM2_FFA_START_FUNC_QUALIFIER_COMMAND,
+             0
+             );
   if (EFI_ERROR (Status)) {
     goto GoIdle_Exit;
   }
@@ -361,12 +361,12 @@ FfaTpm2SubmitCommand (
   )
 {
   return PtpCrbTpmCommand (
-            (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress),
-            InputParameterBlock,
-            InputParameterBlockSize,
-            OutputParameterBlock,
-            OutputParameterBlockSize
-            );
+           (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmBaseAddress),
+           InputParameterBlock,
+           InputParameterBlockSize,
+           OutputParameterBlock,
+           OutputParameterBlockSize
+           );
 }
 
 /**

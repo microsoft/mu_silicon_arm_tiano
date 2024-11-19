@@ -29,9 +29,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #include "Tpm2DeviceLibFfa.h"
 
-UINT32 mMyId = MAX_UINT32;
-UINT32 mFfaTpm2PartitionId = MAX_UINT32;
-
+UINT32  mMyId               = MAX_UINT32;
+UINT32  mFfaTpm2PartitionId = MAX_UINT32;
 
 /**
   Check the return status from the FF-A call and returns EFI_STATUS
@@ -106,13 +105,13 @@ TranslateTpmReturnStatus (
 STATIC
 VOID
 FfaPrepareGuid (
-  IN OUT EFI_GUID *Guid
+  IN OUT EFI_GUID  *Guid
   )
 {
-  UINT32 TempData[4];
+  UINT32  TempData[4];
 
   if (Guid == NULL) {
-      return;
+    return;
   }
 
   //
@@ -120,9 +119,9 @@ FfaPrepareGuid (
   //
 
   Guid->Data2 += Guid->Data3;
-  Guid->Data3 = Guid->Data2 - Guid->Data3;
-  Guid->Data2 = Guid->Data2 - Guid->Data3;
-  CopyMem (TempData, Guid, sizeof(EFI_GUID));
+  Guid->Data3  = Guid->Data2 - Guid->Data3;
+  Guid->Data2  = Guid->Data2 - Guid->Data3;
+  CopyMem (TempData, Guid, sizeof (EFI_GUID));
 
   //
   // Swap the bytes for TempData[2] and TempData[3].
@@ -130,7 +129,7 @@ FfaPrepareGuid (
 
   TempData[2] = SwapBytes32 (TempData[2]);
   TempData[3] = SwapBytes32 (TempData[3]);
-  CopyMem (Guid, TempData, sizeof(EFI_GUID));
+  CopyMem (Guid, TempData, sizeof (EFI_GUID));
 }
 
 /**
@@ -146,14 +145,15 @@ VerifyFfaVersion (
   VOID
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   ZeroMem (&FfaConduitArgs, sizeof (FFA_CONDUIT_ARGS));
   FfaConduitArgs.Arg0 = ARM_FID_FFA_VERSION;
-  FfaConduitArgs.Arg1 =ARM_FFA_CREATE_VERSION (
-                        ARM_FFA_MAJOR_VERSION,
-                        ARM_FFA_MINOR_VERSION);
+  FfaConduitArgs.Arg1 = ARM_FFA_CREATE_VERSION (
+                          ARM_FFA_MAJOR_VERSION,
+                          ARM_FFA_MINOR_VERSION
+                          );
 
   Status = ArmCallFfaConduit (&FfaConduitArgs);
   if (EFI_ERROR (Status)) {
@@ -161,7 +161,8 @@ VerifyFfaVersion (
   }
 
   if (((FfaConduitArgs.Arg0 >> ARM_FFA_MAJOR_VERSION_SHIFT) != ARM_FFA_MAJOR_VERSION) ||
-      ((FfaConduitArgs.Arg0 & ARM_FFA_MINOR_VERSION_MASK) < ARM_FFA_MINOR_VERSION)) {
+      ((FfaConduitArgs.Arg0 & ARM_FFA_MINOR_VERSION_MASK) < ARM_FFA_MINOR_VERSION))
+  {
     Status = EFI_UNSUPPORTED;
     goto Exit;
   }
@@ -174,11 +175,11 @@ Exit:
 
 EFI_STATUS
 GetMyId (
-  OUT UINT16 *PartitionId
+  OUT UINT16  *PartitionId
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   if (PartitionId == NULL) {
     Status = EFI_INVALID_PARAMETER;
@@ -187,7 +188,7 @@ GetMyId (
 
   if (mMyId != MAX_UINT32) {
     *PartitionId = mMyId;
-    Status = EFI_SUCCESS;
+    Status       = EFI_SUCCESS;
     goto Exit;
   }
 
@@ -200,23 +201,23 @@ GetMyId (
   }
 
   *PartitionId = (UINT16)(FfaConduitArgs.Arg2 & MAX_UINT16);
-  mMyId = *PartitionId;
+  mMyId        = *PartitionId;
 
 Exit:
   return Status;
 }
 
 EFI_STATUS
-GetTpmSerivcePartitionId (
-  OUT UINT32 *PartitionId
+GetTpmServicePartitionId (
+  OUT UINT32  *PartitionId
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
-  EFI_GUID  TpmServiceGuid;
-  UINT16 CurrentIndex;
-  UINT16 LastIndex;
-  EFI_FFA_PART_INFO_DESC *TpmPartInfo;
+  EFI_STATUS              Status;
+  FFA_CONDUIT_ARGS        FfaConduitArgs;
+  EFI_GUID                TpmServiceGuid;
+  UINT16                  CurrentIndex;
+  UINT16                  LastIndex;
+  EFI_FFA_PART_INFO_DESC  *TpmPartInfo;
 
   if (PartitionId == NULL) {
     Status = EFI_INVALID_PARAMETER;
@@ -225,7 +226,7 @@ GetTpmSerivcePartitionId (
 
   if (mFfaTpm2PartitionId != MAX_UINT32) {
     *PartitionId = mFfaTpm2PartitionId;
-    Status = EFI_SUCCESS;
+    Status       = EFI_SUCCESS;
     goto Exit;
   }
 
@@ -242,7 +243,7 @@ GetTpmSerivcePartitionId (
     goto Exit;
   }
 
-  LastIndex = (UINT16)(FfaConduitArgs.Arg2 & MAX_UINT16);
+  LastIndex    = (UINT16)(FfaConduitArgs.Arg2 & MAX_UINT16);
   CurrentIndex = (UINT16)((FfaConduitArgs.Arg2 >> 16) & MAX_UINT16);
 
   // Only allow one TPM service partition.
@@ -252,9 +253,9 @@ GetTpmSerivcePartitionId (
     goto Exit;
   }
 
-  TpmPartInfo = (EFI_FFA_PART_INFO_DESC *)(&FfaConduitArgs.Arg3);
+  TpmPartInfo         = (EFI_FFA_PART_INFO_DESC *)(&FfaConduitArgs.Arg3);
   mFfaTpm2PartitionId = TpmPartInfo->PartitionId;
-  *PartitionId = mFfaTpm2PartitionId;
+  *PartitionId        = mFfaTpm2PartitionId;
 
   Status = EFI_SUCCESS;
 
@@ -281,11 +282,11 @@ Exit:
 **/
 EFI_STATUS
 Tpm2ServiceFuncCallReq2 (
-  IN FFA_CONDUIT_ARGS *FfaConduitArgs
+  IN FFA_CONDUIT_ARGS  *FfaConduitArgs
   )
 {
-  EFI_STATUS Status;
-  EFI_GUID  TpmServiceGuid;
+  EFI_STATUS  Status;
+  EFI_GUID    TpmServiceGuid;
 
   if (FfaConduitArgs == NULL) {
     Status = EFI_INVALID_PARAMETER;
@@ -293,14 +294,14 @@ Tpm2ServiceFuncCallReq2 (
   }
 
   if (mMyId == MAX_UINT32) {
-    Status = GetMyId ((UINT16*)&mMyId);
+    Status = GetMyId ((UINT16 *)&mMyId);
     if (EFI_ERROR (Status)) {
       goto Exit;
     }
   }
 
   if (mFfaTpm2PartitionId == MAX_UINT32) {
-    Status = GetTpmSerivcePartitionId (&mFfaTpm2PartitionId);
+    Status = GetTpmServicePartitionId (&mFfaTpm2PartitionId);
     if (EFI_ERROR (Status)) {
       goto Exit;
     }
@@ -331,11 +332,11 @@ Exit:
 
 EFI_STATUS
 Tpm2GetInterfaceVersion (
-  OUT UINT32 *Version
+  OUT UINT32  *Version
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   if (Version == NULL) {
     Status = EFI_INVALID_PARAMETER;
@@ -350,7 +351,7 @@ Tpm2GetInterfaceVersion (
     goto Exit;
   }
 
-  Status = TranslateTpmReturnStatus(FfaConduitArgs.Arg4);
+  Status = TranslateTpmReturnStatus (FfaConduitArgs.Arg4);
 
   if (!EFI_ERROR (Status)) {
     *Version = FfaConduitArgs.Arg5;
@@ -373,11 +374,11 @@ Exit:
 */
 EFI_STATUS
 Tpm2GetFeatureInfo (
-  OUT UINT32 *FeatureInfo
+  OUT UINT32  *FeatureInfo
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   if (FeatureInfo == NULL) {
     Status = EFI_INVALID_PARAMETER;
@@ -393,7 +394,7 @@ Tpm2GetFeatureInfo (
     goto Exit;
   }
 
-  Status = TranslateTpmReturnStatus(FfaConduitArgs.Arg4);
+  Status = TranslateTpmReturnStatus (FfaConduitArgs.Arg4);
 
 Exit:
   return Status;
@@ -401,12 +402,12 @@ Exit:
 
 EFI_STATUS
 Tpm2ServiceStart (
-  IN UINT64 FuncQualifier,
-  IN UINT64 LocalityQualifier
+  IN UINT64  FuncQualifier,
+  IN UINT64  LocalityQualifier
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   ZeroMem (&FfaConduitArgs, sizeof (FFA_CONDUIT_ARGS));
   FfaConduitArgs.Arg4 = TPM2_FFA_START;
@@ -418,7 +419,7 @@ Tpm2ServiceStart (
     goto Exit;
   }
 
-  Status = TranslateTpmReturnStatus(FfaConduitArgs.Arg4);
+  Status = TranslateTpmReturnStatus (FfaConduitArgs.Arg4);
 
 Exit:
   return Status;
@@ -426,13 +427,13 @@ Exit:
 
 EFI_STATUS
 Tpm2RegisterNotification (
-  IN BOOLEAN NotificationTypeQualifier,
-  IN UINT16 vCpuId,
-  IN UINT64 NotificationId
+  IN BOOLEAN  NotificationTypeQualifier,
+  IN UINT16   vCpuId,
+  IN UINT64   NotificationId
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   ZeroMem (&FfaConduitArgs, sizeof (FFA_CONDUIT_ARGS));
   FfaConduitArgs.Arg4 = TPM2_FFA_REGISTER_FOR_NOTIFICATION;
@@ -444,7 +445,7 @@ Tpm2RegisterNotification (
     goto Exit;
   }
 
-  Status = TranslateTpmReturnStatus(FfaConduitArgs.Arg4);
+  Status = TranslateTpmReturnStatus (FfaConduitArgs.Arg4);
 
 Exit:
   return Status;
@@ -455,8 +456,8 @@ Tpm2UnregisterNotification (
   VOID
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   ZeroMem (&FfaConduitArgs, sizeof (FFA_CONDUIT_ARGS));
   FfaConduitArgs.Arg4 = TPM2_FFA_UNREGISTER_FROM_NOTIFICATION;
@@ -466,7 +467,7 @@ Tpm2UnregisterNotification (
     goto Exit;
   }
 
-  Status = TranslateTpmReturnStatus(FfaConduitArgs.Arg4);
+  Status = TranslateTpmReturnStatus (FfaConduitArgs.Arg4);
 
 Exit:
   return Status;
@@ -477,8 +478,8 @@ Tpm2FinishNotified (
   VOID
   )
 {
-  EFI_STATUS Status;
-  FFA_CONDUIT_ARGS FfaConduitArgs;
+  EFI_STATUS        Status;
+  FFA_CONDUIT_ARGS  FfaConduitArgs;
 
   ZeroMem (&FfaConduitArgs, sizeof (FFA_CONDUIT_ARGS));
   FfaConduitArgs.Arg4 = TPM2_FFA_FINISH_NOTIFIED;
@@ -488,7 +489,7 @@ Tpm2FinishNotified (
     goto Exit;
   }
 
-  Status = TranslateTpmReturnStatus(FfaConduitArgs.Arg4);
+  Status = TranslateTpmReturnStatus (FfaConduitArgs.Arg4);
 
 Exit:
   return Status;

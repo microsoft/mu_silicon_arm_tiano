@@ -178,7 +178,8 @@ Tpm2DeviceLibFfaConstructor (
   VOID
   )
 {
-  EFI_STATUS Status;
+  EFI_STATUS  Status;
+
   mActiveTpmInterfaceType = 0xFF;
   mCRBIdleByPass          = 0xFF;
 

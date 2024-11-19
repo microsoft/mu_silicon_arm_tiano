@@ -29,7 +29,7 @@ ArmCallFfaConduit (
   IN OUT FFA_CONDUIT_ARGS  *Args
   )
 {
-  ARM_SVC_ARGS SvcArgs;
+  ARM_SVC_ARGS  SvcArgs;
 
   if (Args == NULL) {
     return EFI_INVALID_PARAMETER;

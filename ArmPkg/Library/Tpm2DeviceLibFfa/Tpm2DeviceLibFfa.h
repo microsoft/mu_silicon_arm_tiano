@@ -49,14 +49,14 @@
 
 */
 typedef struct {
-  UINT64  Arg0;
-  UINT64  Arg1;
-  UINT64  Arg2;
-  UINT64  Arg3;
-  UINT64  Arg4;
-  UINT64  Arg5;
-  UINT64  Arg6;
-  UINT64  Arg7;
+  UINT64    Arg0;
+  UINT64    Arg1;
+  UINT64    Arg2;
+  UINT64    Arg3;
+  UINT64    Arg4;
+  UINT64    Arg5;
+  UINT64    Arg6;
+  UINT64    Arg7;
 } FFA_CONDUIT_ARGS;
 
 STATIC_ASSERT (sizeof (FFA_CONDUIT_ARGS) <= sizeof (ARM_SMC_ARGS), "FFA_CONDUIT_ARGS size mismatch");
@@ -95,7 +95,7 @@ VerifyFfaVersion (
 
 EFI_STATUS
 Tpm2GetInterfaceVersion (
-  OUT UINT32 *Version
+  OUT UINT32  *Version
   );
 
 /*
@@ -111,20 +111,20 @@ Tpm2GetInterfaceVersion (
 */
 EFI_STATUS
 Tpm2GetFeatureInfo (
-  OUT UINT32 *FeatureInfo
+  OUT UINT32  *FeatureInfo
   );
 
 EFI_STATUS
 Tpm2ServiceStart (
-  IN UINT64 FuncQualifier,
-  IN UINT64 LocalityQualifier
+  IN UINT64  FuncQualifier,
+  IN UINT64  LocalityQualifier
   );
 
 EFI_STATUS
 Tpm2RegisterNotification (
-  IN BOOLEAN NotificationTypeQualifier,
-  IN UINT16 vCpuId,
-  IN UINT64 NotificationId
+  IN BOOLEAN  NotificationTypeQualifier,
+  IN UINT16   vCpuId,
+  IN UINT64   NotificationId
   );
 
 EFI_STATUS
