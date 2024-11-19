@@ -146,7 +146,6 @@ UpdateMmFoundationPeCoffPermissions (
           ImageContext->ImageAddress
           ));
       }
-
     } else {
       DEBUG ((
         DEBUG_INFO,

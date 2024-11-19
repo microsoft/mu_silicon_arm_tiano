@@ -26,7 +26,7 @@
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   StandaloneMmPkg/StandaloneMmPkg.dec
-  ArmPkg/ArmPkg.dec   # MU_CHANGE - Add ArmPkg for access to StandlaloneMmCpu.h
+  ArmPkg/ArmPkg.dec   # MU_CHANGE - Add ArmPkg for access to StandaloneMmCpu.h
 
 [LibraryClasses]
   BaseMemoryLib

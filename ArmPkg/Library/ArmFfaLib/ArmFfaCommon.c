@@ -59,20 +59,20 @@ STATIC
 EFIAPI
 VOID
 ConvertEfiGuidToUuid (
-  IN   EFI_GUID *Guid,
-  OUT  UINT64   *Uuid
-)
+  IN   EFI_GUID  *Guid,
+  OUT  UINT64    *Uuid
+  )
 {
-  UINT32 *Data32;
-  UINT16 *Data16;
+  UINT32  *Data32;
+  UINT16  *Data16;
 
   if ((Guid == NULL) || (Uuid == NULL)) {
     return;
   }
 
   CopyGuid ((EFI_GUID *)Uuid, Guid);
-  Data32 = (UINT32 *)Uuid;
-  Data16 = (UINT16 *) &Data32[1];
+  Data32    = (UINT32 *)Uuid;
+  Data16    = (UINT16 *)&Data32[1];
   Data32[1] = SwapBytes32 (Data32[1]);
   Data16[0] = SwapBytes16 (Data16[0]);
   Data16[1] = SwapBytes16 (Data16[1]);
@@ -532,7 +532,8 @@ ArmFfaLibPartitionInfoGet (
   } else {
     ZeroMem (Uuid, sizeof (EFI_GUID));
   }
-  SmcUuid = (UINT32 *) Uuid;
+
+  SmcUuid = (UINT32 *)Uuid;
 
   ZeroMem (&FfaArgs, sizeof (ARM_FFA_ARGS));
 

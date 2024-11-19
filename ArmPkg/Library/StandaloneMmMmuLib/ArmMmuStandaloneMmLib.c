@@ -261,6 +261,7 @@ ArmSetMemoryRegionNoAccess (
     } else {
       CodePermission = ARM_SPM_MM_SET_MEM_ATTR_DATA_PERM_NO_ACCESS << ARM_SPM_MM_SET_MEM_ATTR_CODE_PERM_SHIFT;
     }
+
     return RequestMemoryPermissionChange (
              UseFfaAbis,
              BaseAddress,
@@ -293,6 +294,7 @@ ArmClearMemoryRegionNoAccess (
     } else {
       CodePermission = ARM_SPM_MM_SET_MEM_ATTR_DATA_PERM_NO_ACCESS << ARM_SPM_MM_SET_MEM_ATTR_CODE_PERM_SHIFT;
     }
+
     return RequestMemoryPermissionChange (
              UseFfaAbis,
              BaseAddress,
