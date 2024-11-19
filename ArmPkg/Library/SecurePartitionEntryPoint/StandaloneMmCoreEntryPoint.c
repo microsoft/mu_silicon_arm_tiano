@@ -36,20 +36,20 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #define SPM_MINOR_VER_MASK   0x0000FFFF
 #define SPM_MAJOR_VER_SHIFT  16
 
-#define SPM_MAJOR_VER		  0
-#define SPM_MINOR_VER		  1
+#define SPM_MAJOR_VER  0
+#define SPM_MINOR_VER  1
 
 #define BOOT_PAYLOAD_VERSION  1
 
-#define FFA_PAGE_4K 0
-#define FFA_PAGE_16K 1
-#define FFA_PAGE_64K 2
+#define FFA_PAGE_4K   0
+#define FFA_PAGE_16K  1
+#define FFA_PAGE_64K  2
 
 // Local variable to help Standalone MM Core decide whether FF-A ABIs can be
 // used for all communication. This variable is usable only after the StMM image
 // has been relocated and all image section permissions have been correctly
 // updated.
-STATIC BOOLEAN mUseOnlyFfaAbis = FALSE;
+STATIC BOOLEAN  mUseOnlyFfaAbis = FALSE;
 
 /**
   This structure is used to stage boot information required to initialize the
@@ -59,10 +59,10 @@ STATIC BOOLEAN mUseOnlyFfaAbis = FALSE;
   be passed by the SPMC for SP initialization.
 **/
 typedef struct {
-  UINT64                        SpMemBase;
-  UINT64                        SpMemSize;
-  UINT64                        SpHeapBase;
-  UINT64                        SpHeapSize;
+  UINT64    SpMemBase;
+  UINT64    SpMemSize;
+  UINT64    SpHeapBase;
+  UINT64    SpHeapSize;
 } SP_BOOT_INFO;
 
 /**
@@ -83,11 +83,13 @@ typedef struct {
 **/
 STATIC
 EFI_STATUS
-CheckFfaCompatibility (BOOLEAN *UseOnlyFfaAbis)
+CheckFfaCompatibility (
+  BOOLEAN  *UseOnlyFfaAbis
+  )
 {
-  UINT16       SpmcMajorVer;
-  UINT16       SpmcMinorVer;
-  EFI_STATUS   Status;
+  UINT16      SpmcMajorVer;
+  UINT16      SpmcMinorVer;
+  EFI_STATUS  Status;
 
   Status = ArmFfaLibVersion (
              ARM_FFA_MAJOR_VERSION,
@@ -121,21 +123,21 @@ CheckFfaCompatibility (BOOLEAN *UseOnlyFfaAbis)
 STATIC
 EFI_STATUS
 ReadProperty32 (
-    IN  VOID   * DtbAddress,
-    IN  INT32    Offset,
-    IN  CHAR8  * Property,
-    OUT UINT32 * Value
-    )
+  IN  VOID    *DtbAddress,
+  IN  INT32   Offset,
+  IN  CHAR8   *Property,
+  OUT UINT32  *Value
+  )
 {
-  CONST UINT32 * Property32;
+  CONST UINT32  *Property32;
 
   Property32 =  fdt_getprop (DtbAddress, Offset, Property, NULL);
   if (Property32 == NULL) {
     DEBUG ((
-          DEBUG_ERROR,
-          "%s: Missing in FF-A boot information manifest\n",
-          Property
-          ));
+      DEBUG_ERROR,
+      "%s: Missing in FF-A boot information manifest\n",
+      Property
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -147,21 +149,21 @@ ReadProperty32 (
 STATIC
 EFI_STATUS
 ReadProperty64 (
-    IN  VOID   * DtbAddress,
-    IN  INT32    Offset,
-    IN  CHAR8  * Property,
-    OUT UINT64 * Value
-    )
+  IN  VOID    *DtbAddress,
+  IN  INT32   Offset,
+  IN  CHAR8   *Property,
+  OUT UINT64  *Value
+  )
 {
-  CONST UINT64 * Property64;
+  CONST UINT64  *Property64;
 
   Property64 =  fdt_getprop (DtbAddress, Offset, Property, NULL);
   if (Property64 == NULL) {
     DEBUG ((
-          DEBUG_ERROR,
-          "%s: Missing in FF-A boot information manifest\n",
-          Property
-          ));
+      DEBUG_ERROR,
+      "%s: Missing in FF-A boot information manifest\n",
+      Property
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -187,13 +189,13 @@ EFI_STATUS
 PopulateBootinformation (
   IN  OUT  SP_BOOT_INFO  *SpBootInfo,
   IN       VOID          *DtbAddress
-)
+  )
 {
-  INTN Status;
-  INT32 Offset;
-  UINT64 MemBase;
-  UINT32 EntryPointOffset;
-  UINT32 PageSize;
+  INTN    Status;
+  INT32   Offset;
+  UINT64  MemBase;
+  UINT32  EntryPointOffset;
+  UINT32  PageSize;
 
   Offset = fdt_node_offset_by_compatible (DtbAddress, -1, "arm,ffa-manifest-1.0");
 
@@ -204,32 +206,35 @@ PopulateBootinformation (
   }
 
   Status = ReadProperty64 (
-      DtbAddress,
-      Offset,
-      "load-address",
-      &MemBase);
+             DtbAddress,
+             Offset,
+             "load-address",
+             &MemBase
+             );
   if (Status != EFI_SUCCESS) {
     return Status;
   }
 
-  Status = ReadProperty32(
-      DtbAddress,
-      Offset,
-      "entrypoint-offset",
-      &EntryPointOffset);
+  Status = ReadProperty32 (
+             DtbAddress,
+             Offset,
+             "entrypoint-offset",
+             &EntryPointOffset
+             );
 
   SpBootInfo->SpMemBase = MemBase + EntryPointOffset;
   DEBUG ((DEBUG_INFO, "sp mem base  = 0x%llx\n", SpBootInfo->SpMemBase));
 
   Status = ReadProperty64 (
-      DtbAddress,
-      Offset,
-      "image-size",
-      &SpBootInfo->SpMemSize
-      );
+             DtbAddress,
+             Offset,
+             "image-size",
+             &SpBootInfo->SpMemSize
+             );
   if (Status != EFI_SUCCESS) {
     return Status;
   }
+
   DEBUG ((DEBUG_INFO, "sp mem size  = 0x%llx\n", SpBootInfo->SpMemSize));
 
   Status = ReadProperty32 (DtbAddress, Offset, "xlat-granule", &PageSize);
@@ -255,7 +260,7 @@ PopulateBootinformation (
       DEBUG ((DEBUG_ERROR, "Invalid page type = %lu\n", PageSize));
       return EFI_INVALID_PARAMETER;
       break;
-  };
+  }
 
   DEBUG ((DEBUG_INFO, "Page Size = 0x%lx\n", PageSize));
 
@@ -267,12 +272,12 @@ PopulateBootinformation (
 STATIC
 EFI_STATUS
 GetSpManifest (
-  IN  OUT     UINT64 **SpManifestAddr,
+  IN  OUT     UINT64  **SpManifestAddr,
   IN          VOID    *BootInfoAddr
   )
 {
-  EFI_FFA_BOOT_INFO_HEADER *FfaBootInfo;
-  EFI_FFA_BOOT_INFO_DESC   *FfaBootInfoDesc;
+  EFI_FFA_BOOT_INFO_HEADER  *FfaBootInfo;
+  EFI_FFA_BOOT_INFO_DESC    *FfaBootInfoDesc;
 
   // Paranoid check to avoid an inadvertent NULL pointer dereference.
   if (BootInfoAddr == NULL) {
@@ -281,24 +286,25 @@ GetSpManifest (
   }
 
   // Check boot information magic number.
-  FfaBootInfo = (EFI_FFA_BOOT_INFO_HEADER *) BootInfoAddr;
+  FfaBootInfo = (EFI_FFA_BOOT_INFO_HEADER *)BootInfoAddr;
   if (FfaBootInfo->Magic != FFA_BOOT_INFO_SIGNATURE) {
     DEBUG ((
-          DEBUG_ERROR, "FfaBootInfo Magic no. is invalid 0x%ux\n",
-          FfaBootInfo->Magic
-          ));
+      DEBUG_ERROR,
+      "FfaBootInfo Magic no. is invalid 0x%ux\n",
+      FfaBootInfo->Magic
+      ));
     return EFI_INVALID_PARAMETER;
   }
 
-
   FfaBootInfoDesc =
     (EFI_FFA_BOOT_INFO_DESC *)((UINT8 *)BootInfoAddr +
-        FfaBootInfo->OffsetBootInfoDesc);
+                               FfaBootInfo->OffsetBootInfoDesc);
 
   if (FfaBootInfoDesc->Type ==
-      (FFA_BOOT_INFO_TYPE(FFA_BOOT_INFO_TYPE_STD) |
-      FFA_BOOT_INFO_TYPE_ID(FFA_BOOT_INFO_TYPE_ID_FDT))) {
-    *SpManifestAddr = (UINT64 *) FfaBootInfoDesc->Content;
+      (FFA_BOOT_INFO_TYPE (FFA_BOOT_INFO_TYPE_STD) |
+       FFA_BOOT_INFO_TYPE_ID (FFA_BOOT_INFO_TYPE_ID_FDT)))
+  {
+    *SpManifestAddr = (UINT64 *)FfaBootInfoDesc->Content;
     return EFI_SUCCESS;
   }
 
@@ -324,19 +330,19 @@ ModuleEntryPoint (
   IN UINT64  cookie2
   )
 {
-  PE_COFF_LOADER_IMAGE_CONTEXT    ImageContext;
-  SP_BOOT_INFO                    SpBootInfo = {0};
-  EFI_STATUS                      Status;
-  INT32                           Ret;
-  UINT32                          SectionHeaderOffset;
-  UINT16                          NumberOfSections;
-  VOID                            *HobStart;
-  VOID                            *TeData;
-  UINTN                           TeDataSize;
-  EFI_PHYSICAL_ADDRESS            ImageBase;
-  UINT64                          *DtbAddress;
-  EFI_FIRMWARE_VOLUME_HEADER      *BfvAddress;
-  BOOLEAN                         UseOnlyFfaAbis = FALSE;
+  PE_COFF_LOADER_IMAGE_CONTEXT  ImageContext;
+  SP_BOOT_INFO                  SpBootInfo = { 0 };
+  EFI_STATUS                    Status;
+  INT32                         Ret;
+  UINT32                        SectionHeaderOffset;
+  UINT16                        NumberOfSections;
+  VOID                          *HobStart;
+  VOID                          *TeData;
+  UINTN                         TeDataSize;
+  EFI_PHYSICAL_ADDRESS          ImageBase;
+  UINT64                        *DtbAddress;
+  EFI_FIRMWARE_VOLUME_HEADER    *BfvAddress;
+  BOOLEAN                       UseOnlyFfaAbis = FALSE;
 
   Status = CheckFfaCompatibility (&UseOnlyFfaAbis);
   if (EFI_ERROR (Status) || !UseOnlyFfaAbis) {
@@ -351,13 +357,13 @@ ModuleEntryPoint (
   }
 
   // Extract boot information from the DTB
-  Status = PopulateBootinformation (&SpBootInfo, (VOID *) DtbAddress);
+  Status = PopulateBootinformation (&SpBootInfo, (VOID *)DtbAddress);
   if (Status != EFI_SUCCESS) {
     goto finish;
   }
 
   // Stash the base address of the boot firmware volume
-  BfvAddress = (EFI_FIRMWARE_VOLUME_HEADER *) SpBootInfo.SpMemBase;
+  BfvAddress = (EFI_FIRMWARE_VOLUME_HEADER *)SpBootInfo.SpMemBase;
 
   // Locate PE/COFF File information for the Standalone MM core module
   Status = LocateStandaloneMmCorePeCoffData (BfvAddress, &TeData, &TeDataSize);
