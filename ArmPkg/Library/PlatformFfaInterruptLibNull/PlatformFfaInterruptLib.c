@@ -20,8 +20,8 @@
 VOID
 EFIAPI
 SecurePartitionInterruptHandler (
-  UINT32 InterruptId
+  UINT32  InterruptId
   )
 {
-	DEBUG ((DEBUG_INFO, "%a Received interrupt ID 0x%x\n", __func__, InterruptId));
+  DEBUG ((DEBUG_INFO, "%a Received interrupt ID 0x%x\n", __func__, InterruptId));
 }

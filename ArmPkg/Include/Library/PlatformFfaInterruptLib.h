@@ -18,7 +18,7 @@
 VOID
 EFIAPI
 SecurePartitionInterruptHandler (
-  UINT32 InterruptId
+  UINT32  InterruptId
   );
 
 #endif /* PLATFORM_FF_A_INTERRUPT_LIB_H_ */

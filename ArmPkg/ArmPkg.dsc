@@ -142,6 +142,7 @@
   ArmPkg/Library/ArmExceptionLib/ArmExceptionLib.inf
   ArmPkg/Library/ArmExceptionLib/ArmRelocateExceptionLib.inf
   ArmPkg/Library/ArmFfaLibEx/ArmFfaLibEx.inf
+  ArmPkg/Library/PlatformFfaInterruptLibNull/PlatformFfaInterruptLib.inf
 
   ArmPkg/Drivers/CpuDxe/CpuDxe.inf
   ArmPkg/Drivers/CpuPei/CpuPei.inf
