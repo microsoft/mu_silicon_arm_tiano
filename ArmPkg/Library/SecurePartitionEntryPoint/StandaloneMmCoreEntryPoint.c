@@ -20,11 +20,11 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/ArmMmuLib.h>
 #include <Library/ArmSvcLib.h>
 #include <Library/DebugLib.h>
-#include <Library/HobLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/SerialPortLib.h>
 #include <Library/ArmStandaloneMmMmuLib.h>
+#include <Library/SecurePartitionServicesTableLib.h>
 #include <Library/PcdLib.h>
 
 #include <IndustryStandard/ArmStdSmc.h>
@@ -32,24 +32,14 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <IndustryStandard/ArmFfaSvc.h>
 #include <IndustryStandard/ArmFfaBootInfo.h>
 
-#define SPM_MAJOR_VER_MASK   0xFFFF0000
-#define SPM_MINOR_VER_MASK   0x0000FFFF
-#define SPM_MAJOR_VER_SHIFT  16
-
-#define SPM_MAJOR_VER  0
-#define SPM_MINOR_VER  1
-
-#define BOOT_PAYLOAD_VERSION  1
-
 #define FFA_PAGE_4K   0
 #define FFA_PAGE_16K  1
 #define FFA_PAGE_64K  2
 
-// Local variable to help Standalone MM Core decide whether FF-A ABIs can be
-// used for all communication. This variable is usable only after the StMM image
-// has been relocated and all image section permissions have been correctly
-// updated.
-STATIC BOOLEAN  mUseOnlyFfaAbis = FALSE;
+// Materialize the Secure Partition Services Table
+SECURE_PARTITION_SERVICES_TABLE  mSpst = {
+  .FDTAddress = NULL
+};
 
 /**
   This structure is used to stage boot information required to initialize the
@@ -336,7 +326,6 @@ ModuleEntryPoint (
   INT32                         Ret;
   UINT32                        SectionHeaderOffset;
   UINT16                        NumberOfSections;
-  VOID                          *HobStart;
   VOID                          *TeData;
   UINTN                         TeDataSize;
   EFI_PHYSICAL_ADDRESS          ImageBase;
@@ -411,6 +400,10 @@ ModuleEntryPoint (
     goto finish;
   }
 
+  // Now that we can update globals, initialize the SPST for other libraries
+  mSpst.FDTAddress = DtbAddress;
+  gSpst            = &mSpst;
+
   if (ImageContext.ImageAddress != (UINTN)TeData) {
     ImageContext.ImageAddress = (UINTN)TeData;
     ArmSetMemoryRegionNoExec (ImageBase, SIZE_4KB);
@@ -420,15 +413,14 @@ ModuleEntryPoint (
     ASSERT_EFI_ERROR (Status);
   }
 
-  // Update the global copy now that the image has been relocated.
-  mUseOnlyFfaAbis = UseOnlyFfaAbis;
+  ProcessLibraryConstructorList (NULL, NULL);
 
   ProcessLibraryConstructorList (NULL, NULL);
 
   //
   // Call the MM Core entry point
   //
-  ProcessModuleEntryPointList (HobStart);
+  ProcessModuleEntryPointList (NULL);
 
 finish:
   if (Status == RETURN_UNSUPPORTED) {
