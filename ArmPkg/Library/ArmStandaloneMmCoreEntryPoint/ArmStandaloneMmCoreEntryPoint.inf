@@ -64,6 +64,9 @@
 [Pcd]
   gArmTokenSpaceGuid.PcdStMmStackSize
 
+[FixedPcd]
+  gArmTokenSpaceGuid.PcdSxcUse18Registers # MU_CHANGE: Add 18 registers support
+
 #
 # This configuration fails for CLANGPDB, which does not support PIE in the GCC
 # sense. Such however is required for ARM family StandaloneMmCore
