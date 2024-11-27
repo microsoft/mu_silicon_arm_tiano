@@ -1,0 +1,39 @@
+## @file
+# Secure Partition System Table library implementation.
+#
+# Copyright (c) Microsoft Corporation.
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = SecurePartitionSystemTableLib
+  FILE_GUID                      = 5118C38F-D97D-4FF8-8B44-971273B07342
+  MODULE_TYPE                    = MM_CORE_STANDALONE
+  VERSION_STRING                 = 1.0
+  PI_SPECIFICATION_VERSION       = 0x00010032
+  LIBRARY_CLASS                  = SecurePartitionSystemTableLib|MM_CORE_STANDALONE
+
+#
+#  VALID_ARCHITECTURES           = AARCH64
+#
+
+[Sources]
+  SecurePartitionServicesTableLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+
+#
+# This configuration fails for CLANGPDB, which does not support PIE in the GCC
+# sense. Such however is required for ARM family StandaloneMmCore
+# self-relocation, and thus the CLANGPDB toolchain is unsupported for ARM and
+# AARCH64 for this module.
+#
+[BuildOptions]
+  GCC:*_*_ARM_CC_FLAGS = -fpie
+  GCC:*_*_AARCH64_CC_FLAGS = -fpie
