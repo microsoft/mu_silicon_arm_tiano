@@ -38,6 +38,7 @@
   DebugLib
   FdtLib
   ArmSvcLib
+  SecurePartitionServicesTableLib
 
 #
 # This configuration fails for CLANGPDB, which does not support PIE in the GCC
