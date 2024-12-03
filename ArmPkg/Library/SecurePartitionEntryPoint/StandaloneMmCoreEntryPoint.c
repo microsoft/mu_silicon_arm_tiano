@@ -415,8 +415,6 @@ ModuleEntryPoint (
 
   ProcessLibraryConstructorList (NULL, NULL);
 
-  ProcessLibraryConstructorList (NULL, NULL);
-
   //
   // Call the MM Core entry point
   //
