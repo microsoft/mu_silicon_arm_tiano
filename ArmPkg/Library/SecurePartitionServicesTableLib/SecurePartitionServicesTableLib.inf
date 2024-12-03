@@ -10,12 +10,12 @@
 
 [Defines]
   INF_VERSION                    = 0x0001001A
-  BASE_NAME                      = SecurePartitionServiceTableLib
+  BASE_NAME                      = SecurePartitionServicesTableLib
   FILE_GUID                      = 5118C38F-D97D-4FF8-8B44-971273B07342
   MODULE_TYPE                    = MM_CORE_STANDALONE
   VERSION_STRING                 = 1.0
   PI_SPECIFICATION_VERSION       = 0x00010032
-  LIBRARY_CLASS                  = SecurePartitionServiceTableLib|MM_CORE_STANDALONE
+  LIBRARY_CLASS                  = SecurePartitionServicesTableLib|MM_CORE_STANDALONE
 
 #
 #  VALID_ARCHITECTURES           = AARCH64
