@@ -210,6 +210,8 @@
 # [Components.common.MM_STANDALONE] MU_CHANGE
   ArmPkg/Drivers/StandaloneMmCpu/StandaloneMmCpu.inf
 
+  ArmPkg/Library/ArmArchTimerLibEx/ArmArchTimerLibEx.inf
+
 [Components.AARCH64]
   ArmPkg/Drivers/ArmPsciMpServicesDxe/ArmPsciMpServicesDxe.inf
   ArmPkg/Drivers/MmCommunicationDxe/MmCommunication.inf
