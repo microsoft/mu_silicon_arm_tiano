@@ -45,3 +45,4 @@
 [Pcd.common]
   gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress            ## CONSUMES
   gEfiSecurityPkgTokenSpaceGuid.PcdActiveTpmInterfaceType    ## PRODUCES
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpmServiceFfaPartitionId  ## SOMETIMES_PRODUCES

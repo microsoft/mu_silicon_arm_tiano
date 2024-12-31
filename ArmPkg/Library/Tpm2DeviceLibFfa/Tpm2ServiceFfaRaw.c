@@ -230,6 +230,14 @@ GetTpmServicePartitionId (
     goto Exit;
   }
 
+  if (PcdGet16 (PcdTpmServiceFfaPartitionId) != 0) {
+    mFfaTpm2PartitionId = PcdGet16 (PcdTpmServiceFfaPartitionId);
+    *PartitionId        = mFfaTpm2PartitionId;
+    Status              = EFI_SUCCESS;
+
+    goto Exit;
+  }
+
   CopyMem (&TpmServiceGuid, &gEfiTpm2ServiceFfaGuid, sizeof (EFI_GUID));
 
   ZeroMem (&FfaConduitArgs, sizeof (FFA_CONDUIT_ARGS));
@@ -257,7 +265,7 @@ GetTpmServicePartitionId (
   mFfaTpm2PartitionId = TpmPartInfo->PartitionId;
   *PartitionId        = mFfaTpm2PartitionId;
 
-  Status = EFI_SUCCESS;
+  Status = PcdSet16S (PcdTpmServiceFfaPartitionId, mFfaTpm2PartitionId);
 
 Exit:
   return Status;
