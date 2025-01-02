@@ -23,6 +23,9 @@
   AArch64/ArmSvc.S    | GCC
   AArch64/ArmSvc.masm | MSFT
 
+[FixedPcd]
+  gArmTokenSpaceGuid.PcdSxcUse18Registers # MU_CHANGE - 18 registers
+
 [Packages]
   ArmPkg/ArmPkg.dec
   MdePkg/MdePkg.dec
