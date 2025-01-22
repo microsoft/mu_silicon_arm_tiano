@@ -195,15 +195,18 @@ Tpm2DeviceLibFfaConstructor (
   }
 
   //
-  // Always cache current active TpmInterfaceType for StandaloneMm implementation
+  // Start by checking the PCD out of the gate and read from the CRB if it is invalid
   //
-  mActiveTpmInterfaceType = Tpm2GetPtpInterface ((VOID *)(UINTN)PcdGet64 (PcdTpmBaseAddress));
+  if (PcdGet8 (PcdActiveTpmInterfaceType) == 0xFF) {
+    mActiveTpmInterfaceType = Tpm2GetPtpInterface ((VOID *)(UINTN)PcdGet64 (PcdTpmBaseAddress));
+    PcdSet8S (PcdActiveTpmInterfaceType, mActiveTpmInterfaceType);
+  }
+
   if (mActiveTpmInterfaceType != Tpm2PtpInterfaceCrb) {
     Status = EFI_UNSUPPORTED;
     goto Exit;
   }
 
-  PcdSet8S (PcdActiveTpmInterfaceType, mActiveTpmInterfaceType);
   DEBUG ((DEBUG_INFO, "Setting Tpm Active Interface Type %d\n", mActiveTpmInterfaceType));
   mCRBIdleByPass = Tpm2GetIdleByPass ((VOID *)(UINTN)PcdGet64 (PcdTpmBaseAddress));
 
