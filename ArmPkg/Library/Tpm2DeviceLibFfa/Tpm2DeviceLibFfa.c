@@ -180,7 +180,7 @@ Tpm2DeviceLibFfaConstructor (
 {
   EFI_STATUS  Status;
 
-  mActiveTpmInterfaceType = 0xFF;
+  mActiveTpmInterfaceType = PcdGet8 (PcdActiveTpmInterfaceType);
   mCRBIdleByPass          = 0xFF;
 
   // Check to see if the FF-A is actually supported.
@@ -197,7 +197,7 @@ Tpm2DeviceLibFfaConstructor (
   //
   // Start by checking the PCD out of the gate and read from the CRB if it is invalid
   //
-  if (PcdGet8 (PcdActiveTpmInterfaceType) == 0xFF) {
+  if (mActiveTpmInterfaceType == 0xFF) {
     mActiveTpmInterfaceType = Tpm2GetPtpInterface ((VOID *)(UINTN)PcdGet64 (PcdTpmBaseAddress));
     PcdSet8S (PcdActiveTpmInterfaceType, mActiveTpmInterfaceType);
   }
