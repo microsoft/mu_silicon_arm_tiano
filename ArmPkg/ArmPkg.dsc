@@ -205,6 +205,7 @@
   ArmPkg/Library/NotificationServiceLib/NotificationServiceLib.inf
   ArmPkg/Library/TestServiceLib/TestServiceLib.inf
   ArmPkg/Library/TpmServiceLib/TpmServiceLib.inf
+  ArmPkg/Library/TpmServiceStateTranslationLib/TpmServiceStateTranslationLib.inf
 
 [Components.AARCH64]
   ArmPkg/Drivers/ArmPsciMpServicesDxe/ArmPsciMpServicesDxe.inf

@@ -186,10 +186,19 @@ PtpCrbTpmCommand (
 
   //
   // STEP 1:
-  // Command Reception occurs following a Ready state between the write of the
-  // first byte of a command to the Command Buffer and the receipt of a write
-  // of 1 to Start.
+  // Ready is any time the TPM is ready to receive a command, following a write
+  // of 1 by software to Request.cmdReady, as indicated by the Status field
+  // being cleared to 0.
   //
+  MmioWrite32 ((UINTN)&CrbReg->CrbControlRequest, PTP_CRB_CONTROL_AREA_REQUEST_COMMAND_READY);
+  Status = Tpm2ServiceStart (
+             TPM2_FFA_START_FUNC_QUALIFIER_COMMAND,
+             0
+             );
+  if (EFI_ERROR (Status)) {
+    goto Exit;
+  }
+
   for (Index = 0; Index < SizeIn; Index++) {
     MmioWrite8 ((UINTN)&CrbReg->CrbDataBuffer[Index], BufferIn[Index]);
   }
@@ -263,6 +272,15 @@ PtpCrbTpmCommand (
   DEBUG_CODE_END ();
 
 Exit:
+
+  //
+  //  Return to Idle state by setting TPM_CRB_CTRL_STS_x.Status.goIdle to 1.
+  //
+  MmioWrite32 ((UINTN)&CrbReg->CrbControlRequest, PTP_CRB_CONTROL_AREA_REQUEST_GO_IDLE);
+  Status = Tpm2ServiceStart (
+             TPM2_FFA_START_FUNC_QUALIFIER_COMMAND,
+             0
+             );
 
   return Status;
 }

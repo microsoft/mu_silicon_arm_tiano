@@ -1,5 +1,16 @@
 /** @file
-  Implementation for the TPM Service
+  Implementation for the TPM Service. This library is based
+  off of the ARM spec: TPM Service Command Response Buffer
+  Interface Over FF-A. The spec can be found here:
+
+  https://developer.arm.com/documentation/den0138/0100/?lang=en
+
+  The state flow is based off the TCG PC Client Specific Platform
+  TPM Profile for TPM 2.0. The spec can be found here:
+
+  https://trustedcomputinggroup.org/resource/pc-client-platform-tpm-profile-ptp-specification/
+
+  Figure 4 - TPM State Diagram for CRB Interface
 
   Copyright (c), Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -10,9 +21,10 @@
 #include <Library/DebugLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/TpmServiceLib.h>
+#include <Library/TpmServiceStateTranslationLib.h>
 #include <Guid/Tpm2ServiceFfa.h>
-#include <Library/Tpm2DeviceLib.h>
 #include <IndustryStandard/TpmPtp.h>
+#include <IndustryStandard/Tpm20.h>
 
 /* TPM Service Defines */
 #define TPM_MAJOR_VER  (1)
@@ -21,16 +33,22 @@
 #define TPM_START_PROCESS_CMD      (0)
 #define TPM_START_PROCESS_LOC_REQ  (1)
 
-#define TPM_LOC_STATE_MASK   (0x9F)
-#define TPM_LOC_STS_MASK     (0x01)
-#define TPM_CTRL_START_MASK  (0x01)
+#define TPM_LOCALITY_OFFSET  (0x1000)
 
-// Default Value - tpmEstablished
-#define TPM_LOC_STATE_DEFAULT  (0x01)
-// Default Value - CRB Interface Selected, Only Locality0 Supported
-#define TPM_INTERFACE_ID_DEFAULT  (0x4011)
+/* TPM Service States */
+typedef enum {
+  TPM_STATE_IDLE = 0,
+  TPM_STATE_READY,
+  TPM_STATE_COMPLETE,
+  NUM_TPM_STATES
+} TpmState;
 
 typedef UINTN TpmStatus;
+
+/* TPM Service Variables */
+STATIC TpmState                      mCurrentState;
+STATIC UINT8                         mActiveLocality;
+STATIC PTP_CRB_INTERFACE_IDENTIFIER  mInterfaceIdDefault;
 
 /**
   Converts the passed in EFI_STATUS to a TPM_STATUS
@@ -75,44 +93,23 @@ ConvertEfiToTpmStatus (
 /**
   Initializes the internal CRB
 
+  @param  Locality   The locality of the CRB
+
 **/
 STATIC
 VOID
 InitInternalCrb (
-  VOID
+  UINT8  Locality
   )
 {
-  /* TODO: If we end up supporting more than Locality0, this will need to init all localities supported */
   PTP_CRB_REGISTERS_PTR  InternalTpmCrb;
 
-  InternalTpmCrb = (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmInternalBaseAddress);
-  DEBUG ((DEBUG_INFO, "PcdTpmInternalBaseAddress: %lx\n", PcdGet64 (PcdTpmInternalBaseAddress)));
+  InternalTpmCrb = (PTP_CRB_REGISTERS_PTR)(UINTN)(PcdGet64 (PcdTpmInternalBaseAddress) + (Locality * TPM_LOCALITY_OFFSET));
+  DEBUG ((DEBUG_INFO, "Locality: %x - InternalTpmCrb Address: %lx\n", Locality, (UINTN)InternalTpmCrb));
   SetMem ((void *)InternalTpmCrb, sizeof (PTP_CRB_REGISTERS), 0x00);
-  InternalTpmCrb->LocalityState = TPM_LOC_STATE_DEFAULT;
-  InternalTpmCrb->InterfaceId   = TPM_INTERFACE_ID_DEFAULT;
-}
-
-/**
-  Updates the internal CRB with the locality information for the locality requested
-
-**/
-STATIC
-VOID
-UpdateInternalCrb (
-  VOID
-  )
-{
-  /* TODO: If we end up supporting more than Locality0, this will need to update the correct locality registers */
-  PTP_CRB_REGISTERS_PTR  InternalTpmCrb;
-
-  InternalTpmCrb                 = (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmInternalBaseAddress);
-  InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_TPM_REG_VALID_STATUS;
-  InternalTpmCrb->LocalityState &= ~(PTP_CRB_LOCALITY_STATE_ACTIVE_LOCALITY_MASK);
-  /* NOTE: Leaving the ActiveLocality as 0 as that is our only supported locality */
-  InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_LOCALITY_ASSIGNED;
-  InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_TPM_ESTABLISHED;
-  DEBUG ((DEBUG_INFO, "LocalityState: %x\n", InternalTpmCrb->LocalityState));
-  InternalTpmCrb->LocalityStatus |= PTP_CRB_LOCALITY_STATUS_GRANTED;
+  InternalTpmCrb->LocalityState    = PTP_CRB_LOCALITY_STATE_TPM_ESTABLISHED;
+  InternalTpmCrb->InterfaceId      = mInterfaceIdDefault.Uint32;
+  InternalTpmCrb->CrbControlStatus = PTP_CRB_CONTROL_AREA_STATUS_TPM_IDLE;
 }
 
 /**
@@ -125,22 +122,64 @@ CleanInternalCrb (
   VOID
   )
 {
-  /* TODO: If we end up supporting more than Locality0, this will need to clean the correct locality registers */
   PTP_CRB_REGISTERS_PTR  InternalTpmCrb;
 
-  InternalTpmCrb                      = (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmInternalBaseAddress);
-  InternalTpmCrb->LocalityState      &= TPM_LOC_STATE_MASK;
+  /* If the user has never requested a locality, don't clean, no need.
+   * We should only ever clean the active locality as when localities change
+   * we clear the entire CRB region. */
+  if (mActiveLocality == NUM_LOCALITIES) {
+    return;
+  }
+
+  InternalTpmCrb = (PTP_CRB_REGISTERS_PTR)(UINTN)(PcdGet64 (PcdTpmInternalBaseAddress) + (mActiveLocality * TPM_LOCALITY_OFFSET));
+
+  /* Set the locality state based on the active locality. */
+  InternalTpmCrb->LocalityState = PTP_CRB_LOCALITY_STATE_TPM_ESTABLISHED;
+  switch (mActiveLocality) {
+    case 0:
+      InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_ACTIVE_LOCALITY_0;
+      break;
+
+    case 1:
+      InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_ACTIVE_LOCALITY_1;
+      break;
+
+    case 2:
+      InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_ACTIVE_LOCALITY_2;
+      break;
+
+    case 3:
+      InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_ACTIVE_LOCALITY_3;
+      break;
+
+    case 4:
+      InternalTpmCrb->LocalityState |= PTP_CRB_LOCALITY_STATE_ACTIVE_LOCALITY_4;
+      break;
+
+    default:
+      break;
+  }
+
+  InternalTpmCrb->LocalityState      |= PTP_CRB_LOCALITY_STATE_TPM_REG_VALID_STATUS;
+  InternalTpmCrb->LocalityState      |= PTP_CRB_LOCALITY_STATE_LOCALITY_ASSIGNED;
+  InternalTpmCrb->LocalityStatus     |= PTP_CRB_LOCALITY_STATUS_GRANTED;
   InternalTpmCrb->LocalityControl     = 0;
-  InternalTpmCrb->LocalityStatus     &= TPM_LOC_STS_MASK;
-  InternalTpmCrb->InterfaceId         = TPM_INTERFACE_ID_DEFAULT;
+  InternalTpmCrb->InterfaceId         = mInterfaceIdDefault.Uint32;
   InternalTpmCrb->CrbControlExtension = 0;
   InternalTpmCrb->CrbControlRequest   = 0;
-  InternalTpmCrb->CrbControlStatus    = PTP_CRB_CONTROL_AREA_STATUS_TPM_IDLE;
   InternalTpmCrb->CrbControlCancel    = 0;
-  InternalTpmCrb->CrbControlStart    &= TPM_CTRL_START_MASK;
+  InternalTpmCrb->CrbControlStart     = 0;
   InternalTpmCrb->CrbInterruptEnable  = 0;
   InternalTpmCrb->CrbInterruptStatus  = 0;
-  /* Remaining registers can be ignored */
+
+  /* Set the current TPM Status based on the current state. */
+  if (mCurrentState == TPM_STATE_IDLE) {
+    InternalTpmCrb->CrbControlStatus = PTP_CRB_CONTROL_AREA_STATUS_TPM_IDLE;
+  } else {
+    InternalTpmCrb->CrbControlStatus = 0;
+  }
+
+  /* Remaining registers can be ignored. */
 }
 
 /**
@@ -158,52 +197,126 @@ HandleCommand (
   VOID
   )
 {
+  EFI_STATUS             Status;
   PTP_CRB_REGISTERS_PTR  InternalTpmCrb;
 
-  DEBUG ((DEBUG_INFO, "Handle TPM Command\n"));
-  InternalTpmCrb = (PTP_CRB_REGISTERS_PTR)(UINTN)PcdGet64 (PcdTpmInternalBaseAddress);
+  InternalTpmCrb = (PTP_CRB_REGISTERS_PTR)(UINTN)(PcdGet64 (PcdTpmInternalBaseAddress) + (mActiveLocality * TPM_LOCALITY_OFFSET));
 
-  /* Make sure the internal CRB was set to start a command */
-  if (InternalTpmCrb->CrbControlStart != 1) {
-    return TPM2_FFA_ERROR_DENIED;
+  /* Depending on our current state, we will investigate specific registers and
+   * make state transitions or deny commands. */
+  Status = EFI_ACCESS_DENIED;
+  switch (mCurrentState) {
+    /* The TPM can transition to IDLE from any state outside of command execution when the
+     * SW sets the goIdle bit in the CrbControlRequest register. When the TPM transitions to
+     * IDLE from COMPLETE it should clear the buffer. */
+    case TPM_STATE_IDLE:
+      /* Check the cmdReady bit in the CrbControlRequest register to see if we need to
+       * transition to the READY state, otherwise, deny the request. */
+      if (InternalTpmCrb->CrbControlRequest & PTP_CRB_CONTROL_AREA_REQUEST_COMMAND_READY) {
+        DEBUG ((DEBUG_INFO, "IDLE State - Handle TPM Command cmdReady Request\n"));
+        Status = TpmSstCmdReady (mActiveLocality);
+        if (Status == EFI_SUCCESS) {
+          mCurrentState = TPM_STATE_READY;
+        }
+      }
+
+      break;
+
+    /* The TPM can transition to READY from IDLE or COMPLETE when the SW sets the cmdReady bit
+     * in the CrbControlRequest register. When the TPM transitions to READY from COMPLETE it
+     * should clear the buffer. */
+    case TPM_STATE_READY:
+      /* Check the goIdle bit in the CrbControlRequest register to see if we need to
+       * transition back to the IDLE state. */
+      if (InternalTpmCrb->CrbControlRequest & PTP_CRB_CONTROL_AREA_REQUEST_GO_IDLE) {
+        DEBUG ((DEBUG_INFO, "READY State - Handle TPM Command goIdle Request\n"));
+        Status = TpmSstGoIdle (mActiveLocality);
+        if (Status == EFI_SUCCESS) {
+          mCurrentState = TPM_STATE_IDLE;
+        }
+
+        /* Check the cmdReady bit in the CrbControlRequest register, clear it if it has been
+         * set again. */
+      } else if (InternalTpmCrb->CrbControlRequest & PTP_CRB_CONTROL_AREA_REQUEST_COMMAND_READY) {
+        DEBUG ((DEBUG_INFO, "READY State - Handle TPM Command cmdReady Request\n"));
+        Status = TpmSstCmdReady (mActiveLocality);
+
+        /* Check the CrbControlStart register to see if we need to start executing a command.
+         * Once the command completes, transition to the COMPLETE state. */
+      } else if (InternalTpmCrb->CrbControlStart & PTP_CRB_CONTROL_START) {
+        DEBUG ((DEBUG_INFO, "READY State - Handle TPM Command Start Request\n"));
+        Status = TpmSstStart (mActiveLocality, InternalTpmCrb);
+        if (Status == EFI_SUCCESS) {
+          mCurrentState = TPM_STATE_COMPLETE;
+        }
+      }
+
+      break;
+
+    /* The TPM can transition to COMPLETE only from READY when the SW writes a 1 to the
+     * CrbControlStart register and the command execution finishes. The SW can write more
+     * data to the buffer and set the register again to trigger another command execution;
+     * this is only if TPM_CapCRBIdleBypass is 1. */
+    case TPM_STATE_COMPLETE:
+      /* Check the goIdle bit in the CrbControlRequest register to see if we need to
+       * transition to the IDLE state. */
+      if (InternalTpmCrb->CrbControlRequest & PTP_CRB_CONTROL_AREA_REQUEST_GO_IDLE) {
+        DEBUG ((DEBUG_INFO, "COMPLETE State - Handle TPM Command goIdle Request\n"));
+        Status = TpmSstGoIdle (mActiveLocality);
+        if (Status == EFI_SUCCESS) {
+          mCurrentState = TPM_STATE_IDLE;
+          SetMem ((void *)InternalTpmCrb->CrbDataBuffer, sizeof (InternalTpmCrb->CrbDataBuffer), 0x00);
+        }
+
+        /* Check the cmdReady bit in the CrbControlRequest register to see if we need to
+         * transition back to the READY state. */
+      } else if (InternalTpmCrb->CrbControlRequest & PTP_CRB_CONTROL_AREA_REQUEST_COMMAND_READY) {
+        /* Transition to READY from COMPLETE is only supported if TPM_CapCRBIdleBypass is 1.*/
+        if (TpmSstIsIdleBypassSupported ()) {
+          DEBUG ((DEBUG_INFO, "COMPLETE State - Handle TPM Command cmdReady Request\n"));
+          Status = TpmSstCmdReady (mActiveLocality);
+          if (Status == EFI_SUCCESS) {
+            mCurrentState = TPM_STATE_READY;
+            SetMem ((void *)InternalTpmCrb->CrbDataBuffer, sizeof (InternalTpmCrb->CrbDataBuffer), 0x00);
+          }
+        }
+
+        /* Check the CrbControlStart register to see if we need to execute another command. */
+      } else if (InternalTpmCrb->CrbControlStart & PTP_CRB_CONTROL_START) {
+        /* Execution of another command from COMPLETE is only supported if TPM_CapCRBIdleBypass
+         * is 1. */
+        if (TpmSstIsIdleBypassSupported ()) {
+          DEBUG ((DEBUG_INFO, "COMPLETE State - Handle TPM Command Start Request\n"));
+          Status = TpmSstStart (mActiveLocality, InternalTpmCrb);
+        }
+      }
+
+      break;
+
+    /* The normal state flow should be: IDLE -> READY -> COMPLETE -> IDLE. */
+    default:
+      DEBUG ((DEBUG_ERROR, "INVALID State - Attempting to transition to IDLE State\n"));
+      Status = TpmSstGoIdle (mActiveLocality);
+      if (Status == EFI_SUCCESS) {
+        mCurrentState = TPM_STATE_IDLE;
+        SetMem ((void *)InternalTpmCrb->CrbDataBuffer, sizeof (InternalTpmCrb->CrbDataBuffer), 0x00);
+      }
+
+      break;
   }
-
-  /* Set the status to ready (i.e. not idle) */
-  InternalTpmCrb->CrbControlStatus = 0;
-
-  /* Copy the command data to the static buffer */
-  UINT8   TpmCommandBuffer[sizeof (InternalTpmCrb->CrbDataBuffer)];
-  UINT32  ResponseDataLen = InternalTpmCrb->CrbControlResponseSize;
-  UINT32  CommandDataLen  = InternalTpmCrb->CrbControlCommandSize;
-
-  CopyMem (TpmCommandBuffer, InternalTpmCrb->CrbDataBuffer, CommandDataLen);
-
-  /* Submit the command to the TPM */
-  EFI_STATUS  Status = Tpm2SubmitCommand (
-                         CommandDataLen,
-                         TpmCommandBuffer,
-                         &ResponseDataLen,
-                         TpmCommandBuffer
-                         );
-
-  /* Copy the response data from the static buffer */
-  CopyMem (InternalTpmCrb->CrbDataBuffer, TpmCommandBuffer, ResponseDataLen);
 
   /* Clear the internal CRB start register to indicate successful completion and response ready */
-  if (Status == EFI_SUCCESS) {
-    InternalTpmCrb->CrbControlStart = 0;
-  } else {
+  if (Status != EFI_SUCCESS) {
     DEBUG ((DEBUG_ERROR, "Command Failed w/ Status: %x\n", Status));
   }
-
-  /* Set the status to idle */
-  InternalTpmCrb->CrbControlStatus = PTP_CRB_CONTROL_AREA_STATUS_TPM_IDLE;
 
   return ConvertEfiToTpmStatus (Status);
 }
 
 /**
   Handles locality requests for the TPM service
+
+  @param  Locality   The locality of the CRB
 
   @retval TPM_STATUS_OK      Success
   @retval TPM_STATUS_INVARG  Invalid parameter
@@ -214,19 +327,19 @@ HandleCommand (
 STATIC
 TpmStatus
 HandleLocalityRequest (
-  VOID
+  UINT8  Locality
   )
 {
   EFI_STATUS  Status;
 
-  DEBUG ((DEBUG_INFO, "Handle TPM Locality Request\n"));
-
   /* Request to use the TPM */
-  Status = Tpm2RequestUseTpm ();
+  DEBUG ((DEBUG_INFO, "Handle TPM Locality%x Request\n", Locality));
+  Status = TpmSstLocalityRequest (Locality);
 
   /* Update the internal TPM CRB */
   if (Status == EFI_SUCCESS) {
-    UpdateInternalCrb ();
+    InitInternalCrb (Locality);
+    mActiveLocality = Locality;
   } else {
     DEBUG ((DEBUG_ERROR, "Locality Request Failed w/ Status: %x\n", Status));
   }
@@ -314,18 +427,23 @@ StartHandler (
     * NOTE: function = 0, command is ready to be processed
     *       function = 1, locality request is ready to be processed
     *       locality = 0...4, the locality where the command or request is located */
-  /* TODO: Currently only Locality0 is available, if this needs to change, we should
-   *       update the PCD base address with the appropriate locality offset. */
-  if (Locality != PTP_CRB_LOCALITY_STATE_ACTIVE_LOCALITY_0) {
+  if (Locality >= NUM_LOCALITIES) {
     Response->Arg0 = TPM2_FFA_ERROR_INVARG;
     DEBUG ((DEBUG_ERROR, "Invalid Locality\n"));
     return TPM2_FFA_ERROR_INVARG;
   }
 
   if (Function == TPM_START_PROCESS_CMD) {
-    ReturnVal = HandleCommand ();
+    /* We should only proceed if the locality being requested matches that of the
+     * current locality that is active. */
+    if (Locality == mActiveLocality) {
+      ReturnVal = HandleCommand ();
+    } else {
+      ReturnVal = TPM2_FFA_ERROR_INVARG;
+      DEBUG ((DEBUG_ERROR, "Locality Mismatch\n"));
+    }
   } else if (Function == TPM_START_PROCESS_LOC_REQ) {
-    ReturnVal = HandleLocalityRequest ();
+    ReturnVal = HandleLocalityRequest (Locality);
   } else {
     ReturnVal = TPM2_FFA_ERROR_INVARG;
     DEBUG ((DEBUG_ERROR, "Invalid Start Function\n"));
@@ -419,11 +537,30 @@ TpmServiceInit (
   VOID
   )
 {
-  InitInternalCrb ();
+  UINT8  Locality;
+
+  /* Initialize the default interface ID. */
+  mInterfaceIdDefault.Uint32                = 0;
+  mInterfaceIdDefault.Bits.InterfaceType    = 1; // CRB active
+  mInterfaceIdDefault.Bits.InterfaceVersion = 1; // CRB interface version
+  mInterfaceIdDefault.Bits.CapLocality      = 1; // 5 localities supported
+  mInterfaceIdDefault.Bits.CapCRB           = 1; // CRB supported
+
+  /* Initializes all of the localities. */
+  for (Locality = 0; Locality < NUM_LOCALITIES; Locality++) {
+    InitInternalCrb (Locality);
+  }
+
+  /* Initialize the TPM Service State Translation Library. */
+  TpmSstInit ();
+
+  /* Initialize our default state information. */
+  mCurrentState   = TPM_STATE_IDLE;
+  mActiveLocality = NUM_LOCALITIES; // Invalid - No active locality
 }
 
 /**
-  Deinitializes the TPM service
+  De-initializes the TPM service
 
 **/
 VOID

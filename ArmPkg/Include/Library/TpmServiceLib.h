@@ -24,7 +24,7 @@ TpmServiceInit (
   );
 
 /**
-  Deinitializes the TPM service
+  De-initializes the TPM service
 
 **/
 VOID

@@ -1,6 +1,6 @@
 #/** @file
 #
-#  Component description file for the TPM Service
+#  Component description file for the TPM Service State Translation Library
 #
 #  Copyright (c), Microsoft Corporation.
 #
@@ -10,14 +10,14 @@
 
 [Defines]
   INF_VERSION                    = 1.29
-  BASE_NAME                      = TpmServiceLib
-  FILE_GUID                      = 84002883-0ef6-4c50-908d-f6408386b8fe
+  BASE_NAME                      = TpmServiceStateTranslationLib
+  FILE_GUID                      = 36162cbc-07a4-44b9-bed0-1030ee0ef742
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
-  LIBRARY_CLASS                  = TpmServiceLib
+  LIBRARY_CLASS                  = TpmServiceStateTranslationLib
 
 [Sources.common]
-  TpmServiceLib.c
+  TpmServiceStateTranslationLib.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -25,14 +25,13 @@
   SecurityPkg/SecurityPkg.dec
 
 [LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  IoLib
+  TimerLib
   DebugLib
-  PlatformFfaInterruptLib
-  ArmSvcLib
-  ArmSmcLib
-  ArmFfaLib
-  ArmFfaLibEx
-  TpmServiceStateTranslationLib
+  Tpm2DebugLib
 
 [Pcd]
   gArmTokenSpaceGuid.PcdFfaLibConduitSmc                   ## CONSUMES
-  gEfiSecurityPkgTokenSpaceGuid.PcdTpmInternalBaseAddress  ## CONSUMES
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress          ## CONSUMES
