@@ -89,6 +89,7 @@ InitializeMemory (
   UINTN       FdBase;
   UINTN       FdTop;
   UINTN       UefiMemoryBase;
+  UINT32      UefiMemorySize; // MU_CHANGE
 
   DEBUG ((DEBUG_LOAD | DEBUG_INFO, "Memory Init PEIM Loaded\n"));
 
@@ -109,8 +110,16 @@ InitializeMemory (
   // Declare the UEFI memory to PEI
   //
 
-  // In case the firmware has been shadowed in the System Memory
-  if ((FdBase >= SystemMemoryBase) && (FdTop <= SystemMemoryTop)) {
+  // MU_CHANGE START: Allow platform to customize initial memory region.
+  UefiMemorySize = FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
+  if (ArmPlatformGetPeiMemory (&UefiMemoryBase, &UefiMemorySize)) {
+    // Check the Firmware does not intersect with the provided memory region.
+    ASSERT ((FdBase < UefiMemoryBase) || (FdBase >= (UefiMemoryBase + UefiMemorySize)));
+    ASSERT ((FdTop <= UefiMemoryBase) || (FdTop > (UefiMemoryBase + UefiMemorySize)));
+  } else if ((FdBase >= SystemMemoryBase) && (FdTop <= SystemMemoryTop)) {
+    // In case the firmware has been shadowed in the System Memory
+    // MU_CHANGE END
+
     // Check if there is enough space between the top of the system memory and the top of the
     // firmware to place the UEFI memory (for PEI & DXE phases)
     if (SystemMemoryTop - FdTop >= FixedPcdGet32 (PcdSystemMemoryUefiRegionSize)) {
@@ -129,7 +138,7 @@ InitializeMemory (
     UefiMemoryBase = SystemMemoryTop - FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
   }
 
-  Status = PeiServicesInstallPeiMemory (UefiMemoryBase, FixedPcdGet32 (PcdSystemMemoryUefiRegionSize));
+  Status = PeiServicesInstallPeiMemory (UefiMemoryBase, UefiMemorySize); // MU_CHANGE: Allow platform to customize initial memory region.
   ASSERT_EFI_ERROR (Status);
 
   // Initialize MMU and Memory HOBs (Resource Descriptor HOBs)

@@ -423,7 +423,7 @@ GicV3DxeInitialize (
       for (Index = 8; Index < (mGicNumInterrupts / 4); Index++) {
         MmioWrite32 (
           mGicDistributorBase + ARM_GIC_ICDIPTR + (Index * 4),
-          (UINT32)CpuTarget      // MU_CHANGE - ARM64 VS change
+          CpuTarget
           );
       }
     }
@@ -457,13 +457,10 @@ GicV3DxeInitialize (
     }
 
     // Route the SPIs to the primary CPU. SPIs start at the INTID 32
-    // MU_CHANGE - SPIs per the GICv3 spec start at line 32, but the previous code
-    // relied on ARM_GICD_IROUTER to be a value different than the spec that
-    // skipped those first 32 lines.
-    for (Index = 32; Index < mGicNumInterrupts; Index++) {
+    for (Index = 0; Index < (mGicNumInterrupts - 32); Index++) {
       MmioWrite64 (
         mGicDistributorBase + ARM_GICD_IROUTER + (Index * 8),
-        (UINT32)CpuTarget   // MU_CHANGE - ARM64 VS change
+        CpuTarget
         );
     }
   }

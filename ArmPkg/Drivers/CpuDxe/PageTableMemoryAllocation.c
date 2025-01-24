@@ -13,16 +13,12 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/UefiBootServicesTableLib.h>
 #include <Protocol/ArmPageTableMemoryAllocation.h>
 
-#pragma pack(1)
-
 typedef struct {
   UINT32        Signature;
   UINTN         Offset;
   UINTN         FreePages;
   LIST_ENTRY    NextPool;
 } PAGE_TABLE_POOL;
-
-#pragma pack()
 
 #define MIN_PAGES_AVAILABLE        5
 #define PAGE_TABLE_POOL_SIGNATURE  SIGNATURE_32 ('P','T','P','L')
