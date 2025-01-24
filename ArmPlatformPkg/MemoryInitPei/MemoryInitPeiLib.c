@@ -7,6 +7,7 @@
 **/
 
 #include <PiPei.h>
+#include <Uefi/UefiSpec.h>
 
 #include <Library/ArmMmuLib.h>
 #include <Library/ArmPlatformLib.h>
@@ -107,11 +108,13 @@ MemoryPeim (
 
   if (!Found) {
     // Reserved the memory space occupied by the firmware volume
-    BuildResourceDescriptorHob (
+    BuildResourceDescriptorV2 (
       EFI_RESOURCE_SYSTEM_MEMORY,
       ResourceAttributes,
       PcdGet64 (PcdSystemMemoryBase),
-      PcdGet64 (PcdSystemMemorySize)
+      PcdGet64 (PcdSystemMemorySize),
+      EFI_MEMORY_WB,
+      NULL
       );
   }
 
