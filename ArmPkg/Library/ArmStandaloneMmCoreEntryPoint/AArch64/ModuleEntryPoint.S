@@ -55,7 +55,8 @@ ASM_FUNC(CheckFfaSupport)
 
   svc #0
 
-  MOV64 (x9, ARM_FFA_RET_NOT_SUPPORTED)
+  // Set x9 as ARM_FFA_RET_NOT_SUPPORTED (-1)   // MU_CHANGE - Fix clang build errors
+  mvn x9, xzr                                   // MU_CHANGE - Fix clang build errors
   cmp x0, x9
   cset x0, ne
   mov x9, xzr
