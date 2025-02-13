@@ -1038,9 +1038,9 @@ CEntryPoint (
     goto finish;
   }
 
-  DEBUG ((DEBUG_INFO, "Start Dump Hob: %lx\n", (unsigned long)HobStart));
+  DEBUG ((DEBUG_INFO, "Start Dump Hob: %p\n", HobStart));   // MU_CHANGE - Fix clang build errors
   DumpPhitHob (HobStart);
-  DEBUG ((DEBUG_INFO, "End Dump Hob: %lx\n", (unsigned long)HobStart));
+  DEBUG ((DEBUG_INFO, "End Dump Hob: %p\n", HobStart));     // MU_CHANGE - Fix clang build errors
 
   FvHob = GetNextHob (EFI_HOB_TYPE_FV, HobStart);
   if (FvHob == NULL) {
