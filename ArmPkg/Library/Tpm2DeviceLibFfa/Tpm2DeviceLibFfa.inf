@@ -21,7 +21,6 @@
   Tpm2DeviceLibFfa.c
   Tpm2ServiceFfaRaw.c
   Tpm2Ptp.c
-  FfaConduitSmc.c
   Tpm2DeviceLibFfa.h
 
 [Packages]
@@ -33,11 +32,11 @@
 [LibraryClasses]
   BaseLib
   DebugLib
-  ArmSmcLib
   TimerLib
   BaseMemoryLib
   IoLib
   Tpm2DebugLib
+  ArmFfaLib
 
 [Guids]
   gEfiTpm2ServiceFfaGuid

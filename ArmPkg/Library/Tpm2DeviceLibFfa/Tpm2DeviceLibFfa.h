@@ -42,31 +42,6 @@
 #include <Library/ArmSmcLib.h>
 #include <Library/ArmSvcLib.h>
 
-/*
-
-  Only w0-w7 is used for TPM services, other than x2 and x3 are sometimes for UUID when using
-  REQ2.
-
-*/
-typedef struct {
-  UINT64    Arg0;
-  UINT64    Arg1;
-  UINT64    Arg2;
-  UINT64    Arg3;
-  UINT64    Arg4;
-  UINT64    Arg5;
-  UINT64    Arg6;
-  UINT64    Arg7;
-} FFA_CONDUIT_ARGS;
-
-STATIC_ASSERT (sizeof (FFA_CONDUIT_ARGS) <= sizeof (ARM_SMC_ARGS), "FFA_CONDUIT_ARGS size mismatch");
-STATIC_ASSERT (sizeof (FFA_CONDUIT_ARGS) <= sizeof (ARM_SVC_ARGS), "FFA_CONDUIT_ARGS size mismatch");
-
-EFI_STATUS
-ArmCallFfaConduit (
-  IN OUT FFA_CONDUIT_ARGS  *Args
-  );
-
 /**
   Check the return status from the FF-A call and returns EFI_STATUS
 
@@ -80,19 +55,17 @@ TranslateFfaReturnStatus (
   UINTN  FfaReturnStatus
   );
 
-/**
-  Send a command to FF-A to make sure it is at least v1.2 because we need DIRECT
-  REQ2 to talk to TPM services.
+/*
+  This function is used to get the TPM interface version.
 
-  @retval EFI_SUCCESS     Command was successfully sent to the TPM
-                          and the response was copied to the Output buffer.
-  @retval Other           Some error occurred in communication with the TPM.
-**/
-EFI_STATUS
-VerifyFfaVersion (
-  VOID
-  );
+  @param[out] Version - Supplies the pointer to the TPM interface version.
 
+  @retval EFI_SUCCESS           The TPM command was successfully sent to the TPM
+                                and the response was copied to the Output buffer.
+  @retval EFI_INVALID_PARAMETER The TPM command buffer is NULL or the TPM command
+                                buffer size is 0.
+  @retval EFI_DEVICE_ERROR      An error occurred in communication with the TPM.
+*/
 EFI_STATUS
 Tpm2GetInterfaceVersion (
   OUT UINT32  *Version

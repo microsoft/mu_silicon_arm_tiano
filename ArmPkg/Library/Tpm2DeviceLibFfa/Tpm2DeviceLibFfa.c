@@ -183,12 +183,6 @@ Tpm2DeviceLibFfaConstructor (
   mActiveTpmInterfaceType = PcdGet8 (PcdActiveTpmInterfaceType);
   mCRBIdleByPass          = 0xFF;
 
-  // Check to see if the FF-A is actually supported.
-  Status = VerifyFfaVersion ();
-  if (EFI_ERROR (Status)) {
-    goto Exit;
-  }
-
   if (PcdGet64 (PcdTpmBaseAddress) == 0) {
     Status = EFI_NOT_STARTED;
     goto Exit;
