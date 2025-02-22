@@ -259,7 +259,7 @@ Tpm2GetFeatureInfo (
 Exit:
   return Status;
 }
-extern volatile BOOLEAN loop;
+
 EFI_STATUS
 Tpm2ServiceStart (
   IN UINT64  FuncQualifier,
