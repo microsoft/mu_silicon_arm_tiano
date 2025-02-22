@@ -140,7 +140,7 @@ GetTpmServicePartitionId (
       "Failed to get partition id. Status: %r\n",
       Status
       ));
-    return Status;
+    goto Exit;
   }
 
   Status = ArmFfaLibGetRxTxBuffers (
@@ -168,17 +168,17 @@ GetTpmServicePartitionId (
   if ((Count != 1) || (Size < sizeof (EFI_FFA_PART_INFO_DESC))) {
     Status = EFI_INVALID_PARAMETER;
     DEBUG ((DEBUG_ERROR, "Invalid partition Info(%g). Count: %d, Size: %d\n", &gEfiTpm2ServiceFfaGuid, Count, Size));
-    goto Exit;
+  } else {
+    TpmPartInfo         = (EFI_FFA_PART_INFO_DESC *)RxBuffer;
+    mFfaTpm2PartitionId = TpmPartInfo->PartitionId;
+    *PartitionId        = mFfaTpm2PartitionId;
+
+    Status = PcdSet16S (PcdTpmServiceFfaPartitionId, mFfaTpm2PartitionId);
   }
 
-  TpmPartInfo         = (EFI_FFA_PART_INFO_DESC *)RxBuffer;
-  mFfaTpm2PartitionId = TpmPartInfo->PartitionId;
-  *PartitionId        = mFfaTpm2PartitionId;
-
-  Status = PcdSet16S (PcdTpmServiceFfaPartitionId, mFfaTpm2PartitionId);
+  ArmFfaLibRxRelease (PartId);
 
 Exit:
-  ArmFfaLibRxRelease (PartId);
   return Status;
 }
 
@@ -207,10 +207,10 @@ Tpm2GetInterfaceVersion (
     goto Exit;
   }
 
-  Status = TranslateTpmReturnStatus (FfaDirectReq2Args.Arg4);
+  Status = TranslateTpmReturnStatus (FfaDirectReq2Args.Arg0);
 
   if (!EFI_ERROR (Status)) {
-    *Version = FfaDirectReq2Args.Arg5;
+    *Version = FfaDirectReq2Args.Arg1;
   }
 
 Exit:
@@ -259,7 +259,7 @@ Tpm2GetFeatureInfo (
 Exit:
   return Status;
 }
-
+extern volatile BOOLEAN loop;
 EFI_STATUS
 Tpm2ServiceStart (
   IN UINT64  FuncQualifier,
