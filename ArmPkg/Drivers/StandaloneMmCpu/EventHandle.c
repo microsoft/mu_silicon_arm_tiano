@@ -199,7 +199,7 @@ PiMmCpuTpFwRootMmiHandler (
                     &gGuidedEventContext->HeaderGuid,
                     NULL,
                     gGuidedEventContext->Data,
-                    &gGuidedEventContext->MessageLength
+                    (UINTN *)(&gGuidedEventContext->MessageLength) // MU_CHANGE: BZ3398 Make MessageLength the same size in EFI_MM_COMMUNICATE_HEADER for both 32 and 64
                     );
 
   if (Status != EFI_SUCCESS) {
