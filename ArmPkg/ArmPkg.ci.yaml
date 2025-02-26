@@ -55,7 +55,8 @@
             "MdeModulePkg/MdeModulePkg.dec",
             "MdePkg/MdePkg.dec",
             "ShellPkg/ShellPkg.dec",
-            "StandaloneMmPkg/StandaloneMmPkg.dec"
+            "StandaloneMmPkg/StandaloneMmPkg.dec",      # MU_CHANGE
+            "SecurityPkg/SecurityPkg.dec",              # MU_CHANGE
         ],
         # For host based unit tests
         "AcceptableDependencies-HOST_APPLICATION":[
