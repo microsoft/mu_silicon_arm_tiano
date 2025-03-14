@@ -319,4 +319,38 @@ ArmFfaLibMsgSendDirectReq2 (
   IN  OUT DIRECT_MSG_ARGS  *ImpDefArgs
   );
 
+/**
+  Mapping Rx/Tx buffers.
+  This function is only called in ArmFfaLibConstructor because
+  Rx/Tx buffer is registered only once per partition.
+
+  @retval EFI_SUCCESS
+  @retval EFI_ALREADY_STARTED     Rx/Tx buffer already mapped in PEI phase
+  @retval EFI_OUT_OF_RESOURCE     Out of memory
+  @retval EFI_INVALID_PARAMETER   Invalid alignment of Rx/Tx buffer
+  @retval Others                  Error
+
+**/
+EFI_STATUS
+EFIAPI
+ArmFfaLibRxTxMap (
+  IN VOID
+  );
+
+/**
+  Unmap Rx/Tx buffer.
+  This function is only called in Exit boot service because
+  Rx/Tx buffer is registered only once per partition.
+
+  @retval EFI_SUCCESS
+  @retval EFI_INVALID_PARAMETERS               Already unregistered
+  @retval EFI_UNSUPPORTED                      Not supported
+
+**/
+EFI_STATUS
+EFIAPI
+ArmFfaLibRxTxUnmap (
+  IN VOID
+  );
+
 #endif // ARM_FFA_LIB_H_

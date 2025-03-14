@@ -369,6 +369,11 @@
   # If PcdFfaLibConduitSvc == FALSE, conduit = SVC
   gArmTokenSpaceGuid.PcdFfaLibConduitSmc|TRUE|BOOLEAN|0x00000063
 
+  #
+  # FF-A Tx/Rx buffer size PCD, this is used to denote the count of pages
+  # that are used for each of the Tx/Rx buffer.
+  gArmTokenSpaceGuid.PcdFfaTxRxPageCount|1|UINT64|0x00000061
+
 [PcdsFixedAtBuild.common, PcdsDynamic.common]
   #
   # ARM Architectural Timer
@@ -466,5 +471,4 @@
   gArmTokenSpaceGuid.PcdLinuxBootFileGuid|{0x0}|VOID*|0x0000005C
   gArmTokenSpaceGuid.PcdFfaTxBuffer|0x00|UINT64|0x0000005F
   gArmTokenSpaceGuid.PcdFfaRxBuffer|0x00|UINT64|0x00000060
-  gArmTokenSpaceGuid.PcdFfaTxRxPageCount|1|UINT64|0x00000061
   gArmTokenSpaceGuid.PcdFfaExitBootEventRegistered|FALSE|BOOLEAN|0x00000062
