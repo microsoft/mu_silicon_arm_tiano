@@ -20,6 +20,7 @@
   ArmFfaCommon.h
   ArmFfaCommon.c
   ArmFfaStandaloneMmLib.c
+  ArmFfaRxTxMapStmm.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -34,6 +35,10 @@
 
 [Pcd]
   gArmTokenSpaceGuid.PcdFfaLibConduitSmc
+  gArmTokenSpaceGuid.PcdFfaTxRxPageCount
+
+[Guid]
+  gArmFfaRxTxBufferInfoGuid
 
 [FixedPcd]
   gArmTokenSpaceGuid.PcdSxcUse18Registers # MU_CHANGE: Add 18 registers support
