@@ -1100,6 +1100,16 @@ CEntryPoint (
   //
   ProcessModuleEntryPointList (HobStart);
 
+  //
+  if (CommProtocol == CommProtocolFfa) {
+    // In case of FF-A, register Rx/Tx buffer address
+    Status = ArmFfaLibRxTxMap ();
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "Error: Failed to register Rx/Tx buffer address...\n"));
+      goto finish;
+    }
+  }
+
   // ProcessModuleEntryPointList() copies the HOB List passed
   // by TF-A, i.e. HobStart, in the ConfigurationTable[].
   // Therefore, find the HobList in the ConfigurationTable[] by
