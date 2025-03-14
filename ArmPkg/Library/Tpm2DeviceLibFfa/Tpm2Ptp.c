@@ -203,13 +203,6 @@ PtpCrbTpmCommand (
     MmioWrite8 ((UINTN)&CrbReg->CrbDataBuffer[Index], BufferIn[Index]);
   }
 
-  MmioWrite32 ((UINTN)&CrbReg->CrbControlCommandAddressHigh, (UINT32)RShiftU64 ((UINTN)CrbReg->CrbDataBuffer, 32));
-  MmioWrite32 ((UINTN)&CrbReg->CrbControlCommandAddressLow, (UINT32)(UINTN)CrbReg->CrbDataBuffer);
-  MmioWrite32 ((UINTN)&CrbReg->CrbControlCommandSize, sizeof (CrbReg->CrbDataBuffer));
-
-  MmioWrite64 ((UINTN)&CrbReg->CrbControlResponseAddrss, (UINTN)CrbReg->CrbDataBuffer);
-  MmioWrite32 ((UINTN)&CrbReg->CrbControlResponseSize, sizeof (CrbReg->CrbDataBuffer));
-
   //
   // STEP 2:
   // Command Execution occurs after receipt of a 1 to Start and the TPM
