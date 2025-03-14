@@ -55,7 +55,6 @@ UINT16   gPartId;
   @param [out] Uuid           Uuid
 
 **/
-STATIC
 VOID
 EFIAPI
 ConvertEfiGuidToUuid (
@@ -81,6 +80,23 @@ ConvertEfiGuidToUuid (
   Data16[1] = SwapBytes16 (Data16[1]);
   Data32[2] = SwapBytes32 (Data32[2]); // MU_CHANGE: Update UUID mangling method
   Data32[3] = SwapBytes32 (Data32[3]); // MU_CHANGE: Update UUID mangling method
+}
+
+/**
+  Convert UUID to EFI_GUID format, which is the inverse of ConvertEfiGuidToUuid.
+
+  @param [in] Uuid            Uuid
+  @param [out] Guid           EFI_GUID
+**/
+VOID
+EFIAPI
+ConvertUuidToEfiGuid (
+  IN  UINT64    *Uuid,
+  OUT EFI_GUID  *Guid
+  )
+{
+  // Well, just use this function to do it... the conversion is symetric.
+  ConvertEfiGuidToUuid ((EFI_GUID *)Uuid, Guid);
 }
 
 /**
