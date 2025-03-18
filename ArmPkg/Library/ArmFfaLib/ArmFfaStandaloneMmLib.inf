@@ -21,6 +21,7 @@
   ArmFfaCommon.c
   ArmFfaStandaloneMmLib.c
   ArmFfaRxTxMapStmm.c
+  ArmFfaRxTxMapStmm.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -37,7 +38,7 @@
   gArmTokenSpaceGuid.PcdFfaLibConduitSmc
   gArmTokenSpaceGuid.PcdFfaTxRxPageCount
 
-[Guids]
+[Guid]
   gArmFfaRxTxBufferInfoGuid
 
 [FixedPcd]

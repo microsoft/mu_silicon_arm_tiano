@@ -37,7 +37,7 @@
   gArmTokenSpaceGuid.PcdFfaLibConduitSmc
   gArmTokenSpaceGuid.PcdFfaTxRxPageCount
 
-[Guids]
+[Guid]
   gArmFfaRxTxBufferInfoGuid
 
 [FixedPcd]
