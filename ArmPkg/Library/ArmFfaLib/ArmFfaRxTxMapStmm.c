@@ -229,8 +229,8 @@ ArmFfaLibRxTxMap (
     Status = EFI_OUT_OF_RESOURCES;
     goto ErrorHandler;
   }
-  mArmFfaRxTxBufferStmmInfo->TxBufferAddr = (UINTN)TxBuffer;
-  mArmFfaRxTxBufferStmmInfo->RxBufferAddr = (UINTN)RxBuffer;
+  mArmFfaRxTxBufferStmmInfo->TxBufferAddr = TxBuffer;
+  mArmFfaRxTxBufferStmmInfo->RxBufferAddr = RxBuffer;
   mArmFfaRxTxBufferStmmInfo->TxBufferSize = BufferSize;
   mArmFfaRxTxBufferStmmInfo->RxBufferSize = BufferSize;
 
