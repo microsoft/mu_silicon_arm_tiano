@@ -96,7 +96,7 @@ ConvertUuidToEfiGuid (
   )
 {
   // Well, just use this function to do it... the conversion is symetric.
-  ConvertEfiGuidToUuid ((EFI_GUID *)Uuid, Guid);
+  ConvertEfiGuidToUuid ((EFI_GUID *)Uuid, (UINT64*)Guid);
 }
 
 /**
