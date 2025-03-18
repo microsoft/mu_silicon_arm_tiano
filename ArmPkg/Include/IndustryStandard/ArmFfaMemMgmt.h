@@ -155,10 +155,10 @@ typedef struct {
    The number of constituents (`FFA_MEMORY_REGION_CONSTITUENT`)
    included in this memory region range.
   **/
-  UINT32 AddressRangeCount;
+  UINT32 ConstituentCount;
   /** Reserved field, SBZ. */
   UINT64 Reserved;
-  /** An array of `AddressRangeCount` memory region constituents. */
+  /** An array of `ConstituentCount` memory region constituents. */
   FFA_MEMORY_REGION_CONSTITUENT Constituents[];
 } FFA_COMPOSITE_MEMORY_REGION;
 
@@ -201,9 +201,9 @@ typedef struct {
   memory access descriptor".
 **/
 typedef struct {
-  FFA_MEMORY_ACCESS_PERMISSIONS_DESCRIPTOR receiver_permissions;
+  FFA_MEMORY_ACCESS_PERMISSIONS_DESCRIPTOR ReceiverPermissions;
   /**
-    Offset in bytes from the start of the outer `ffa_memory_region` to
+    Offset in bytes from the start of the outer `FFA_MEMORY_TRANSACTION_DESCRIPTOR` to
     an `FFA_COMPOSITE_MEMORY_REGION` struct.
   **/
   UINT32  CompositeMemoryRegionOffset;
