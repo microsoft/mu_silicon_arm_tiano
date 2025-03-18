@@ -873,7 +873,7 @@ DelegatedEventLoop (
         FfaMsgInfo.DirectMsgVersion = DirectMsgV2;
         Uuid[0]                     = EventCompleteSvcArgs->Arg2;
         Uuid[1]                     = EventCompleteSvcArgs->Arg3;
-        ConvertUuidToEfiGuid (Uuid, &ServiceGuid);
+        ArmFfaConvertUuidToEfiGuid (Uuid, &ServiceGuid);
         ServiceType = GetServiceType (&ServiceGuid);
       } else {
         Status = EFI_INVALID_PARAMETER;

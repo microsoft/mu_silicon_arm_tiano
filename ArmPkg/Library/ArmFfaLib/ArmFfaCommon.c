@@ -57,7 +57,7 @@ UINT16   gPartId;
 **/
 VOID
 EFIAPI
-ConvertEfiGuidToUuid (
+ArmFfaConvertEfiGuidToUuid (
   IN   EFI_GUID  *Guid,
   OUT  UINT64    *Uuid
   )
@@ -83,20 +83,20 @@ ConvertEfiGuidToUuid (
 }
 
 /**
-  Convert UUID to EFI_GUID format, which is the inverse of ConvertEfiGuidToUuid.
+  Convert UUID to EFI_GUID format, which is the inverse of ArmFfaConvertEfiGuidToUuid.
 
   @param [in] Uuid            Uuid
   @param [out] Guid           EFI_GUID
 **/
 VOID
 EFIAPI
-ConvertUuidToEfiGuid (
+ArmFfaConvertUuidToEfiGuid (
   IN  UINT64    *Uuid,
   OUT EFI_GUID  *Guid
   )
 {
   // Well, just use this function to do it... the conversion is symetric.
-  ConvertEfiGuidToUuid ((EFI_GUID *)Uuid, (UINT64*)Guid);
+  ArmFfaConvertEfiGuidToUuid ((EFI_GUID *)Uuid, (UINT64*)Guid);
 }
 
 /**
@@ -549,7 +549,7 @@ ArmFfaLibPartitionInfoGet (
   }
 
   if (ServiceGuid != NULL) {
-    ConvertEfiGuidToUuid (ServiceGuid, Uuid);
+    ArmFfaConvertEfiGuidToUuid (ServiceGuid, Uuid);
   } else {
     ZeroMem (Uuid, sizeof (Uuid));
   }
@@ -713,7 +713,7 @@ ArmFfaLibMsgSendDirectReq2 (
   }
 
   if (ServiceGuid != NULL) {
-    ConvertEfiGuidToUuid (ServiceGuid, Uuid);
+    ArmFfaConvertEfiGuidToUuid (ServiceGuid, Uuid);
   } else {
     ZeroMem (Uuid, sizeof (Uuid));
   }
