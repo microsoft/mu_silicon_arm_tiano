@@ -109,6 +109,42 @@ SmmuV3EncodeAddressWidth (
 }
 
 /**
+  Set the translation starting level for SMMUv3 page tables.
+  Only 3 and 4 level paging are supported.
+
+  @param [in]  SmmuInfo           Pointer to the SMMU_INFO structure.
+  @param [in]  OutputAddressWidth  The output address width.
+  @param [out] S2Sl0              The starting level for stage 2 translation.
+
+  @retval EFI_SUCCESS              Success.
+  @retval EFI_INVALID_PARAMETER    Invalid parameter.
+**/
+EFI_STATUS
+SmmuV3SetTranslationStartingLevel (
+  IN SMMU_INFO  *SmmuInfo,
+  IN UINT32     OutputAddressWidth,
+  OUT UINT64    *S2Sl0
+  )
+{
+  if ((OutputAddressWidth > 48) || (OutputAddressWidth < 32)) {
+    DEBUG ((DEBUG_ERROR, "%a: OutputAddressWidth not supported.\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Per the Arm ARM VMSA spec, >= 44 bits of address width requires 4 level paging.
+  // Otherwise, 3 level paging is used.
+  if (OutputAddressWidth >= 44) {
+    SmmuInfo->TranslationStartingLevel = 0; // 4 level paging
+    *S2Sl0                             = 0x2;
+  } else {
+    SmmuInfo->TranslationStartingLevel = 1; // 3 level paging
+    *S2Sl0                             = 0x1;
+  }
+
+  return EFI_SUCCESS;
+}
+
+/**
   Read a 32-bit value from the specified SMMU register.
 
   @param [in]  SmmuBase   The base address of the SMMU.
@@ -526,7 +562,7 @@ SmmuV3ConsumeEventQueueForErrors (
   }
 
   *IsEmpty  = FALSE;
-  NextFault = SmmuInfo->EventQueue + ConsumerIndex;
+  NextFault = (SMMUV3_FAULT_RECORD *)SmmuInfo->EventQueue + ConsumerIndex;
   CopyMem (FaultRecord, NextFault, SMMUV3_EVENT_QUEUE_ENTRY_SIZE);
 
   ConsumerIndex += 1;
@@ -543,6 +579,41 @@ SmmuV3ConsumeEventQueueForErrors (
 
 End:
   return EFI_SUCCESS;
+}
+
+/**
+  Dump the page table entries for a given virtual address.
+  Dumps PTE's for all levels regardless of the starting level chosen for translation.
+
+  @param [in]  SmmuInfo        Pointer to the SMMU_INFO structure.
+  @param [in]  VirtualAddress  The virtual address to dump.
+  @param [in]  Root            Pointer to the root page table.
+
+  @retval None.
+**/
+VOID
+SmmuV3DumpPageTableEntries (
+  IN SMMU_INFO   *SmmuInfo,
+  IN UINT64      VirtualAddress,
+  IN PAGE_TABLE  *Root
+  )
+{
+  UINTN       Index;
+  UINT8       Level;
+  PAGE_TABLE  *Current;
+
+  Current = Root;
+
+  for (Level = SmmuInfo->TranslationStartingLevel; Level < PAGE_TABLE_DEPTH; Level++) {
+    Index = PAGE_TABLE_INDEX (VirtualAddress, Level);
+    if (Current->Entries[Index] == 0) {
+      DEBUG ((DEBUG_ERROR, "%a: Invalid entry at level %d, index %d\n", __func__, Level, Index));
+      break;
+    }
+
+    DEBUG ((DEBUG_INFO, "%a: VirtualAddress = %llx Level = %d Current->Entries[%d] = 0x%llx\n", __func__, VirtualAddress, Level, Index, Current->Entries[Index]));
+    Current = (PAGE_TABLE *)((UINTN)Current->Entries[Index] & ~0xFFF);
+  }
 }
 
 /**
@@ -572,16 +643,23 @@ SmmuV3LogErrors (
     DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
   } else {
     if (IsEmpty == FALSE) {
-      DEBUG ((DEBUG_ERROR, "%a: FaultRecord:\n", __func__));
+      DEBUG ((DEBUG_ERROR, "%a: %llx FaultRecord:\n", __func__, SmmuInfo->SmmuBase));
       for (Index = 0; Index < sizeof (FaultRecord.Fault) / sizeof (FaultRecord.Fault[0]); Index++) {
         DEBUG ((DEBUG_ERROR, "0x%llx\n", FaultRecord.Fault[Index]));
+      }
+
+      // Dump PTE's if translation related fault
+      if (((FaultRecord.Fault[0] & 0xFF) == 0x10) || ((FaultRecord.Fault[0] & 0xFF) == 0x11) ||
+          ((FaultRecord.Fault[0] & 0xFF) == 0x12) || ((FaultRecord.Fault[0] & 0xFF) == 0x13))
+      {
+        SmmuV3DumpPageTableEntries (SmmuInfo, FaultRecord.Fault[2], SmmuInfo->PageTableRoot);
       }
     }
   }
 
   GError.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_GERROR);
   if (GError.AsUINT32 != 0) {
-    DEBUG ((DEBUG_ERROR, "%a: GError: 0x%lx\n", __func__, GError.AsUINT32));
+    DEBUG ((DEBUG_ERROR, "%a: %llx GError: 0x%lx\n", __func__, SmmuInfo->SmmuBase, GError.AsUINT32));
   }
 }
 
