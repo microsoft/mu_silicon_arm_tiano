@@ -56,14 +56,12 @@ UpdateFlags (
   IN UINT32      Index
   )
 {
-  EFI_STATUS  Status;
-  UINT64      Entry;
+  UINT64  Entry;
 
   if ((Table == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (Index >= PAGE_TABLE_SIZE)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter.\n", __func__));
-    Status = EFI_INVALID_PARAMETER;
-    ASSERT_EFI_ERROR (Status);
-    return Status;
+    ASSERT_EFI_ERROR (EFI_INVALID_PARAMETER);
+    return EFI_INVALID_PARAMETER;
   }
 
   // Allows clearing the R/W bits without affecting the other bits in the entry.
@@ -266,7 +264,6 @@ IoMmuMap (
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddress;
   IOMMU_MAP_INFO        *MapInfo;
-  SMMUV3_CMD_GENERIC    Command;
 
   if ((This == NULL) ||
       (HostAddress == NULL) ||
@@ -288,30 +285,11 @@ IoMmuMap (
   }
 
   // Invalidate TLBI Command
-  SMMUV3_BUILD_CMD_TLBI_NSNH_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
+  Status = SmmuV3TLBInvalidateAll (mSmmu);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_NSNH_ALL failed.\n", __func__));
+    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
     goto Error;
   }
-
-  SMMUV3_BUILD_CMD_TLBI_EL2_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
-    goto Error;
-  }
-
-  // Issue a CMD_SYNC command to guarantee that any previously issued TLB
-  // invalidations (CMD_TLBI_*) are completed (SMMUv3.2 spec section 4.6.3).
-  SMMUV3_BUILD_CMD_SYNC_NO_INTERRUPT (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_SYNC_NO_INTERRUPT failed.\n", __func__));
-    goto Error;
-  }
-
-  ArmDataSynchronizationBarrier ();
 
   // Allocate and fill the IOMMU_MAP_INFO structure with mapped information
   *DeviceAddress = PhysicalAddress; // Identity mapping
@@ -350,9 +328,8 @@ IoMmuUnmap (
   IN  VOID                  *Mapping
   )
 {
-  EFI_STATUS          Status;
-  SMMUV3_CMD_GENERIC  Command;
-  IOMMU_MAP_INFO      *MapInfo;
+  EFI_STATUS      Status;
+  IOMMU_MAP_INFO  *MapInfo;
 
   if ((This == NULL) || (Mapping == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
@@ -369,30 +346,11 @@ IoMmuUnmap (
   }
 
   // Invalidate TLBI Command
-  SMMUV3_BUILD_CMD_TLBI_NSNH_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
+  Status = SmmuV3TLBInvalidateAll (mSmmu);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_NSNH_ALL failed.\n", __func__));
+    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
     goto Error;
   }
-
-  SMMUV3_BUILD_CMD_TLBI_EL2_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
-    goto Error;
-  }
-
-  // Issue a CMD_SYNC command to guarantee that any previously issued TLB
-  // invalidations (CMD_TLBI_*) are completed (SMMUv3.2 spec section 4.6.3).
-  SMMUV3_BUILD_CMD_SYNC_NO_INTERRUPT (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_SYNC_NO_INTERRUPT failed.\n", __func__));
-    goto Error;
-  }
-
-  ArmDataSynchronizationBarrier ();
 
   // Free the mapping structure allocated in IoMmuMap
   if (MapInfo != NULL) {
@@ -530,9 +488,8 @@ IoMmuSetAttribute (
   IN UINT64                IoMmuAccess
   )
 {
-  EFI_STATUS          Status;
-  IOMMU_MAP_INFO      *MapInfo;
-  SMMUV3_CMD_GENERIC  Command;
+  EFI_STATUS      Status;
+  IOMMU_MAP_INFO  *MapInfo;
 
   if ((This == NULL) || (Mapping == NULL) || ((IoMmuAccess & ~(EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)) != 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
@@ -556,30 +513,11 @@ IoMmuSetAttribute (
   }
 
   // Invalidate TLBI Command
-  SMMUV3_BUILD_CMD_TLBI_NSNH_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
+  Status = SmmuV3TLBInvalidateAll (mSmmu);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_NSNH_ALL failed.\n", __func__));
+    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
     goto Error;
   }
-
-  SMMUV3_BUILD_CMD_TLBI_EL2_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
-    goto Error;
-  }
-
-  // Issue a CMD_SYNC command to guarantee that any previously issued TLB
-  // invalidations (CMD_TLBI_*) are completed (SMMUv3.2 spec section 4.6.3).
-  SMMUV3_BUILD_CMD_SYNC_NO_INTERRUPT (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_SYNC_NO_INTERRUPT failed.\n", __func__));
-    goto Error;
-  }
-
-  ArmDataSynchronizationBarrier ();
 
   // Only prints errors if Event Queue is not empty and GError != 0
   SmmuV3LogErrors (mSmmu);

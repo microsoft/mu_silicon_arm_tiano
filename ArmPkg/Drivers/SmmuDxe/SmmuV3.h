@@ -407,4 +407,18 @@ SmmuV3SendCommand (
   IN SMMUV3_CMD_GENERIC  *Command
   );
 
+/**
+  Invalidate all TLB entries in the SMMUv3.
+
+  @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
+
+  @retval EFI_SUCCESS            Success.
+  @retval EFI_TIMEOUT            Timeout.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+**/
+EFI_STATUS
+SmmuV3TLBInvalidateAll (
+  IN SMMU_INFO  *SmmuInfo
+  );
+
 #endif

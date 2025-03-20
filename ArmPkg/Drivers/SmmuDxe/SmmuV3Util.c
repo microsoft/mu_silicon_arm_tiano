@@ -817,3 +817,54 @@ SmmuV3SendCommand (
 
   return Status;
 }
+
+/**
+  Invalidate all TLB entries in the SMMUv3.
+
+  @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
+
+  @retval EFI_SUCCESS            Success.
+  @retval EFI_TIMEOUT            Timeout.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+**/
+EFI_STATUS
+SmmuV3TLBInvalidateAll (
+  IN SMMU_INFO  *SmmuInfo
+  )
+{
+  SMMUV3_CMD_GENERIC  Command;
+  EFI_STATUS          Status;
+
+  if (SmmuInfo == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Invalidate TLBI Commands
+  SMMUV3_BUILD_CMD_TLBI_NSNH_ALL (&Command);
+  Status = SmmuV3SendCommand (SmmuInfo, &Command);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_NSNH_ALL failed.\n", __func__));
+    return Status;
+  }
+
+  SMMUV3_BUILD_CMD_TLBI_EL2_ALL (&Command);
+  Status = SmmuV3SendCommand (SmmuInfo, &Command);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
+    return Status;
+  }
+
+  // Issue a CMD_SYNC command to guarantee that any previously issued TLB
+  // invalidations (CMD_TLBI_*) are completed (SMMUv3.2 spec section 4.6.3).
+  SMMUV3_BUILD_CMD_SYNC_NO_INTERRUPT (&Command);
+  Status = SmmuV3SendCommand (SmmuInfo, &Command);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: CMD_SYNC_NO_INTERRUPT failed.\n", __func__));
+    return Status;
+  }
+
+  ArmDataSynchronizationBarrier ();
+
+  return Status;
+}
