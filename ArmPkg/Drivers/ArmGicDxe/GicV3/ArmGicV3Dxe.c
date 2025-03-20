@@ -628,7 +628,7 @@ GicV3DxeInitialize (
 
   RegValue = ArmGicV3GetControlSystemRegisterEnable ();
   if ((RegValue & ICC_SRE_EL2_SRE) == 0) {
-    ArmGicV3SetControlSystemRegisterEnable (RegValue | ICC_SRE_EL2_SRE);
+    ArmGicV3SetControlSystemRegisterEnable ((UINT32)RegValue | ICC_SRE_EL2_SRE);
     ASSERT ((ArmGicV3GetControlSystemRegisterEnable () & ICC_SRE_EL2_SRE) != 0);
   }
 
@@ -688,7 +688,7 @@ GicV3DxeInitialize (
   ArmGicV3SetPriorityMask (0xff);
 
   // Use combined priority drop and deactivate (EOImode == 0)
-  RegValue  = ArmGicV3GetControlRegister ();
+  RegValue  = (UINT64)ArmGicV3GetControlRegister ();
   RegValue &= ~(UINT64)ICC_CTLR_EOImode;
   ArmGicV3SetControlRegister (RegValue);
 

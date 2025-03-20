@@ -7,7 +7,6 @@
 //
 
     AREA |.text|, CODE, READONLY
-    ALIGN 3
 
     EXPORT ArmMonitorCall
 
