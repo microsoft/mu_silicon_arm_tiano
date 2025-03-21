@@ -211,34 +211,43 @@ PageTableDeInit (
 
   @param [in]   SmmuInfo       Pointer to the SMMU_INFO structure.
   @param [out]  QueueLog2Size  Pointer to store the log2 size of the queue.
+  @param [out]  EventQueueBase Pointer to store the base address of the allocated event queue.
 
-  @retval Pointer to the allocated event queue, or NULL on failure.
+  @retval EFI_SUCCESS          The event queue was allocated successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+  @retval EFI_OUT_OF_RESOURCES  Allocation failed due to insufficient resources.
 **/
 STATIC
-VOID *
+EFI_STATUS
 SmmuV3AllocateEventQueue (
-  IN SMMU_INFO  *SmmuInfo,
-  OUT UINT32    *QueueLog2Size
+  IN  SMMU_INFO  *SmmuInfo,
+  OUT UINT32     *QueueLog2Size,
+  OUT VOID       **EventQueueBase
   )
 {
   UINT32       QueueSize;
   SMMUV3_IDR1  Idr1;
-  VOID         *EventQueueBase;
   UINT32       Pages;
 
-  if ((SmmuInfo == NULL) || (QueueLog2Size == NULL)) {
+  if ((SmmuInfo == NULL) || (QueueLog2Size == NULL) || (EventQueueBase == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
-    return NULL;
+    return EFI_INVALID_PARAMETER;
   }
 
   Idr1.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_IDR1);
 
-  *QueueLog2Size = MIN (Idr1.EventQs, SMMUV3_EVENT_QUEUE_LOG2ENTRIES);
-  QueueSize      = SMMUV3_EVENT_QUEUE_SIZE_FROM_LOG2 (*QueueLog2Size);
-  Pages          = EFI_SIZE_TO_PAGES (QueueSize);
-  EventQueueBase = AllocatePages (Pages);
-  ZeroMem (EventQueueBase, EFI_PAGES_TO_SIZE (Pages));
-  return EventQueueBase;
+  *QueueLog2Size  = MIN (Idr1.EventQs, SMMUV3_EVENT_QUEUE_LOG2ENTRIES);
+  QueueSize       = SMMUV3_EVENT_QUEUE_SIZE_FROM_LOG2 (*QueueLog2Size);
+  Pages           = EFI_SIZE_TO_PAGES (QueueSize);
+  *EventQueueBase = AllocatePages (Pages);
+
+  if (*EventQueueBase == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Allocation failed\n", __func__));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  ZeroMem (*EventQueueBase, EFI_PAGES_TO_SIZE (Pages));
+  return EFI_SUCCESS;
 }
 
 /**
@@ -246,24 +255,27 @@ SmmuV3AllocateEventQueue (
 
   @param [in]   SmmuInfo       Pointer to the SMMU_INFO structure.
   @param [out]  QueueLog2Size  Pointer to store the log2 size of the queue.
+  @param [out]  CmdQueueBase   Pointer to store the base address of the allocated command queue.
 
-  @retval Pointer to the allocated command queue, or NULL on failure.
+  @retval EFI_SUCCESS          The command queue was allocated successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+  @retval EFI_OUT_OF_RESOURCES  Allocation failed due to insufficient resources.
 **/
 STATIC
-VOID *
+EFI_STATUS
 SmmuV3AllocateCommandQueue (
   IN  SMMU_INFO  *SmmuInfo,
-  OUT UINT32     *QueueLog2Size
+  OUT UINT32     *QueueLog2Size,
+  OUT VOID       **CmdQueueBase
   )
 {
   UINT32       QueueSize;
   SMMUV3_IDR1  Idr1;
-  VOID         *CmdQueueBase;
   UINT32       Pages;
 
-  if ((SmmuInfo == NULL) || (QueueLog2Size == NULL)) {
+  if ((SmmuInfo == NULL) || (QueueLog2Size == NULL) || (CmdQueueBase == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
-    return NULL;
+    return EFI_INVALID_PARAMETER;
   }
 
   Idr1.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_IDR1);
@@ -271,9 +283,15 @@ SmmuV3AllocateCommandQueue (
   *QueueLog2Size = MIN (Idr1.CmdQs, SMMUV3_COMMAND_QUEUE_LOG2ENTRIES);
   QueueSize      = SMMUV3_COMMAND_QUEUE_SIZE_FROM_LOG2 (*QueueLog2Size);
   Pages          = EFI_SIZE_TO_PAGES (QueueSize);
-  CmdQueueBase   = AllocatePages (Pages);
-  ZeroMem (CmdQueueBase, EFI_PAGES_TO_SIZE (Pages));
-  return CmdQueueBase;
+  *CmdQueueBase  = AllocatePages (Pages);
+
+  if (*CmdQueueBase == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Allocation failed\n", __func__));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  ZeroMem (*CmdQueueBase, EFI_PAGES_TO_SIZE (Pages));
+  return EFI_SUCCESS;
 }
 
 /**
@@ -621,11 +639,15 @@ SmmuV3Configure (
     CopyMem (&StreamTablePtr[Index], &TemplateStreamEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
   }
 
-  CommandQueue = SmmuV3AllocateCommandQueue (SmmuInfo, &CommandQueueLog2Size);
-  EventQueue   = SmmuV3AllocateEventQueue (SmmuInfo, &EventQueueLog2Size);
-  if ((CommandQueue == NULL) || (EventQueue == NULL)) {
-    DEBUG ((DEBUG_ERROR, "%a: Error allocating SMMU Queues\n", __func__));
-    Status = EFI_OUT_OF_RESOURCES;
+  Status = SmmuV3AllocateCommandQueue (SmmuInfo, &CommandQueueLog2Size, &CommandQueue);
+  if (EFI_ERROR (Status) || (CommandQueue == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Error allocating SMMU Command Queue\n", __func__));
+    goto End;
+  }
+
+  Status = SmmuV3AllocateEventQueue (SmmuInfo, &EventQueueLog2Size, &EventQueue);
+  if (EFI_ERROR (Status) || (EventQueue == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Error allocating SMMU Event Queue\n", __func__));
     goto End;
   }
 
