@@ -25,7 +25,7 @@ extends:
     do_ci_build: true
     do_ci_setup: true
     do_non_ci_build: false
-    do_non_ci_setup: true
+    do_non_ci_setup: false
     do_pr_eval: true
     container_build: true
     os_type: Linux
