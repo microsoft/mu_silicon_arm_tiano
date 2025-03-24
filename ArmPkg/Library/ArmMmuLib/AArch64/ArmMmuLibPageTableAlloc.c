@@ -12,7 +12,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Protocol/ArmPageTableMemoryAllocation.h>
 
-PAGE_TABLE_MEM_ALLOC_PROTOCOL  *mPageTableMemAllocProtocol = NULL;
+PAGE_TABLE_MEM_ALLOC_PROTOCOL  *PageTableMemAllocProtocol = NULL;
 
 /**
   Allocates pages for the page table from a reserved pool.
@@ -21,21 +21,22 @@ PAGE_TABLE_MEM_ALLOC_PROTOCOL  *mPageTableMemAllocProtocol = NULL;
 
   @return A pointer to the allocated buffer or NULL if allocation fails
 **/
+static
 VOID *
 AllocatePageTableMemory (
   IN UINTN  Pages
   )
 {
-  if (mPageTableMemAllocProtocol == NULL) {
+  if (PageTableMemAllocProtocol == NULL) {
     gBS->LocateProtocol (
            &gArmPageTableMemoryAllocationProtocolGuid,
            NULL,
-           (VOID **)&mPageTableMemAllocProtocol
+           (VOID **)&PageTableMemAllocProtocol
            );
   }
 
-  if (mPageTableMemAllocProtocol != NULL) {
-    return mPageTableMemAllocProtocol->AllocatePageTableMemory (Pages);
+  if (PageTableMemAllocProtocol != NULL) {
+    return PageTableMemAllocProtocol->AllocatePageTableMem (Pages);
   }
 
   return AllocatePages (Pages);

@@ -34,7 +34,7 @@ VOID *
   );
 
 typedef struct _PAGE_TABLE_MEM_ALLOC_PROTOCOL {
-  ALLOCATE_PAGE_TABLE_MEMORY    AllocatePageTableMemory;
+  ALLOCATE_PAGE_TABLE_MEMORY    AllocatePageTableMem;
 } PAGE_TABLE_MEM_ALLOC_PROTOCOL;
 
 #endif
