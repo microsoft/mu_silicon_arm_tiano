@@ -138,7 +138,6 @@ ArmGicV3GetControlRegister ENDP
 //  );
 ArmGicV3SetControlRegister PROC
         msr     ICC_CTLR_EL1, x0
-        isb     sy
         ret
 ArmGicV3SetControlRegister ENDP
 
