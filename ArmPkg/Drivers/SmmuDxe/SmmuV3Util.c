@@ -126,14 +126,14 @@ SmmuV3SetTranslationStartingLevel (
   OUT UINT64    *S2Sl0
   )
 {
-  if ((OutputAddressWidth > 48) || (OutputAddressWidth < 32)) {
-    DEBUG ((DEBUG_ERROR, "%a: OutputAddressWidth not supported.\n", __func__));
+  if ((OutputAddressWidth > PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MAX) || (OutputAddressWidth < PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MIN)) {
+    DEBUG ((DEBUG_ERROR, "%a: OutputAddressWidth %d not supported.\n", __func__, OutputAddressWidth));
     return EFI_INVALID_PARAMETER;
   }
 
   // Per the Arm ARM VMSA spec, >= 44 bits of address width requires 4 level paging.
   // Otherwise, 3 level paging is used.
-  if (OutputAddressWidth >= 44) {
+  if (OutputAddressWidth >= PAGE_TABLE_4_LEVEL_OUTPUT_ADDRESS_WIDTH_MIN) {
     SmmuInfo->TranslationStartingLevel = 0; // 4 level paging
     *S2Sl0                             = 0x2;
   } else {
@@ -820,6 +820,7 @@ SmmuV3SendCommand (
 
 /**
   Invalidate all TLB entries in the SMMUv3.
+  TODO: Change to use CMD_TLBI_S2_IPA instead of ALL.
 
   @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
 

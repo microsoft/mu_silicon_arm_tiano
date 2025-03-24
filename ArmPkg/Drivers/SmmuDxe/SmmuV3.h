@@ -18,6 +18,9 @@
 // Number of levels in the page table
 #define PAGE_TABLE_DEPTH  4
 #define PAGE_TABLE_INDEX(VirtualAddress, Level)  (((VirtualAddress) >> (12 + (9 * (PAGE_TABLE_DEPTH - 1 - (Level))))) & 0x1FF)
+#define PAGE_TABLE_4_LEVEL_OUTPUT_ADDRESS_WIDTH_MIN  44
+#define PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MAX          48
+#define PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MIN          32
 
 // Macro to align values down. Alignment is required to be power of 2.
 #define ALIGN_DOWN_BY(length, alignment) \

@@ -36,7 +36,6 @@
   ArmLib
   BaseLib
   BaseMemoryLib
-  CacheMaintenanceLib
   IoLib
   HobLib
   MemoryAllocationLib

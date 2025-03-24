@@ -14,7 +14,6 @@
 #include <Library/ArmLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
-#include <Library/CacheMaintenanceLib.h>
 #include <Library/DebugLib.h>
 #include <Library/IoLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -36,10 +35,10 @@ typedef struct IOMMU_MAP_INFO {
 } IOMMU_MAP_INFO;
 
 /**
-  Update the flags of a page table entry per Arm Architecture Reference Manual for A profile.
+  Update the RW flags of a page table entry per Arm Architecture Reference Manual for A profile.
   <https://developer.arm.com/documentation/102105/ka-07>
 
-  The bottom 12 bits of a PAGE_TABLE_ENTRY, such as R/W, Access Flags, Valid flags, can be set or cleared. Only allows clearing of R/W bits
+  The bottom 12 bits of a PAGE_TABLE_ENTRY, such as R/W. Only allows setting/clearing of R/W bits
 
   @param [in]  Table                  Pointer to the page table.
   @param [in]  Flags                  Flags such as Read/Write Flags to set or clear. Only allows clearing of R/W bits. 12 bits or less.
@@ -50,7 +49,7 @@ typedef struct IOMMU_MAP_INFO {
 **/
 STATIC
 EFI_STATUS
-UpdateFlags (
+UpdateReadWriteFlags (
   IN PAGE_TABLE  *Table,
   IN UINT16      Flags,
   IN UINT32      Index
@@ -58,21 +57,18 @@ UpdateFlags (
 {
   UINT64  Entry;
 
-  if ((Table == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (Index >= PAGE_TABLE_SIZE)) {
+  if ((Table == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (Index >= PAGE_TABLE_SIZE) ||
+      ((Flags & ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT)) != 0))
+  {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter.\n", __func__));
     ASSERT_EFI_ERROR (EFI_INVALID_PARAMETER);
     return EFI_INVALID_PARAMETER;
   }
 
   // Allows clearing the R/W bits without affecting the other bits in the entry.
-  if (Flags != 0) {
-    // Set R/W bits in page table entry
-    Entry = Table->Entries[Index] | Flags;
-  } else {
-    // Clear R/W bits in page table entry
-    Entry = Table->Entries[Index] & ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT);
-  }
-
+  Entry = Table->Entries[Index] & ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT);
+  // Set R/W bits in page table entry
+  Entry                |= Flags;
   Table->Entries[Index] = Entry;
 
   return EFI_SUCCESS;
@@ -136,7 +132,6 @@ UpdateMapping (
       }
 
       ZeroMem ((VOID *)NewPage, EFI_PAGE_SIZE);
-      WriteBackInvalidateDataCacheRange (NewPage, EFI_PAGE_SIZE);
 
       Entry                   = (PAGE_TABLE_ENTRY)(UINTN)NewPage | PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
       Current->Entries[Index] = Entry; // valid entry
@@ -160,11 +155,10 @@ UpdateMapping (
         Entry                  |= PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
         Current->Entries[Index] =  Entry;
       } else {
-        Entry                   = Current->Entries[Index] & ~PAGE_TABLE_ENTRY_VALID_BIT; // invalidate entry
-        Current->Entries[Index] = Entry;                                                 // only invalidate leaf entry
+        Current->Entries[Index] = Current->Entries[Index] & ~PAGE_TABLE_ENTRY_VALID_BIT; // only invalidate leaf entry
       }
     } else {
-      Status = UpdateFlags (Current, Flags, Index);
+      Status = UpdateReadWriteFlags (Current, Flags, Index);
       if (EFI_ERROR (Status)) {
         goto Error;
       }
@@ -228,6 +222,13 @@ UpdatePageTable (
     CurPhysicalAddress += EFI_PAGE_SIZE;
   }
 
+  // Invalidate TLBI Command
+  Status = SmmuV3TLBInvalidateAll (mSmmu);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
+    goto Error;
+  }
+
   return Status;
 
 Error:
@@ -284,13 +285,6 @@ IoMmuMap (
     goto Error;
   }
 
-  // Invalidate TLBI Command
-  Status = SmmuV3TLBInvalidateAll (mSmmu);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
-    goto Error;
-  }
-
   // Allocate and fill the IOMMU_MAP_INFO structure with mapped information
   *DeviceAddress = PhysicalAddress; // Identity mapping
 
@@ -342,13 +336,6 @@ IoMmuUnmap (
   Status = UpdatePageTable (mSmmu->PageTableRoot, MapInfo->PhysicalAddress, MapInfo->NumberOfBytes, 0, FALSE, FALSE);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
-  }
-
-  // Invalidate TLBI Command
-  Status = SmmuV3TLBInvalidateAll (mSmmu);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
     goto Error;
   }
 
@@ -509,13 +496,6 @@ IoMmuSetAttribute (
              );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
-  }
-
-  // Invalidate TLBI Command
-  Status = SmmuV3TLBInvalidateAll (mSmmu);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
     goto Error;
   }
 
