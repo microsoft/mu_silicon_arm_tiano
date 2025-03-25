@@ -15,14 +15,12 @@
   <https://developer.arm.com/documentation/102105/ka-07>
   Section D8.3.1 VMSAv8-64 descriptor formats
 **/
-#define PAGE_TABLE_DEPTH            4                           // Number of levels in the page table
 #define PAGE_TABLE_READ_BIT         (0x1 << 6)
 #define PAGE_TABLE_WRITE_BIT        (0x1 << 7)
 #define PAGE_TABLE_ENTRY_VALID_BIT  0x1
 #define PAGE_TABLE_BLOCK_OFFSET     0xFFF
 #define PAGE_TABLE_ACCESS_FLAG      (0x1 << 10)
 #define PAGE_TABLE_DESCRIPTOR       (0x1 << 1)
-#define PAGE_TABLE_INDEX(VirtualAddress, Level)               (((VirtualAddress) >> (12 + (9 * (PAGE_TABLE_DEPTH - 1 - (Level))))) & 0x1FF)
 #define PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS(IoMmuAccess)  (IoMmuAccess << 6)
 
 /**

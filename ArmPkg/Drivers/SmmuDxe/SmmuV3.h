@@ -15,6 +15,13 @@
 #include <Register/SmmuV3Registers.h>
 #include <Uefi/UefiBaseType.h>
 
+// Number of levels in the page table
+#define PAGE_TABLE_DEPTH  4
+#define PAGE_TABLE_INDEX(VirtualAddress, Level)  (((VirtualAddress) >> (12 + (9 * (PAGE_TABLE_DEPTH - 1 - (Level))))) & 0x1FF)
+#define PAGE_TABLE_4_LEVEL_OUTPUT_ADDRESS_WIDTH_MIN  44
+#define PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MAX          48
+#define PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MIN          32
+
 // Macro to align values down. Alignment is required to be power of 2.
 #define ALIGN_DOWN_BY(length, alignment) \
     ((UINT64)(length) & ~((UINT64)(alignment) - 1))
@@ -150,6 +157,7 @@ typedef struct _SMMU_INFO {
   VOID          *StreamTable;
   VOID          *CommandQueue;
   VOID          *EventQueue;
+  UINT8         TranslationStartingLevel;
   UINT64        SmmuBase;
   UINT32        StreamTableSize;
   UINT32        CommandQueueSize;
@@ -184,6 +192,24 @@ SmmuV3DecodeAddressWidth (
 UINT8
 SmmuV3EncodeAddressWidth (
   IN UINT32  AddressWidth
+  );
+
+/**
+  Set the translation starting level for SMMUv3 page tables.
+  Only 3 and 4 level paging are supported.
+
+  @param [in]  SmmuInfo           Pointer to the SMMU_INFO structure.
+  @param [in]  OutputAddressWidth  The output address width.
+  @param [out] S2Sl0              The starting level for stage 2 translation.
+
+  @retval EFI_SUCCESS              Success.
+  @retval EFI_INVALID_PARAMETER    Invalid parameter.
+**/
+EFI_STATUS
+SmmuV3SetTranslationStartingLevel (
+  IN SMMU_INFO  *SmmuInfo,
+  IN UINT32     OutputAddressWidth,
+  OUT UINT64    *S2Sl0
   );
 
 /**
@@ -382,6 +408,20 @@ EFI_STATUS
 SmmuV3SendCommand (
   IN SMMU_INFO           *SmmuInfo,
   IN SMMUV3_CMD_GENERIC  *Command
+  );
+
+/**
+  Invalidate all TLB entries in the SMMUv3.
+
+  @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
+
+  @retval EFI_SUCCESS            Success.
+  @retval EFI_TIMEOUT            Timeout.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+**/
+EFI_STATUS
+SmmuV3TLBInvalidateAll (
+  IN SMMU_INFO  *SmmuInfo
   );
 
 #endif

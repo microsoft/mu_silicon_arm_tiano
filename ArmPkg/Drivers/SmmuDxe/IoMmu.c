@@ -12,6 +12,7 @@
 
 #include <Uefi.h>
 #include <Library/ArmLib.h>
+#include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/IoLib.h>
@@ -34,13 +35,12 @@ typedef struct IOMMU_MAP_INFO {
 } IOMMU_MAP_INFO;
 
 /**
-  Update the flags of a page table entry per Arm Architecture Reference Manual for A profile.
+  Update the RW flags of a page table entry per Arm Architecture Reference Manual for A profile.
   <https://developer.arm.com/documentation/102105/ka-07>
 
-  The bottom 12 bits of a PAGE_TABLE_ENTRY, such as R/W, Access Flags, Valid flags, can be set or cleared. Only allows clearing of R/W bits
+  The bottom 12 bits of a PAGE_TABLE_ENTRY, such as R/W. Only allows setting/clearing of R/W bits
 
   @param [in]  Table                  Pointer to the page table.
-  @param [in]  SetReadWriteFlagsOnly  Boolean to indicate if only R/W flags should be set.
   @param [in]  Flags                  Flags such as Read/Write Flags to set or clear. Only allows clearing of R/W bits. 12 bits or less.
   @param [in]  Index                  Index of the entry to update. <= PAGE_TABLE_SIZE
 
@@ -49,40 +49,29 @@ typedef struct IOMMU_MAP_INFO {
 **/
 STATIC
 EFI_STATUS
-UpdateFlags (
+UpdateReadWriteFlags (
   IN PAGE_TABLE  *Table,
-  IN BOOLEAN     SetReadWriteFlagsOnly,
   IN UINT16      Flags,
   IN UINT32      Index
   )
 {
-  EFI_STATUS  Status;
+  UINT64  Entry;
 
-  if ((Table == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (Index >= PAGE_TABLE_SIZE)) {
+  if ((Table == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (Index >= PAGE_TABLE_SIZE) ||
+      ((Flags & ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT)) != 0))
+  {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter.\n", __func__));
-    Status = EFI_INVALID_PARAMETER;
-    ASSERT_EFI_ERROR (Status);
-    return Status;
+    ASSERT_EFI_ERROR (EFI_INVALID_PARAMETER);
+    return EFI_INVALID_PARAMETER;
   }
 
-  Status = EFI_SUCCESS;
-
-  // This boolean is used to explicity update the R/W bits in the page table entry.
   // Allows clearing the R/W bits without affecting the other bits in the entry.
-  if (SetReadWriteFlagsOnly) {
-    if (Flags != 0) {
-      // Set R/W bits in page table entry
-      Table->Entries[Index] |= Flags;
-    } else {
-      // Clear R/W bits in page table entry
-      Table->Entries[Index] &= ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT);
-    }
-  } else {
-    // Set R/W bits in page table entry
-    Table->Entries[Index] |= Flags;
-  }
+  Entry = Table->Entries[Index] & ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT);
+  // Set R/W bits in page table entry
+  Entry                |= Flags;
+  Table->Entries[Index] = Entry;
 
-  return Status;
+  return EFI_SUCCESS;
 }
 
 /**
@@ -119,6 +108,7 @@ UpdateMapping (
   UINT8       Level;
   UINT32      Index;
   PAGE_TABLE  *Current;
+  UINT64      Entry;
 
   // Flags must be 12 bits or less
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0)) {
@@ -130,7 +120,7 @@ UpdateMapping (
   Current = Root;
 
   // Traverse the page table to the leaf level
-  for (Level = 0; Level < PAGE_TABLE_DEPTH - 1; Level++) {
+  for (Level = mSmmu->TranslationStartingLevel; Level < PAGE_TABLE_DEPTH - 1; Level++) {
     Index = PAGE_TABLE_INDEX (VirtualAddress, Level);
 
     if (Current->Entries[Index] == 0) {
@@ -143,18 +133,8 @@ UpdateMapping (
 
       ZeroMem ((VOID *)NewPage, EFI_PAGE_SIZE);
 
-      Current->Entries[Index] = (PAGE_TABLE_ENTRY)(UINTN)NewPage;
-    }
-
-    if (!SetReadWriteFlagsOnly) {
-      if (Valid) {
-        Current->Entries[Index] |= PAGE_TABLE_ENTRY_VALID_BIT; // valid entry
-      }
-    }
-
-    Status = UpdateFlags (Current, SetReadWriteFlagsOnly, Flags, Index);
-    if (EFI_ERROR (Status)) {
-      goto FlagError;
+      Entry                   = (PAGE_TABLE_ENTRY)(UINTN)NewPage | PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
+      Current->Entries[Index] = Entry; // valid entry
     }
 
     Current = (PAGE_TABLE *)((UINTN)Current->Entries[Index] & ~PAGE_TABLE_BLOCK_OFFSET);
@@ -170,23 +150,25 @@ UpdateMapping (
 
     if (!SetReadWriteFlagsOnly) {
       if (Valid) {
-        Current->Entries[Index]  = (PhysicalAddress & ~PAGE_TABLE_BLOCK_OFFSET); // Assign PA
-        Current->Entries[Index] |= PAGE_TABLE_ENTRY_VALID_BIT;                   // valid entry
+        Entry = (PhysicalAddress & ~PAGE_TABLE_BLOCK_OFFSET); // Assign PA
+        // validate entry and set leaf level flags
+        Entry                  |= PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
+        Current->Entries[Index] =  Entry;
       } else {
-        Current->Entries[Index] &= ~PAGE_TABLE_ENTRY_VALID_BIT; // only invalidate leaf entry
+        Current->Entries[Index] = Current->Entries[Index] & ~PAGE_TABLE_ENTRY_VALID_BIT; // only invalidate leaf entry
       }
-    }
-
-    Status = UpdateFlags (Current, SetReadWriteFlagsOnly, Flags, Index);
-    if (EFI_ERROR (Status)) {
-      goto FlagError;
+    } else {
+      Status = UpdateReadWriteFlags (Current, Flags, Index);
+      if (EFI_ERROR (Status)) {
+        goto Error;
+      }
     }
   }
 
+  ArmDataSynchronizationBarrier ();
+  SpeculationBarrier ();
   return Status;
 
-FlagError:
-  DEBUG ((DEBUG_ERROR, "%a: Failed to update flags.\n", __func__));
 Error:
   ASSERT_EFI_ERROR (Status);
   return Status;
@@ -240,6 +222,13 @@ UpdatePageTable (
     CurPhysicalAddress += EFI_PAGE_SIZE;
   }
 
+  // Invalidate TLBI Command
+  Status = SmmuV3TLBInvalidateAll (mSmmu);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
+    goto Error;
+  }
+
   return Status;
 
 Error:
@@ -276,7 +265,6 @@ IoMmuMap (
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddress;
   IOMMU_MAP_INFO        *MapInfo;
-  UINT16                Flags;
 
   if ((This == NULL) ||
       (HostAddress == NULL) ||
@@ -290,21 +278,16 @@ IoMmuMap (
     goto Error;
   }
 
-  // Arm Architecture Reference Manual Armv8, for Armv8-A architecture profile:
-  // The VMSAv8-64 translation table format descriptors.
-  // Bit #10 AF = 1, Table/Page Descriptors for levels 0-3 so set bit #1 to 0b'1 for each entry
-  Flags = PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR;
-
   PhysicalAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress;
-  Status          = UpdatePageTable (mSmmu->PageTableRoot, PhysicalAddress, *NumberOfBytes, Flags, TRUE, FALSE);
+  Status          = UpdatePageTable (mSmmu->PageTableRoot, PhysicalAddress, *NumberOfBytes, 0, TRUE, FALSE);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
     goto Error;
   }
 
+  // Allocate and fill the IOMMU_MAP_INFO structure with mapped information
   *DeviceAddress = PhysicalAddress; // Identity mapping
 
-  // Allocate and fill the IOMMU_MAP_INFO structure with mapped information
   MapInfo                  = (IOMMU_MAP_INFO *)AllocateZeroPool (sizeof (IOMMU_MAP_INFO));
   MapInfo->NumberOfBytes   = *NumberOfBytes;
   MapInfo->VirtualAddress  = *DeviceAddress;
@@ -339,9 +322,8 @@ IoMmuUnmap (
   IN  VOID                  *Mapping
   )
 {
-  EFI_STATUS          Status;
-  SMMUV3_CMD_GENERIC  Command;
-  IOMMU_MAP_INFO      *MapInfo;
+  EFI_STATUS      Status;
+  IOMMU_MAP_INFO  *MapInfo;
 
   if ((This == NULL) || (Mapping == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
@@ -354,30 +336,6 @@ IoMmuUnmap (
   Status = UpdatePageTable (mSmmu->PageTableRoot, MapInfo->PhysicalAddress, MapInfo->NumberOfBytes, 0, FALSE, FALSE);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
-  }
-
-  // Invalidate TLBI Command
-  SMMUV3_BUILD_CMD_TLBI_NSNH_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_NSNH_ALL failed.\n", __func__));
-    goto Error;
-  }
-
-  SMMUV3_BUILD_CMD_TLBI_EL2_ALL (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
-    goto Error;
-  }
-
-  // Issue a CMD_SYNC command to guarantee that any previously issued TLB
-  // invalidations (CMD_TLBI_*) are completed (SMMUv3.2 spec section 4.6.3).
-  SMMUV3_BUILD_CMD_SYNC_NO_INTERRUPT (&Command);
-  Status = SmmuV3SendCommand (mSmmu, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_SYNC_NO_INTERRUPT failed.\n", __func__));
     goto Error;
   }
 
