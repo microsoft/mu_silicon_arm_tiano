@@ -29,8 +29,8 @@
 #include "IoMmu.h"
 #include "SmmuV3.h"
 
-// Global SMMU instance
-SMMU_INFO  *mSmmu;
+// Global IOMMU/SMMU instance
+IOMMU_CONFIG  *mIoMmu;
 
 /**
   Calculate and update the checksum of an ACPI table.
@@ -69,7 +69,8 @@ AcpiPlatformChecksum (
   Add the IORT ACPI table.
 
   @param [in]  AcpiTableProtocol    Pointer to the ACPI Table Protocol.
-  @param [in]  SmmuConfig           Pointer to the SMMU configuration.
+  @param [in]  IortData             Pointer to the IORT.
+  @param [in]  IortSize             Size of the IORT table.
 
   @retval EFI_SUCCESS               Success.
   @retval EFI_OUT_OF_RESOURCES      Out of resources.
@@ -79,30 +80,23 @@ STATIC
 EFI_STATUS
 AddIortTable (
   IN EFI_ACPI_TABLE_PROTOCOL  *AcpiTable,
-  IN SMMU_CONFIG              *SmmuConfig
+  IN VOID                     *IortData,
+  IN UINT32                   IortSize
   )
 {
   EFI_STATUS            Status;
   UINTN                 TableHandle;
-  UINT32                TableSize;
   EFI_PHYSICAL_ADDRESS  PageAddress;
-  UINT8                 *New;
 
-  if ((AcpiTable == NULL) || (SmmuConfig == NULL)) {
+  if ((AcpiTable == NULL) || (IortData == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  // Calculate the new table size based on the number of nodes in SMMU_CONFIG struct
-  TableSize = sizeof (SmmuConfig->Config.Iort) +
-              sizeof (SmmuConfig->Config.ItsNode) +
-              sizeof (SmmuConfig->Config.SmmuNode) +
-              sizeof (SmmuConfig->Config.RcNode);
-
   Status = gBS->AllocatePages (
                   AllocateAnyPages,
                   EfiACPIReclaimMemory,
-                  EFI_SIZE_TO_PAGES (TableSize),
+                  EFI_SIZE_TO_PAGES (IortSize),
                   &PageAddress
                   );
   if (EFI_ERROR (Status)) {
@@ -110,27 +104,10 @@ AddIortTable (
     return EFI_OUT_OF_RESOURCES;
   }
 
-  New = (UINT8 *)(UINTN)PageAddress;
-  ZeroMem (New, TableSize);
+  ZeroMem ((VOID *)(UINTN)PageAddress, EFI_SIZE_TO_PAGES (IortSize) * EFI_PAGE_SIZE);
+  CopyMem ((VOID *)(UINTN)PageAddress, IortData, IortSize);
 
-  // Add the ACPI Description table header
-  CopyMem (New, &SmmuConfig->Config.Iort, sizeof (SmmuConfig->Config.Iort));
-  ((EFI_ACPI_DESCRIPTION_HEADER *)New)->Length = TableSize;
-  New                                         += sizeof (SmmuConfig->Config.Iort);
-
-  // ITS Node
-  CopyMem (New, &SmmuConfig->Config.ItsNode, sizeof (SmmuConfig->Config.ItsNode));
-  New += sizeof (SmmuConfig->Config.ItsNode);
-
-  // SMMUv3 Node
-  CopyMem (New, &SmmuConfig->Config.SmmuNode, sizeof (SmmuConfig->Config.SmmuNode));
-  New += sizeof (SmmuConfig->Config.SmmuNode);
-
-  // RC Node
-  CopyMem (New, &SmmuConfig->Config.RcNode, sizeof (SmmuConfig->Config.RcNode));
-  New += sizeof (SmmuConfig->Config.RcNode);
-
-  Status = AcpiPlatformChecksum ((UINT8 *)(UINTN)PageAddress, TableSize);
+  Status = AcpiPlatformChecksum ((UINT8 *)(UINTN)PageAddress, IortSize);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to calculate checksum for IORT table\n", __func__));
     return Status;
@@ -139,7 +116,7 @@ AddIortTable (
   Status = AcpiTable->InstallAcpiTable (
                         AcpiTable,
                         (EFI_ACPI_COMMON_HEADER *)(UINTN)PageAddress,
-                        TableSize,
+                        IortSize,
                         &TableHandle
                         );
   if (EFI_ERROR (Status)) {
@@ -320,7 +297,7 @@ SmmuV3FreeQueue (
   Build the stream table for SMMUv3.
 
   @param [in]  SmmuInfo       Pointer to the SMMU_INFO structure.
-  @param [in]  SmmuConfig     Pointer to the SMMU configuration.
+  @param [in]  StreamId       Stream ID.
   @param [out] StreamEntry    Pointer to the stream table entry.
 
   @retval EFI_SUCCESS         Success.
@@ -328,9 +305,9 @@ SmmuV3FreeQueue (
 **/
 STATIC
 EFI_STATUS
-SmmuV3BuildStreamTable (
+SmmuV3BuildStreamTableEntry (
   IN SMMU_INFO                   *SmmuInfo,
-  IN SMMU_CONFIG                 *SmmuConfig,
+  IN UINT32                      StreamId,
   OUT SMMUV3_STREAM_TABLE_ENTRY  *StreamEntry
   )
 {
@@ -346,17 +323,17 @@ SmmuV3BuildStreamTable (
   UINT8        DACS;
   UINT64       S2Sl0;
 
-  if ((SmmuInfo == NULL) || (SmmuConfig == NULL) || (StreamEntry == NULL)) {
+  if ((SmmuInfo == NULL) || (SmmuInfo->StreamEntryConfig == NULL) || (StreamEntry == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  IortCohac = SmmuConfig->Config.SmmuNode.SmmuNode.Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE; // Cohac override flag
-  CCA       = SmmuConfig->Config.RcNode.RcNode.CacheCoherent;                                        // Cache Coherent Attribute
-  CPM       = SmmuConfig->Config.RcNode.RcNode.MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_CPM;    // Coherent Path to Memory
+  IortCohac = SmmuInfo->Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE;                              // Cohac override flag
+  CCA       = SmmuInfo->StreamEntryConfig[StreamId].CacheCoherentAttribute;                            // Cache Coherent Attribute
+  CPM       = SmmuInfo->StreamEntryConfig[StreamId].MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_CPM; // Coherent Path to Memory
 
   // Device attributes are Cacheable and Inner-Shareable
-  DACS = (SmmuConfig->Config.RcNode.RcNode.MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_DACS) >> 1;      // Shift by 1 to isolate DACS bit.
+  DACS = (SmmuInfo->StreamEntryConfig[StreamId].MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_DACS) >> 1;      // Shift by 1 to isolate DACS bit.
 
   ZeroMem ((VOID *)StreamEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
 
@@ -471,7 +448,6 @@ SmmuV3BuildStreamTable (
   This function uses the linear stream table.
 
   @param [in]  SmmuInfo       Pointer to the SMMU_INFO structure.
-  @param [in]  SmmuConfig     Pointer to the SMMU configuration.
   @param [out] Log2Size       Pointer to store the log2 size of the stream table.
   @param [out] Size           Pointer to store the size of the stream table.
 
@@ -480,10 +456,9 @@ SmmuV3BuildStreamTable (
 STATIC
 SMMUV3_STREAM_TABLE_ENTRY *
 SmmuV3AllocateStreamTable (
-  IN SMMU_INFO    *SmmuInfo,
-  IN SMMU_CONFIG  *SmmuConfig,
-  OUT UINT32      *Log2Size,
-  OUT UINT32      *Size
+  IN SMMU_INFO  *SmmuInfo,
+  OUT UINT32    *Log2Size,
+  OUT UINT32    *Size
   )
 {
   UINT32  MaxStreamId;
@@ -492,13 +467,13 @@ SmmuV3AllocateStreamTable (
   UINTN   Pages;
   VOID    *AllocatedAddress;
 
-  if ((SmmuInfo == NULL) || (SmmuConfig == NULL) || (Log2Size == NULL) || (Size == NULL)) {
+  if ((SmmuInfo == NULL) || (Log2Size == NULL) || (Size == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return NULL;
   }
 
   // The max stream id is calculated as the output base + the number of stream ids
-  MaxStreamId      = SmmuConfig->Config.RcNode.RcIdMap.OutputBase + SmmuConfig->Config.RcNode.RcIdMap.NumIds;
+  MaxStreamId      = SmmuInfo->StreamTableEntryMax;
   SidMsb           = HighBitSet32 (MaxStreamId);
   *Log2Size        = SidMsb + 1;
   *Size            = SMMUV3_LINEAR_STREAM_TABLE_SIZE_FROM_LOG2 (*Log2Size);
@@ -543,8 +518,8 @@ SmmuV3FreeStreamTable (
   <https://developer.arm.com/documentation/109242/0100/Programming-the-SMMU/Minimum-configuration>
   <https://developer.arm.com/documentation/ihi0070/latest/>
 
-  @param [in] SmmuInfo    Pointer to the SMMU_INFO structure.
-  @param [in] SmmuConfig  Pointer to the SMMU configuration.
+  @param [in] SmmuInfo        Pointer to the SMMU_INFO structure.
+  @param [in] PageTableRoot   Pointer to the page table root.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_INVALID_PARAMETER  Invalid parameter.
@@ -556,8 +531,8 @@ SmmuV3FreeStreamTable (
 STATIC
 EFI_STATUS
 SmmuV3Configure (
-  IN SMMU_INFO    *SmmuInfo,
-  IN SMMU_CONFIG  *SmmuConfig
+  IN SMMU_INFO   *SmmuInfo,
+  IN PAGE_TABLE  *PageTableRoot
   )
 {
   EFI_STATUS                 Status;
@@ -572,7 +547,6 @@ SmmuV3Configure (
   SMMUV3_STREAM_TABLE_ENTRY  *StreamTablePtr;
   SMMUV3_CMDQ_BASE           CommandQueueBase;
   SMMUV3_EVENTQ_BASE         EventQueueBase;
-  SMMUV3_STREAM_TABLE_ENTRY  TemplateStreamEntry;
   SMMUV3_CR0                 Cr0;
   SMMUV3_CR1                 Cr1;
   SMMUV3_CR2                 Cr2;
@@ -582,14 +556,14 @@ SmmuV3Configure (
   VOID                       *CommandQueue;
   VOID                       *EventQueue;
 
-  if ((SmmuInfo == NULL) || (SmmuConfig == NULL)) {
+  if ((SmmuInfo == NULL) || (PageTableRoot == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
   // Set ReadWriteAllocationHint based on the COHAC_OVERRIDE flag.
   // These hints are applied to the allocated Stream Table, Command Queue, and Event Queue.
-  if ((SmmuConfig->Config.SmmuNode.SmmuNode.Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE) != 0) {
+  if ((SmmuInfo->Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE) != 0) {
     ReadWriteAllocationHint = 0x1;
   } else {
     ReadWriteAllocationHint = 0x0;
@@ -609,7 +583,7 @@ SmmuV3Configure (
   }
 
   // Allocate Linear Stream Table
-  StreamTablePtr = SmmuV3AllocateStreamTable (SmmuInfo, SmmuConfig, &StreamTableLog2Size, &StreamTableSize);
+  StreamTablePtr = SmmuV3AllocateStreamTable (SmmuInfo, &StreamTableLog2Size, &StreamTableSize);
   if (StreamTablePtr == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Error allocating stream table\n", __func__));
     Status = EFI_OUT_OF_RESOURCES;
@@ -620,23 +594,20 @@ SmmuV3Configure (
   SmmuInfo->StreamTableSize     = StreamTableSize;
   SmmuInfo->StreamTableLog2Size = StreamTableLog2Size;
 
-  SmmuInfo->PageTableRoot = PageTableInit ();
+  SmmuInfo->PageTableRoot = PageTableRoot;
   if (SmmuInfo->PageTableRoot == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Error initializing Page Table\n", __func__));
     Status = EFI_OUT_OF_RESOURCES;
     goto End;
   }
 
-  // Build default STE template
-  Status = SmmuV3BuildStreamTable (SmmuInfo, SmmuConfig, &TemplateStreamEntry);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Error building stream table\n", __func__));
-    goto End;
-  }
-
   // Load default STE values
-  for (Index = 0; Index < SMMUV3_COUNT_FROM_LOG2 (StreamTableLog2Size); Index++) {
-    CopyMem (&StreamTablePtr[Index], &TemplateStreamEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
+  for (Index = 0; Index < SmmuInfo->StreamTableEntryMax; Index++) {
+    Status = SmmuV3BuildStreamTableEntry (SmmuInfo, Index, &StreamTablePtr[Index]);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Error building stream table\n", __func__));
+      goto End;
+    }
   }
 
   Status = SmmuV3AllocateCommandQueue (SmmuInfo, &CommandQueueLog2Size, &CommandQueue);
@@ -696,7 +667,7 @@ SmmuV3Configure (
   // Configure CR1
   Cr1.AsUINT32  = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CR1);
   Cr1.AsUINT32 &= ~SMMUV3_CR1_VALID_MASK;
-  if ((SmmuConfig->Config.SmmuNode.SmmuNode.Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE) != 0) {
+  if ((SmmuInfo->Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE) != 0) {
     Cr1.QueueIc = ARM64_RGNCACHEATTR_WRITEBACK_WRITEALLOCATE; // WBC
     Cr1.QueueOc = ARM64_RGNCACHEATTR_WRITEBACK_WRITEALLOCATE; // WBC
     Cr1.QueueSh = ARM64_SHATTR_INNER_SHAREABLE;               // Inner-shareable
@@ -865,28 +836,23 @@ CheckSmmuConfigVersion (
 }
 
 /**
-  Initialize the SMMU_INFO structure.
+  Initialize the IOMMU_CONFIG structure.
 
-  @param [in] SmmuBase The base address of the SMMU.
 
-  @retval Pointer to the allocated SMMU_INFO structure, or NULL on failure.
+  @retval Pointer to the allocated IOMMU_CONFIG structure, or NULL on failure.
 **/
-STATIC
-SMMU_INFO *
-SmmuInit (
-  IN UINT64  SmmuBase
+EFI_STATUS
+IoMmuConfigInit (
+  OUT IOMMU_CONFIG  **IoMmu
   )
 {
-  SMMU_INFO  *SmmuInfo;
-
-  if (SmmuBase == 0) {
-    DEBUG ((DEBUG_ERROR, "%a: Invalid SMMU base address\n", __func__));
-    return NULL;
+  *IoMmu = (IOMMU_CONFIG *)AllocateZeroPool (sizeof (IOMMU_CONFIG));
+  if (*IoMmu == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to allocate IOMMU_CONFIG structure\n", __func__));
+    return EFI_OUT_OF_RESOURCES;
   }
 
-  SmmuInfo           = (SMMU_INFO *)AllocateZeroPool (sizeof (SMMU_INFO));
-  SmmuInfo->SmmuBase = SmmuBase;
-  return SmmuInfo;
+  return EFI_SUCCESS;
 }
 
 /**
@@ -897,48 +863,57 @@ SmmuInit (
 **/
 STATIC
 VOID
-SmmuDeInit (
-  IN SMMU_INFO  *SmmuInfo
+IoMmuDeInit (
+  IN IOMMU_CONFIG  *IoMmu
   )
 {
   EFI_STATUS  Status;
+  UINT32      SmmuIndex;
 
-  if (SmmuInfo == NULL) {
+  if (IoMmu == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: SMMU_INFO structure is NULL\n", __func__));
     return;
   }
 
-  Status = SmmuV3DisableTranslation (SmmuInfo->SmmuBase);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to disable SMMUv3 translation\n", __func__));
+  for (SmmuIndex = 0; SmmuIndex < IoMmu->SmmuCount; SmmuIndex++) {
+    Status = SmmuV3DisableTranslation (IoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Failed to disable SMMUv3 translation 0x%llx\n", __func__, IoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+    }
+
+    Status = SmmuV3GlobalAbort (IoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Failed to global abort SMMUv3 0x%llx\n", __func__, IoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+    }
+
+    if (IoMmu->SmmuInfo[SmmuIndex].PageTableRoot != NULL) {
+      PageTableDeInit (0, IoMmu->SmmuInfo[SmmuIndex].PageTableRoot);
+      IoMmu->SmmuInfo->PageTableRoot = NULL;
+    }
+
+    if (IoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig != NULL) {
+      FreePool (IoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig);
+      IoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig = NULL;
+    }
+
+    if (IoMmu->SmmuInfo[SmmuIndex].StreamTable != NULL) {
+      SmmuV3FreeStreamTable (IoMmu->SmmuInfo[SmmuIndex].StreamTable, IoMmu->SmmuInfo[SmmuIndex].StreamTableSize);
+      IoMmu->SmmuInfo[SmmuIndex].StreamTable = NULL;
+    }
+
+    if (IoMmu->SmmuInfo[SmmuIndex].CommandQueue != NULL) {
+      SmmuV3FreeQueue (IoMmu->SmmuInfo[SmmuIndex].CommandQueue, IoMmu->SmmuInfo[SmmuIndex].CommandQueueLog2Size);
+      IoMmu->SmmuInfo[SmmuIndex].CommandQueue = NULL;
+    }
+
+    if (IoMmu->SmmuInfo[SmmuIndex].EventQueue != NULL) {
+      SmmuV3FreeQueue (IoMmu->SmmuInfo[SmmuIndex].EventQueue, IoMmu->SmmuInfo[SmmuIndex].EventQueueLog2Size);
+      IoMmu->SmmuInfo[SmmuIndex].EventQueue = NULL;
+    }
   }
 
-  Status = SmmuV3GlobalAbort (SmmuInfo->SmmuBase);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to global abort SMMUv3\n", __func__));
-  }
-
-  if (SmmuInfo->PageTableRoot != NULL) {
-    PageTableDeInit (0, SmmuInfo->PageTableRoot);
-    SmmuInfo->PageTableRoot = NULL;
-  }
-
-  if (SmmuInfo->StreamTable != NULL) {
-    SmmuV3FreeStreamTable (SmmuInfo->StreamTable, SmmuInfo->StreamTableSize);
-    SmmuInfo->StreamTable = NULL;
-  }
-
-  if (SmmuInfo->CommandQueue != NULL) {
-    SmmuV3FreeQueue (SmmuInfo->CommandQueue, SmmuInfo->CommandQueueLog2Size);
-    SmmuInfo->CommandQueue = NULL;
-  }
-
-  if (SmmuInfo->EventQueue != NULL) {
-    SmmuV3FreeQueue (SmmuInfo->EventQueue, SmmuInfo->EventQueueLog2Size);
-    SmmuInfo->EventQueue = NULL;
-  }
-
-  FreePool (SmmuInfo);
+  FreePool (IoMmu->SmmuInfo);
+  FreePool (IoMmu);
 }
 
 /**
@@ -956,6 +931,7 @@ SmmuV3ExitBootServices (
 {
   EFI_STATUS  Status;
   EFI_TPL     OldTpl;
+  UINT32      SmmuIndex;
 
   if (Event == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Event\n", __func__));
@@ -963,24 +939,27 @@ SmmuV3ExitBootServices (
     return;
   }
 
-  if (mSmmu == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: SMMU_INFO structure is NULL\n", __func__));
-    ASSERT (mSmmu != NULL);
+  if ((mIoMmu == NULL) || (mIoMmu->SmmuInfo == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: IOMMU_CONFIG/SMMU_INFO structure is NULL\n", __func__));
+    ASSERT (mIoMmu != NULL);
+    ASSERT (mIoMmu->SmmuInfo != NULL);
     return;
   }
 
   OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
 
-  Status = SmmuV3DisableTranslation (mSmmu->SmmuBase);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu translation.\n", __func__));
-    ASSERT_EFI_ERROR (Status);
-  }
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    Status = SmmuV3DisableTranslation (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu translation.\n", __func__));
+      ASSERT_EFI_ERROR (Status);
+    }
 
-  Status = SmmuV3SetGlobalBypass (mSmmu->SmmuBase);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to set global bypass.\n", __func__));
-    ASSERT_EFI_ERROR (Status);
+    Status = SmmuV3SetGlobalBypass (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Failed to set global bypass.\n", __func__));
+      ASSERT_EFI_ERROR (Status);
+    }
   }
 
   gBS->RestoreTPL (OldTpl);
@@ -1016,6 +995,8 @@ InitializeSmmuDxe (
   EFI_EVENT                Event;
   EFI_ACPI_TABLE_PROTOCOL  *AcpiTable;
   SMMU_CONFIG              *SmmuConfig;
+  PAGE_TABLE               *PageTableRoot;
+  VOID                     *IortData;
 
   // Get SMMU configuration data from HOB
   SmmuConfig = GetSmmuConfigHobData ();
@@ -1056,25 +1037,44 @@ InitializeSmmuDxe (
     return Status;
   }
 
-  // Get SMMUv3 base address from Smmu Config HOB
-  mSmmu = SmmuInit (SmmuConfig->Config.SmmuNode.SmmuNode.Base);
-  if (mSmmu == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to allocate SMMU_INFO structure\n", __func__));
-    return EFI_OUT_OF_RESOURCES;
+  Status = IoMmuConfigInit (&mIoMmu);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to initialize IoMmu Config\n", __func__));
+    return Status;
   }
 
+  IortData = (VOID *)((UINT8 *)SmmuConfig + SmmuConfig->IortOffset);
+
+  Status = SmmuV3ParseIort (IortData, &mIoMmu->SmmuInfo, &mIoMmu->SmmuCount);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to parse IORT for SMMU\n", __func__));
+    return EFI_NOT_FOUND;
+  }
+
+  DEBUG ((DEBUG_VERBOSE, "%a: Found %u SMMUs\n", __func__, mIoMmu->SmmuCount));
+
   // Add IORT Table
-  Status = AddIortTable (AcpiTable, SmmuConfig);
+  Status = AddIortTable (AcpiTable, IortData, SmmuConfig->IortSize);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to add IORT table\n", __func__));
     goto Error;
   }
 
-  // Configure SMMUv3 hardware
-  Status = SmmuV3Configure (mSmmu, SmmuConfig);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to configure SMMUV3 hardware\n", __func__));
+  // Global Page Table until TODO: IoMmu Protocol V2 is implemented
+  PageTableRoot = PageTableInit ();
+  if (PageTableRoot == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to initialize Page Table\n", __func__));
+    Status = EFI_OUT_OF_RESOURCES;
     goto Error;
+  }
+
+  // Configure SMMUv3 hardware
+  for (UINT32 i = 0; i < mIoMmu->SmmuCount; i++) {
+    Status = SmmuV3Configure (&mIoMmu->SmmuInfo[i], PageTableRoot);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Failed to configure SMMUv3 hardware\n", __func__));
+      goto Error;
+    }
   }
 
   // Initialize IoMmu Protocol
@@ -1089,7 +1089,7 @@ InitializeSmmuDxe (
   return Status;
 
 Error:
-  SmmuDeInit (mSmmu);
-  mSmmu = NULL;
+  IoMmuDeInit (mIoMmu);
+  mIoMmu = NULL;
   return Status;
 }

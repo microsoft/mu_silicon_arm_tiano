@@ -18,8 +18,6 @@
 #ifndef SMMU_CONFIG_GUID_H_
 #define SMMU_CONFIG_GUID_H_
 
-#include <IndustryStandard/IoRemappingTable.h>
-
 /*
   The needs/requirements of the SMMU and ACPI/IORT node configuration may vary between new and existing platforms, modify the SMMU_CONFIG structure as needed.
   Increment SMMU_CONFIG version when the structure changes.
@@ -28,44 +26,16 @@
   SmmuDxe driver will check and enforce the version of the SMMU_CONFIG structure to this current version set here.
 */
 #define CURRENT_SMMU_CONFIG_VERSION_MAJOR  0
-#define CURRENT_SMMU_CONFIG_VERSION_MINOR  7
-
-/*
-  See <https://developer.arm.com/documentation/den0049/latest/> for IORT spec for
-  information on the IORT ACPI node structure. Platform must populate all the below
-  ACPI structures to pass the SMMU configuration data to the SMMU driver.
-  See IoRemappingTable.h for definitions of the below sub-structures.
-*/
+#define CURRENT_SMMU_CONFIG_VERSION_MINOR  8
 
 #pragma pack(push, 1)
 
-typedef struct _PLATFORM_ACPI_6_0_IO_REMAPPING_ITS_NODE {
-  EFI_ACPI_6_0_IO_REMAPPING_ITS_NODE    Node;        // ITS Node
-  UINT32                                Identifiers; // ITS Node identifiers
-} PLATFORM_ACPI_6_0_IO_REMAPPING_ITS_NODE;
-
-typedef struct _PLATFORM_ACPI_6_0_IO_REMAPPING_SMMU3_NODE {
-  EFI_ACPI_6_0_IO_REMAPPING_SMMU3_NODE    SmmuNode;  // SMMUV3 Node
-  EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE      SmmuIdMap; // SMMUV3 ID Mapping
-} PLATFORM_ACPI_6_0_IO_REMAPPING_SMMU3_NODE;
-
-typedef struct _PLATFORM_ACPI_6_0_IO_REMAPPING_RC_NODE {
-  EFI_ACPI_6_0_IO_REMAPPING_RC_NODE     RcNode;  // Root Complex Node
-  EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE    RcIdMap; // Root Complex ID Mapping
-} PLATFORM_ACPI_6_0_IO_REMAPPING_RC_NODE;
-
-typedef struct _PLATFORM_IO_REMAPPING_STRUCTURE {
-  EFI_ACPI_6_0_IO_REMAPPING_TABLE              Iort;     // IORT table header
-  PLATFORM_ACPI_6_0_IO_REMAPPING_ITS_NODE      ItsNode;  // ITS Node platform wrapper
-  PLATFORM_ACPI_6_0_IO_REMAPPING_SMMU3_NODE    SmmuNode; // Smmu Node platform wrapper
-  PLATFORM_ACPI_6_0_IO_REMAPPING_RC_NODE       RcNode;   // Root Complex Node platform wrapper
-} PLATFORM_IO_REMAPPING_STRUCTURE;
-
 // SMMU_CONFIG structure to pass the SMMU configuration data from the platform to the SMMU driver.
 typedef struct _SMMU_CONFIG {
-  UINT32                             VersionMajor;
-  UINT32                             VersionMinor;
-  PLATFORM_IO_REMAPPING_STRUCTURE    Config;
+  UINT32    VersionMajor;
+  UINT32    VersionMinor;
+  UINT32    IortSize;
+  UINT32    IortOffset;
 } SMMU_CONFIG;
 
 #pragma pack(pop)

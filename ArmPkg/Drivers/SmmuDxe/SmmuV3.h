@@ -14,6 +14,7 @@
 
 #include <Register/SmmuV3Registers.h>
 #include <Uefi/UefiBaseType.h>
+#include <IndustryStandard/IoRemappingTable.h>
 
 // Number of levels in the page table
 #define PAGE_TABLE_DEPTH  4
@@ -151,24 +152,38 @@ typedef struct _PAGE_TABLE {
   PAGE_TABLE_ENTRY    Entries[PAGE_TABLE_SIZE];
 } PAGE_TABLE;
 
+typedef struct _SMMU_STREAM_ENTRY_CONFIG {
+  UINT32    CacheCoherentAttribute;
+  UINT32    MemoryAccessFlags;
+} SMMU_STREAM_ENTRY_CONFIG;
+
 // General SMMU Information for a SMMU instance
 typedef struct _SMMU_INFO {
-  PAGE_TABLE    *PageTableRoot;
-  VOID          *StreamTable;
-  VOID          *CommandQueue;
-  VOID          *EventQueue;
-  UINT8         TranslationStartingLevel;
-  UINT64        SmmuBase;
-  UINT32        StreamTableSize;
-  UINT32        CommandQueueSize;
-  UINT32        EventQueueSize;
-  UINT32        StreamTableLog2Size;
-  UINT32        CommandQueueLog2Size;
-  UINT32        EventQueueLog2Size;
+  PAGE_TABLE                  *PageTableRoot;
+  VOID                        *StreamTable;
+  VOID                        *CommandQueue;
+  VOID                        *EventQueue;
+  SMMU_STREAM_ENTRY_CONFIG    *StreamEntryConfig;
+  UINT8                       TranslationStartingLevel;
+  UINT64                      SmmuBase;
+  UINT32                      StreamTableSize;
+  UINT32                      StreamTableEntryMax;
+  UINT32                      Flags;
+  UINT32                      CommandQueueSize;
+  UINT32                      EventQueueSize;
+  UINT32                      StreamTableLog2Size;
+  UINT32                      CommandQueueLog2Size;
+  UINT32                      EventQueueLog2Size;
 } SMMU_INFO;
 
-// SMMU instance
-extern SMMU_INFO  *mSmmu;
+// IoMmu configuration structure
+typedef struct _IOMMU_CONFIG {
+  UINT32       SmmuCount;
+  SMMU_INFO    *SmmuInfo;
+} IOMMU_CONFIG;
+
+// IOMMU/SMMU instance
+extern IOMMU_CONFIG  *mIoMmu;
 
 /**
   Decode the address width from the given address size type.
@@ -422,6 +437,22 @@ SmmuV3SendCommand (
 EFI_STATUS
 SmmuV3TLBInvalidateAll (
   IN SMMU_INFO  *SmmuInfo
+  );
+
+/**
+ * Parse IORT table and extract SMMU information
+ *
+ * @param[in]  IortTable    Pointer to the IORT table
+ * @param[out] SmmuInfo     Pointer to store the array of SMMU_INFO structures
+ * @param[out] SmmuCount    Pointer to store the number of SMMU nodes found
+ *
+ * @return EFI_SUCCESS on success, or an error status code on failure
+ */
+EFI_STATUS
+SmmuV3ParseIort (
+  IN  VOID       *IortTable,
+  OUT SMMU_INFO  **SmmuInfo,
+  OUT UINT32     *SmmuCount
   );
 
 #endif
