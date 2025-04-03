@@ -66,21 +66,12 @@ ConvertEfiGuidToUuid (
   UINT32  *Data32;
   UINT16  *Data16;
 
-  // MU_CHANGE Starts: Update UUID mangling method
-  if ((Guid == NULL) || (Uuid == NULL)) {
-    return;
-  }
-  // MU_CHANGE Ends
-
   CopyGuid ((EFI_GUID *)Uuid, Guid);
-  Data32 = (UINT32 *)Uuid;
-  // Data32[0] = SwapBytes32 (Data32[0]); // MU_CHANGE Starts: Update UUID mangling method
+  Data32    = (UINT32 *)Uuid;
+  Data32[0] = SwapBytes32 (Data32[0]);
   Data16    = (UINT16 *)&Data32[1];
-  Data32[1] = SwapBytes32 (Data32[1]); // MU_CHANGE: Update UUID mangling method
   Data16[0] = SwapBytes16 (Data16[0]);
   Data16[1] = SwapBytes16 (Data16[1]);
-  Data32[2] = SwapBytes32 (Data32[2]); // MU_CHANGE: Update UUID mangling method
-  Data32[3] = SwapBytes32 (Data32[3]); // MU_CHANGE: Update UUID mangling method
 }
 
 /**
