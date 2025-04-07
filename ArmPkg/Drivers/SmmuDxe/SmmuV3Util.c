@@ -1209,6 +1209,9 @@ SmmuV3ParseIort (
     return EFI_INVALID_PARAMETER;
   }
 
+  SmmuInfoArray = NULL;
+  SmmuNodePtrs  = NULL;
+
   // Cast the void* to the IORT structure
   Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
 
@@ -1254,15 +1257,16 @@ SmmuV3ParseIort (
   SmmuInfoArray = AllocateZeroPool (SmmuNodeCount * sizeof (SMMU_INFO));
   if (SmmuInfoArray == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to allocate memory for SMMU info array\n", __func__));
-    return EFI_OUT_OF_RESOURCES;
+    Status = EFI_OUT_OF_RESOURCES;
+    goto Error;
   }
 
   // Allocate memory for SMMU node pointers (for output reference lookup)
   SmmuNodePtrs = AllocateZeroPool (SmmuNodeCount * sizeof (VOID *));
   if (SmmuNodePtrs == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to allocate memory for SMMU node pointers\n", __func__));
-    FreePool (SmmuInfoArray);
-    return EFI_OUT_OF_RESOURCES;
+    Status = EFI_OUT_OF_RESOURCES;
+    goto Error;
   }
 
   // Second pass: collect SMMU information
@@ -1306,7 +1310,19 @@ SmmuV3ParseIort (
   return Status;
 
 Error:
-  FreePool (SmmuInfoArray);
-  FreePool (SmmuNodePtrs);
+  if (SmmuInfoArray != NULL) {
+    for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
+      if (SmmuInfoArray[SmmuIndex].StreamEntryConfig != NULL) {
+        FreePool (SmmuInfoArray[SmmuIndex].StreamEntryConfig);
+      }
+    }
+
+    FreePool (SmmuInfoArray);
+  }
+
+  if (SmmuNodePtrs != NULL) {
+    FreePool (SmmuNodePtrs);
+  }
+
   return Status;
 }

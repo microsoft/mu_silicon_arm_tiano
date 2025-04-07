@@ -993,6 +993,7 @@ InitializeSmmuDxe (
 {
   EFI_STATUS               Status;
   EFI_EVENT                Event;
+  UINT32                   SmmuIndex;
   EFI_ACPI_TABLE_PROTOCOL  *AcpiTable;
   SMMU_CONFIG              *SmmuConfig;
   PAGE_TABLE               *PageTableRoot;
@@ -1069,8 +1070,8 @@ InitializeSmmuDxe (
   }
 
   // Configure SMMUv3 hardware
-  for (UINT32 i = 0; i < mIoMmu->SmmuCount; i++) {
-    Status = SmmuV3Configure (&mIoMmu->SmmuInfo[i], PageTableRoot);
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    Status = SmmuV3Configure (&mIoMmu->SmmuInfo[SmmuIndex], PageTableRoot);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a: Failed to configure SMMUv3 hardware\n", __func__));
       goto Error;

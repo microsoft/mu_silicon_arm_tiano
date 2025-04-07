@@ -117,6 +117,7 @@ UpdateMapping (
     goto Error;
   }
 
+  Status = EFI_SUCCESS;
   Current = Root;
 
   // Traverse the page table to the leaf level
@@ -224,11 +225,13 @@ UpdatePageTable (
   }
 
   // Invalidate TLBI Command
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
-      goto Error;
+  if (!Valid) {
+    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+      Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
+        goto Error;
+      }
     }
   }
 
