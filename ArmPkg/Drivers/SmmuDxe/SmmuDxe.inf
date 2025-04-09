@@ -33,6 +33,7 @@
   MdePkg/MdePkg.dec
 
 [LibraryClasses]
+  UefiLib
   ArmLib
   BaseLib
   BaseMemoryLib

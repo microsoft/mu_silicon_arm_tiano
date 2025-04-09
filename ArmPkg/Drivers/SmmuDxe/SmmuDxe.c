@@ -21,6 +21,7 @@
 #include <Library/HobLib.h>
 #include <Library/IoLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/UefiLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiDriverEntryPoint.h>
 #include <Protocol/AcpiTable.h>
@@ -76,7 +77,6 @@ AcpiPlatformChecksum (
   @retval EFI_OUT_OF_RESOURCES      Out of resources.
   @retval EFI_INVALID_PARAMETER     Invalid parameter.
 **/
-STATIC
 EFI_STATUS
 AddIortTable (
   IN EFI_ACPI_TABLE_PROTOCOL  *AcpiTable,
@@ -781,7 +781,6 @@ End:
 
   @return Pointer to the SMMU_CONFIG structure, or NULL if not found.
 **/
-STATIC
 SMMU_CONFIG *
 GetSmmuConfigHobData (
   VOID
@@ -808,7 +807,6 @@ GetSmmuConfigHobData (
   @retval EFI_INVALID_PARAMETER     Invalid parameter.
   @retval EFI_INCOMPATIBLE_VERSION  Incompatible version.
 **/
-STATIC
 EFI_STATUS
 CheckSmmuConfigVersion (
   IN SMMU_CONFIG  *SmmuConfig
@@ -995,23 +993,24 @@ InitializeSmmuDxe (
   EFI_EVENT                Event;
   UINT32                   SmmuIndex;
   EFI_ACPI_TABLE_PROTOCOL  *AcpiTable;
-  SMMU_CONFIG              *SmmuConfig;
+  // SMMU_CONFIG              *SmmuConfig;
   PAGE_TABLE               *PageTableRoot;
   VOID                     *IortData;
+  EFI_ACPI_COMMON_HEADER   *IortHeader;
 
   // Get SMMU configuration data from HOB
-  SmmuConfig = GetSmmuConfigHobData ();
-  if (SmmuConfig == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to get SMMU config data from gSmmuConfigHobGuid\n", __func__));
-    return EFI_NOT_FOUND;
-  }
+  // SmmuConfig = GetSmmuConfigHobData ();
+  // if (SmmuConfig == NULL) {
+  //   DEBUG ((DEBUG_ERROR, "%a: Failed to get SMMU config data from gSmmuConfigHobGuid\n", __func__));
+  //   return EFI_NOT_FOUND;
+  // }
 
   // Check SMMU_CONFIG version, return error if incompatible. Backwards compatibility not supported.
-  Status = CheckSmmuConfigVersion (SmmuConfig);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: SMMU_CONFIG version check failed\n", __func__));
-    return Status;
-  }
+  // Status = CheckSmmuConfigVersion (SmmuConfig);
+  // if (EFI_ERROR (Status)) {
+  //   DEBUG ((DEBUG_ERROR, "%a: SMMU_CONFIG version check failed\n", __func__));
+  //   return Status;
+  // }
 
   // Check if ACPI Table Protocol has been installed
   Status = gBS->LocateProtocol (
@@ -1044,7 +1043,16 @@ InitializeSmmuDxe (
     return Status;
   }
 
-  IortData = (VOID *)((UINT8 *)SmmuConfig + SmmuConfig->IortOffset);
+  IortHeader = NULL;
+  IortHeader = EfiLocateNextAcpiTable (EFI_ACPI_6_0_IO_REMAPPING_TABLE_SIGNATURE, IortHeader);
+  if (IortHeader == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to locate IORT table\n", __func__));
+    return EFI_NOT_FOUND;
+  }
+
+  // Cast the void* to the IORT structure
+  IortData = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortHeader;
+  // IortData = (VOID *)((UINT8 *)SmmuConfig + SmmuConfig->IortOffset);
 
   Status = SmmuV3ParseIort (IortData, &mIoMmu->SmmuInfo, &mIoMmu->SmmuCount);
   if (EFI_ERROR (Status)) {
@@ -1055,11 +1063,11 @@ InitializeSmmuDxe (
   DEBUG ((DEBUG_VERBOSE, "%a: Found %u SMMUs\n", __func__, mIoMmu->SmmuCount));
 
   // Add IORT Table
-  Status = AddIortTable (AcpiTable, IortData, SmmuConfig->IortSize);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to add IORT table\n", __func__));
-    goto Error;
-  }
+  // Status = AddIortTable (AcpiTable, IortData, SmmuConfig->IortSize);
+  // if (EFI_ERROR (Status)) {
+  //   DEBUG ((DEBUG_ERROR, "%a: Failed to add IORT table\n", __func__));
+  //   goto Error;
+  // }
 
   // Global Page Table until TODO: IoMmu Protocol V2 is implemented
   PageTableRoot = PageTableInit ();

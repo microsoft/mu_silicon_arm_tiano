@@ -153,7 +153,7 @@ UpdateMapping (
       if (Valid) {
         Entry = (PhysicalAddress & ~PAGE_TABLE_BLOCK_OFFSET); // Assign PA
         // validate entry and set leaf level flags
-        Entry                  |= PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
+        Entry                  |= PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT | PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
         Current->Entries[Index] =  Entry;
       } else {
         Current->Entries[Index] = Current->Entries[Index] & ~PAGE_TABLE_ENTRY_VALID_BIT; // only invalidate leaf entry
@@ -225,7 +225,7 @@ UpdatePageTable (
   }
 
   // Invalidate TLBI Command
-  if (!Valid) {
+  // if (!Valid) {
     for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
       Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
       if (EFI_ERROR (Status)) {
@@ -233,7 +233,7 @@ UpdatePageTable (
         goto Error;
       }
     }
-  }
+  // }
 
   return Status;
 
@@ -495,45 +495,46 @@ IoMmuSetAttribute (
   IN UINT64                IoMmuAccess
   )
 {
-  EFI_STATUS      Status;
-  IOMMU_MAP_INFO  *MapInfo;
-  UINT32          SmmuIndex;
+//   EFI_STATUS      Status;
+//   IOMMU_MAP_INFO  *MapInfo;
+//   UINT32          SmmuIndex;
 
-  if ((This == NULL) || (Mapping == NULL) || ((IoMmuAccess & ~(EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)) != 0)) {
-    DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
-    Status = EFI_INVALID_PARAMETER;
-    goto Error;
-  }
+//   if ((This == NULL) || (Mapping == NULL) || ((IoMmuAccess & ~(EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)) != 0)) {
+//     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
+//     Status = EFI_INVALID_PARAMETER;
+//     goto Error;
+//   }
 
-  MapInfo = (IOMMU_MAP_INFO *)Mapping;
+//   MapInfo = (IOMMU_MAP_INFO *)Mapping;
 
-  Status = UpdatePageTable (
-             mIoMmu->SmmuInfo->PageTableRoot,
-             MapInfo->PhysicalAddress,
-             MapInfo->NumberOfBytes,
-             PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS (IoMmuAccess),
-             FALSE,
-             TRUE
-             );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
-  }
+//   Status = UpdatePageTable (
+//              mIoMmu->SmmuInfo->PageTableRoot,
+//              MapInfo->PhysicalAddress,
+//              MapInfo->NumberOfBytes,
+//              PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS (IoMmuAccess),
+//              FALSE,
+//              TRUE
+//              );
+//   if (EFI_ERROR (Status)) {
+//     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
+//     goto Error;
+//   }
 
-  // Only prints errors if Event Queue is not empty and GError != 0
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
-  }
+//   // Only prints errors if Event Queue is not empty and GError != 0
+//   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+//     SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+//   }
 
-  return Status;
+//   return Status;
 
-Error:
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
-  }
+// Error:
+//   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+//     SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+//   }
 
-  ASSERT_EFI_ERROR (Status);
-  return Status;
+//   ASSERT_EFI_ERROR (Status);
+//   return Status;
+  return EFI_SUCCESS;
 }
 
 // IOMMU Protocol instance for the SMMU.
