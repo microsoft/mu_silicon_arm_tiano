@@ -114,7 +114,7 @@ UpdateMapping (
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter.\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   Status = EFI_SUCCESS;
@@ -129,7 +129,7 @@ UpdateMapping (
       if (NewPage == NULL) {
         DEBUG ((DEBUG_ERROR, "%a: Failed allocating page.\n", __func__));
         Status = EFI_OUT_OF_RESOURCES;
-        goto Error;
+        goto End;
       }
 
       ZeroMem ((VOID *)NewPage, EFI_PAGE_SIZE);
@@ -161,16 +161,15 @@ UpdateMapping (
     } else {
       Status = UpdateReadWriteFlags (Current, Flags, Index);
       if (EFI_ERROR (Status)) {
-        goto Error;
+        goto End;
       }
     }
   }
 
   ArmDataSynchronizationBarrier ();
   SpeculationBarrier ();
-  return Status;
 
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -208,7 +207,7 @@ UpdatePageTable (
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0) || (Bytes == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   CurPhysicalAddress = PhysicalAddress;
@@ -218,7 +217,7 @@ UpdatePageTable (
     Status = UpdateMapping (Root, CurPhysicalAddress, CurPhysicalAddress, Flags, Valid, SetReadWriteFlagsOnly);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a: Failed to update page table mapping\n", __func__));
-      goto Error;
+      goto End;
     }
 
     CurPhysicalAddress += EFI_PAGE_SIZE;
@@ -230,14 +229,12 @@ UpdatePageTable (
       Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
       if (EFI_ERROR (Status)) {
         DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
-        goto Error;
+        goto End;
       }
     }
   }
 
-  return Status;
-
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -282,14 +279,14 @@ IoMmuMap (
   {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   PhysicalAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress;
   Status          = UpdatePageTable (mIoMmu->SmmuInfo->PageTableRoot, PhysicalAddress, *NumberOfBytes, 0, TRUE, FALSE);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
+    goto End;
   }
 
   // Allocate and fill the IOMMU_MAP_INFO structure with mapped information
@@ -301,14 +298,8 @@ IoMmuMap (
   MapInfo->PhysicalAddress = PhysicalAddress;
   *Mapping                 = MapInfo;
 
+End:
   // Only prints errors if Event Queue is not empty and GError != 0
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
-  }
-
-  return Status;
-
-Error:
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
     SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
   }
@@ -342,7 +333,7 @@ IoMmuUnmap (
   if ((This == NULL) || (Mapping == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   MapInfo = (IOMMU_MAP_INFO *)Mapping;
@@ -350,7 +341,7 @@ IoMmuUnmap (
   Status = UpdatePageTable (mIoMmu->SmmuInfo->PageTableRoot, MapInfo->PhysicalAddress, MapInfo->NumberOfBytes, 0, FALSE, FALSE);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
+    goto End;
   }
 
   // Free the mapping structure allocated in IoMmuMap
@@ -358,14 +349,8 @@ IoMmuUnmap (
     FreePool (MapInfo);
   }
 
+End:
   // Only prints errors if Event Queue is not empty and GError != 0
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
-  }
-
-  return Status;
-
-Error:
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
     SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
   }
@@ -398,18 +383,16 @@ IoMmuFreeBuffer (
   if ((This == NULL) || (HostAddress == NULL) || (Pages == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   Status = gBS->FreePages ((EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress, Pages);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to free pages\n", __func__));
-    goto Error;
+    goto End;
   }
 
-  return Status;
-
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -451,7 +434,7 @@ IoMmuAllocateBuffer (
   if ((This == NULL) || (Pages == 0) || (HostAddress == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   Status = gBS->AllocatePages (
@@ -462,14 +445,12 @@ IoMmuAllocateBuffer (
                   );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to allocate pages\n", __func__));
-    goto Error;
+    goto End;
   }
 
   *HostAddress = (VOID *)(UINTN)PhysicalAddress;
 
-  return Status;
-
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -502,7 +483,7 @@ IoMmuSetAttribute (
   if ((This == NULL) || (Mapping == NULL) || ((IoMmuAccess & ~(EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)) != 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   MapInfo = (IOMMU_MAP_INFO *)Mapping;
@@ -517,17 +498,11 @@ IoMmuSetAttribute (
              );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
+    goto End;
   }
 
+End:
   // Only prints errors if Event Queue is not empty and GError != 0
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
-  }
-
-  return Status;
-
-Error:
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
     SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
   }

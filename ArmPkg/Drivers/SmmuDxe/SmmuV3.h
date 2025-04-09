@@ -446,7 +446,11 @@ SmmuV3TLBInvalidateAll (
  * @param[out] SmmuInfo     Pointer to store the array of SMMU_INFO structures
  * @param[out] SmmuCount    Pointer to store the number of SMMU nodes found
  *
- * @return EFI_SUCCESS on success, or an error status code on failure
+ * @return EFI_SUCCESS on success
+ * @return EFI_INVALID_PARAMETER if any parameter is NULL
+ * @return EFI_OUT_OF_RESOURCES if memory allocation fails
+ * @return EFI_NOT_FOUND if no SMMU nodes are found
+ * @return EFI_UNSUPPORTED if the IORT table is not supported
  */
 EFI_STATUS
 SmmuV3ParseIort (

@@ -977,6 +977,14 @@ SmmuV3NodeCount (
 * Get the max stream ID for each SMMU.
 *
 * @param [in]  IortTable      Pointer to the IORT table.
+* @param [in]  SmmuNodePtrs   Pointer to the array of SMMU node pointers.
+* @param [in]  SmmuNodeCount  Number of SMMU nodes.
+* @param [out] SmmuInfoArray  Pointer to the array of SMMU_INFO structures.
+*
+*
+* @retval EFI_SUCCESS            Success.
+* @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+* @retval EFI_NOT_FOUND          SMMU node not found.
 */
 EFI_STATUS
 SmmuV3GetMaxStreamIds (
@@ -1074,7 +1082,6 @@ SmmuV3GetMaxStreamIds (
  *
  * @retval EFI_SUCCESS            Success.
  * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
- *
  */
 EFI_STATUS
 SmmuV3GetStreamIdInfo (
@@ -1142,8 +1149,6 @@ SmmuV3GetStreamIdInfo (
 
               // Store the Stream ID range information
               for (CurID = StartId; CurID <= EndId; CurID++) {
-                // SmmuInfoArray[k].StreamEntryConfig[CurID].CacheCoherentAttribute = StreamEntryConfig.CacheCoherentAttribute;
-                // SmmuInfoArray[k].StreamEntryConfig[CurID].MemoryAccessFlags = StreamEntryConfig.MemoryAccessFlags;
                 CopyMem (&SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID], &StreamEntryConfig, sizeof (SMMU_STREAM_ENTRY_CONFIG));
               }
 
@@ -1188,7 +1193,11 @@ SmmuV3GetStreamIdInfo (
  * @param[out] SmmuInfo     Pointer to store the array of SMMU_INFO structures
  * @param[out] SmmuCount    Pointer to store the number of SMMU nodes found
  *
- * @return EFI_SUCCESS on success, or an error status code on failure
+ * @return EFI_SUCCESS on success
+ * @return EFI_INVALID_PARAMETER if any parameter is NULL
+ * @return EFI_OUT_OF_RESOURCES if memory allocation fails
+ * @return EFI_NOT_FOUND if no SMMU nodes are found
+ * @return EFI_UNSUPPORTED if the IORT table is not supported
  */
 EFI_STATUS
 SmmuV3ParseIort (
@@ -1216,7 +1225,6 @@ SmmuV3ParseIort (
   Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
 
   // Verify IORT signature
-  // TODO add revision check
   if (Iort->Header.Signature != EFI_ACPI_6_0_IO_REMAPPING_TABLE_SIGNATURE) {
     DEBUG ((
       DEBUG_ERROR,
