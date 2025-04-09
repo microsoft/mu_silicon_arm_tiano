@@ -21,7 +21,7 @@ PCI I/O Protocol
       ↓
 IOMMU Protocol
       ↓
-SMMU Hardware  
+SMMU Hardware
 ```
 
 ## IOMMU Protocol Integration
@@ -33,16 +33,16 @@ SMMU Hardware
 2. **IOMMU Protocol Setup**:
    - Implements the IOMMU protocol:
 
-      ```c
-      struct _EDKII_IOMMU_PROTOCOL {
-        UINT64                         Revision;
-        EDKII_IOMMU_SET_ATTRIBUTE      SetAttribute;
-        EDKII_IOMMU_MAP                Map;
-        EDKII_IOMMU_UNMAP              Unmap;
-        EDKII_IOMMU_ALLOCATE_BUFFER    AllocateBuffer;
-        EDKII_IOMMU_FREE_BUFFER        FreeBuffer;
-      };
-      ```
+     ```c
+     struct _EDKII_IOMMU_PROTOCOL {
+       UINT64                         Revision;
+       EDKII_IOMMU_SET_ATTRIBUTE      SetAttribute;
+       EDKII_IOMMU_MAP                Map;
+       EDKII_IOMMU_UNMAP              Unmap;
+       EDKII_IOMMU_ALLOCATE_BUFFER    AllocateBuffer;
+       EDKII_IOMMU_FREE_BUFFER        FreeBuffer;
+     };
+     ```
 
    - Configures IOMMU page tables with PageTableInit()
 
@@ -53,18 +53,18 @@ SMMU Hardware
 
 1. **IoMmu Map**:
 
-    ```c
-    EFI_STATUS
-    EFIAPI
-    IoMmuMap (
-      IN     EDKII_IOMMU_PROTOCOL   *This,
-      IN     EDKII_IOMMU_OPERATION  Operation,
-      IN     VOID                   *HostAddress,
-      IN OUT UINTN                  *NumberOfBytes,
-      OUT    EFI_PHYSICAL_ADDRESS   *DeviceAddress,
-      OUT    VOID                   **Mapping
-      );
-    ```
+   ```c
+   EFI_STATUS
+   EFIAPI
+   IoMmuMap (
+     IN     EDKII_IOMMU_PROTOCOL   *This,
+     IN     EDKII_IOMMU_OPERATION  Operation,
+     IN     VOID                   *HostAddress,
+     IN OUT UINTN                  *NumberOfBytes,
+     OUT    EFI_PHYSICAL_ADDRESS   *DeviceAddress,
+     OUT    VOID                   **Mapping
+     );
+   ```
 
 - Sets access permissions based on operation type:
   - BusMasterRead: READ access
@@ -83,14 +83,14 @@ SMMU Hardware
 
 2. **IoMmu Unmap**:
 
-    ```c
-    EFI_STATUS
-    EFIAPI
-    IoMmuUnmap (
-      IN  EDKII_IOMMU_PROTOCOL  *This,
-      IN  VOID                  *Mapping
-      );
-    ```
+   ```c
+   EFI_STATUS
+   EFIAPI
+   IoMmuUnmap (
+     IN  EDKII_IOMMU_PROTOCOL  *This,
+     IN  VOID                  *Mapping
+     );
+   ```
 
    - Invalidates mapping in Page Table
    - Invalidates TLB entries
@@ -236,16 +236,27 @@ Potential improvements:
 - Intel IOMMU for DMA protection in UEFI <https://www.intel.com/content/dam/develop/external/us/en/documents/intel-whitepaper-using-iommu-for-dma-protection-in-uefi.pdf>
 - IORT documentation <https://developer.arm.com/documentation/den0049/latest/>
 
-## Integration Instructions
+## Platform Integration Instructions
 
-Integration with Qemu:
+Generic Platform Integration:
 
-- SMMU is supported on Qemu but on v9.1.50+ <https://gitlab.com/qemu-project/qemu>
+- The Platform will construct a SMMU config HOB and publish for SmmuDxe to consume:
+- Append the IORT structure to this struct and update the fields accordingly.
 
-Platform Integration:
+  ```c
+  typedef struct _SMMU_CONFIG {
+    UINT32    VersionMajor;
+    UINT32    VersionMinor;
+    UINT32    IortSize;
+    UINT32    IortOffset;
+  } SMMU_CONFIG;
+  ```
 
-- The Platform will construct a SMMU config HOB in PEI:
 - Essentialy the same as IORT we want to publish
 - The SMMU expects the entire IORT data to be passed into a HOB gSmmuConfigHobGuid.
 - The platform must create the IORT structure and create gSmmuConfigHobGuid with that data using BuildGuidDataHob.
 - This structure is consumed by SmmuDxe to configure the SMMU hardware
+
+Integration with Qemu:
+
+- SMMU is supported on Qemu but on v9.1.50+ <https://gitlab.com/qemu-project/qemu>

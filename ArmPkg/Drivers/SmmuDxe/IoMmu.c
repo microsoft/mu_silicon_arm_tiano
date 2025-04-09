@@ -114,13 +114,14 @@ UpdateMapping (
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter.\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
+  Status = EFI_SUCCESS;
   Current = Root;
 
   // Traverse the page table to the leaf level
-  for (Level = mSmmu->TranslationStartingLevel; Level < PAGE_TABLE_DEPTH - 1; Level++) {
+  for (Level = mIoMmu->SmmuInfo->TranslationStartingLevel; Level < PAGE_TABLE_DEPTH - 1; Level++) {
     Index = PAGE_TABLE_INDEX (VirtualAddress, Level);
 
     if (Current->Entries[Index] == 0) {
@@ -128,7 +129,7 @@ UpdateMapping (
       if (NewPage == NULL) {
         DEBUG ((DEBUG_ERROR, "%a: Failed allocating page.\n", __func__));
         Status = EFI_OUT_OF_RESOURCES;
-        goto Error;
+        goto End;
       }
 
       ZeroMem ((VOID *)NewPage, EFI_PAGE_SIZE);
@@ -160,16 +161,15 @@ UpdateMapping (
     } else {
       Status = UpdateReadWriteFlags (Current, Flags, Index);
       if (EFI_ERROR (Status)) {
-        goto Error;
+        goto End;
       }
     }
   }
 
   ArmDataSynchronizationBarrier ();
   SpeculationBarrier ();
-  return Status;
 
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -202,11 +202,12 @@ UpdatePageTable (
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddressEnd;
   EFI_PHYSICAL_ADDRESS  CurPhysicalAddress;
+  UINT32                SmmuIndex;
 
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0) || (Bytes == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   CurPhysicalAddress = PhysicalAddress;
@@ -216,22 +217,24 @@ UpdatePageTable (
     Status = UpdateMapping (Root, CurPhysicalAddress, CurPhysicalAddress, Flags, Valid, SetReadWriteFlagsOnly);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a: Failed to update page table mapping\n", __func__));
-      goto Error;
+      goto End;
     }
 
     CurPhysicalAddress += EFI_PAGE_SIZE;
   }
 
   // Invalidate TLBI Command
-  Status = SmmuV3TLBInvalidateAll (mSmmu);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
-    goto Error;
+  if (!Valid) {
+    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+      Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
+        goto End;
+      }
+    }
   }
 
-  return Status;
-
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -265,6 +268,7 @@ IoMmuMap (
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddress;
   IOMMU_MAP_INFO        *MapInfo;
+  UINT32                SmmuIndex;
 
   if ((This == NULL) ||
       (HostAddress == NULL) ||
@@ -275,14 +279,14 @@ IoMmuMap (
   {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   PhysicalAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress;
-  Status          = UpdatePageTable (mSmmu->PageTableRoot, PhysicalAddress, *NumberOfBytes, 0, TRUE, FALSE);
+  Status          = UpdatePageTable (mIoMmu->SmmuInfo->PageTableRoot, PhysicalAddress, *NumberOfBytes, 0, TRUE, FALSE);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
+    goto End;
   }
 
   // Allocate and fill the IOMMU_MAP_INFO structure with mapped information
@@ -294,12 +298,12 @@ IoMmuMap (
   MapInfo->PhysicalAddress = PhysicalAddress;
   *Mapping                 = MapInfo;
 
+End:
   // Only prints errors if Event Queue is not empty and GError != 0
-  SmmuV3LogErrors (mSmmu);
-  return Status;
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+  }
 
-Error:
-  SmmuV3LogErrors (mSmmu);
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -324,19 +328,20 @@ IoMmuUnmap (
 {
   EFI_STATUS      Status;
   IOMMU_MAP_INFO  *MapInfo;
+  UINT32          SmmuIndex;
 
   if ((This == NULL) || (Mapping == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   MapInfo = (IOMMU_MAP_INFO *)Mapping;
 
-  Status = UpdatePageTable (mSmmu->PageTableRoot, MapInfo->PhysicalAddress, MapInfo->NumberOfBytes, 0, FALSE, FALSE);
+  Status = UpdatePageTable (mIoMmu->SmmuInfo->PageTableRoot, MapInfo->PhysicalAddress, MapInfo->NumberOfBytes, 0, FALSE, FALSE);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
+    goto End;
   }
 
   // Free the mapping structure allocated in IoMmuMap
@@ -344,12 +349,12 @@ IoMmuUnmap (
     FreePool (MapInfo);
   }
 
+End:
   // Only prints errors if Event Queue is not empty and GError != 0
-  SmmuV3LogErrors (mSmmu);
-  return Status;
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+  }
 
-Error:
-  SmmuV3LogErrors (mSmmu);
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -378,18 +383,16 @@ IoMmuFreeBuffer (
   if ((This == NULL) || (HostAddress == NULL) || (Pages == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   Status = gBS->FreePages ((EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress, Pages);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to free pages\n", __func__));
-    goto Error;
+    goto End;
   }
 
-  return Status;
-
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -431,7 +434,7 @@ IoMmuAllocateBuffer (
   if ((This == NULL) || (Pages == 0) || (HostAddress == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   Status = gBS->AllocatePages (
@@ -442,14 +445,12 @@ IoMmuAllocateBuffer (
                   );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to allocate pages\n", __func__));
-    goto Error;
+    goto End;
   }
 
   *HostAddress = (VOID *)(UINTN)PhysicalAddress;
 
-  return Status;
-
-Error:
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -477,17 +478,18 @@ IoMmuSetAttribute (
 {
   EFI_STATUS      Status;
   IOMMU_MAP_INFO  *MapInfo;
+  UINT32          SmmuIndex;
 
   if ((This == NULL) || (Mapping == NULL) || ((IoMmuAccess & ~(EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)) != 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    goto Error;
+    goto End;
   }
 
   MapInfo = (IOMMU_MAP_INFO *)Mapping;
 
   Status = UpdatePageTable (
-             mSmmu->PageTableRoot,
+             mIoMmu->SmmuInfo->PageTableRoot,
              MapInfo->PhysicalAddress,
              MapInfo->NumberOfBytes,
              PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS (IoMmuAccess),
@@ -496,15 +498,15 @@ IoMmuSetAttribute (
              );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto Error;
+    goto End;
   }
 
+End:
   // Only prints errors if Event Queue is not empty and GError != 0
-  SmmuV3LogErrors (mSmmu);
-  return Status;
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+  }
 
-Error:
-  SmmuV3LogErrors (mSmmu);
   ASSERT_EFI_ERROR (Status);
   return Status;
 }

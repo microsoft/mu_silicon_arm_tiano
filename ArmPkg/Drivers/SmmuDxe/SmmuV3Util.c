@@ -13,6 +13,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/IoLib.h>
+#include <Library/MemoryAllocationLib.h>
 #include <Library/TimerLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiDriverEntryPoint.h>
@@ -866,6 +867,471 @@ SmmuV3TLBInvalidateAll (
   }
 
   ArmDataSynchronizationBarrier ();
+
+  return Status;
+}
+
+/**
+ * Get SMMUV3 node information from the IORT table.
+ *
+ * @param [in]  IortTable      Pointer to the IORT table.
+ * @param [out] SmmuInfoArray  Pointer to the array of SMMU_INFO structures.
+ * @param [out] SmmuNodePtrs   Pointer to the array of SMMU node pointers.
+ *
+ * @retval EFI_SUCCESS            Success.
+ * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+ *
+ */
+EFI_STATUS
+SmmuV3GetNodeInfo (
+  IN  VOID       *IortTable,
+  OUT SMMU_INFO  *SmmuInfoArray,
+  OUT VOID       **SmmuNodePtrs
+  )
+{
+  EFI_ACPI_6_0_IO_REMAPPING_TABLE       *Iort;
+  EFI_ACPI_6_0_IO_REMAPPING_NODE        *Node;
+  EFI_ACPI_6_0_IO_REMAPPING_SMMU3_NODE  *SmmuNode;
+  UINT32                                SmmuIndex;
+  UINT32                                Count;
+
+  if ((IortTable == NULL) || (SmmuInfoArray == NULL) || (SmmuNodePtrs == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Iort      = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
+  Node      = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
+  SmmuIndex = 0;
+
+  for (Count = 0; Count < Iort->NumNodes; Count++) {
+    if (Node->Type == EFI_ACPI_IORT_TYPE_SMMUv3) {
+      SmmuNode                                     = (EFI_ACPI_6_0_IO_REMAPPING_SMMU3_NODE *)Node;
+      SmmuInfoArray[SmmuIndex].SmmuBase            = SmmuNode->Base;
+      SmmuInfoArray[SmmuIndex].Flags               = SmmuNode->Flags;
+      SmmuInfoArray[SmmuIndex].StreamTableEntryMax = 0;  // Initialize max stream ID to 0
+      SmmuInfoArray[SmmuIndex].StreamEntryConfig   = NULL;
+      SmmuNodePtrs[SmmuIndex]                      = (VOID *)SmmuNode;
+      SmmuIndex++;
+    }
+
+    // Move to the next node
+    Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Node + Node->Length);
+  }
+
+  return EFI_SUCCESS;
+}
+
+/**
+ * Get the number of SMMUV3 nodes in the IORT table.
+ *
+ * @param [in]  IortTable      Pointer to the IORT table.
+ * @param [out] SmmuNodeCount  Pointer to store the number of SMMU nodes found.
+ *
+ * @retval EFI_SUCCESS            Success.
+ * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+ * @retval EFI_NOT_FOUND          IORT table not found.
+ */
+EFI_STATUS
+SmmuV3NodeCount (
+  IN  VOID    *IortTable,
+  OUT UINT32  *SmmuNodeCount
+  )
+{
+  EFI_ACPI_6_0_IO_REMAPPING_TABLE  *Iort;
+  EFI_ACPI_6_0_IO_REMAPPING_NODE   *Node;
+  UINT32                           Counter;
+
+  if ((IortTable == NULL) || (SmmuNodeCount == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Cast the void* to the proper IORT structure
+  Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
+  if (Iort == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: NULL IORT table\n", __func__));
+    return EFI_NOT_FOUND;
+  }
+
+  DEBUG ((DEBUG_VERBOSE, "%a: IORT contains %d nodes\n", __func__, Iort->NumNodes));
+
+  // First pass: count SMMU nodes
+  *SmmuNodeCount = 0;
+  Node           = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
+
+  for (Counter = 0; Counter < Iort->NumNodes; Counter++) {
+    if (Node->Type == EFI_ACPI_IORT_TYPE_SMMUv3) {
+      (*SmmuNodeCount)++;
+    }
+
+    // Move to the next node
+    Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Node + Node->Length);
+  }
+
+  DEBUG ((DEBUG_VERBOSE, "%a: Found %d SMMU nodes\n", __func__, *SmmuNodeCount));
+
+  return EFI_SUCCESS;
+}
+
+/*
+* Get the max stream ID for each SMMU.
+*
+* @param [in]  IortTable      Pointer to the IORT table.
+* @param [in]  SmmuNodePtrs   Pointer to the array of SMMU node pointers.
+* @param [in]  SmmuNodeCount  Number of SMMU nodes.
+* @param [out] SmmuInfoArray  Pointer to the array of SMMU_INFO structures.
+*
+*
+* @retval EFI_SUCCESS            Success.
+* @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+* @retval EFI_NOT_FOUND          SMMU node not found.
+*/
+EFI_STATUS
+SmmuV3GetMaxStreamIds (
+  IN  VOID       *IortTable,
+  IN  VOID       **SmmuNodePtrs,
+  IN  UINT32     SmmuNodeCount,
+  OUT SMMU_INFO  *SmmuInfoArray
+  )
+{
+  EFI_ACPI_6_0_IO_REMAPPING_TABLE     *Iort;
+  EFI_ACPI_6_0_IO_REMAPPING_NODE      *Node;
+  EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE  *IdMapping;
+  VOID                                *OutputNode;
+  UINT32                              ByteOffset;
+  BOOLEAN                             Found;
+  UINT32                              Count;
+  UINT32                              IdMappingIndex;
+  UINT32                              SmmuIndex;
+  UINT32                              CurMaxMappingStreamId;
+
+  if ((IortTable == NULL) || (SmmuNodePtrs == NULL) || (SmmuInfoArray == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
+  Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
+
+  for (Count = 0; Count < Iort->NumNodes; Count++) {
+    if (((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP)) && (Node->NumIdMappings > 0)) {
+      // Get the ID mapping array
+      IdMapping = (EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE *)((UINT8 *)Node + Node->IdReference);
+
+      for (IdMappingIndex = 0; IdMappingIndex < Node->NumIdMappings; IdMappingIndex++) {
+        // Calculate the absolute offset of the output reference
+        ByteOffset = IdMapping[IdMappingIndex].OutputReference;
+        OutputNode = (VOID *)((UINT8 *)Iort + ByteOffset);
+
+        // Check if the output reference points to an SMMU node
+        Found = FALSE;
+        for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
+          if (OutputNode == SmmuNodePtrs[SmmuIndex]) {
+            // This ID mapping references an SMMU node
+            // Calculate the max Stream ID for this mapping: OutputBase + NumIds
+            CurMaxMappingStreamId = IdMapping[IdMappingIndex].OutputBase + IdMapping[IdMappingIndex].NumIds;
+
+            // Update MaxStreamId if this mapping has a higher value
+            if (CurMaxMappingStreamId > SmmuInfoArray[SmmuIndex].StreamTableEntryMax) {
+              SmmuInfoArray[SmmuIndex].StreamTableEntryMax = CurMaxMappingStreamId;
+              DEBUG ((
+                DEBUG_VERBOSE,
+                "%a: Updated MaxStreamId for SMMU[0x%llx] to 0x%x (from mapping: InputBase=0x%x, NumIds=0x%x, OutputBase=0x%x)\n",
+                __func__,
+                SmmuInfoArray[SmmuIndex].SmmuBase,
+                SmmuInfoArray[SmmuIndex].StreamTableEntryMax,
+                IdMapping[IdMappingIndex].InputBase,
+                IdMapping[IdMappingIndex].NumIds,
+                IdMapping[IdMappingIndex].OutputBase
+                ));
+            }
+
+            Found = TRUE;
+            break;
+          }
+        }
+
+        if (!Found) {
+          DEBUG ((
+            DEBUG_ERROR,
+            "%a: ID mapping references a non-SMMU node (offset: 0x%x)\n",
+            __func__,
+            ByteOffset
+            ));
+          return EFI_NOT_FOUND;
+        }
+      }
+    }
+
+    // Move to the next node
+    Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Node + Node->Length);
+  }
+
+  return EFI_SUCCESS;
+}
+
+/**
+ * Collect Stream ID specific information for each SMMU.
+ *
+ * @param [in]  IortTable      Pointer to the IORT table.
+ * @param [in]  SmmuNodePtrs   Pointer to the array of SMMU node pointers.
+ * @param [in]  SmmuNodeCount  Number of SMMU nodes.
+ * @param [out] SmmuInfoArray  Pointer to the array of SMMU_INFO structures.
+ *
+ * @retval EFI_SUCCESS            Success.
+ * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+ * @retval EFI_NOT_FOUND          SMMU node not found.
+ */
+EFI_STATUS
+SmmuV3GetStreamIdInfo (
+  IN  VOID       *IortTable,
+  IN  VOID       **SmmuNodePtrs,
+  IN  UINT32     SmmuNodeCount,
+  OUT SMMU_INFO  *SmmuInfoArray
+  )
+{
+  EFI_ACPI_6_0_IO_REMAPPING_TABLE            *Iort;
+  EFI_ACPI_6_0_IO_REMAPPING_NODE             *Node;
+  EFI_ACPI_6_0_IO_REMAPPING_RC_NODE          *RcNode;
+  EFI_ACPI_6_0_IO_REMAPPING_NAMED_COMP_NODE  *NamedCompNode;
+  EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE         *IdMapping;
+  VOID                                       *OutputNode;
+  SMMU_STREAM_ENTRY_CONFIG                   StreamEntryConfig;
+  UINT32                                     ByteOffset;
+  UINT32                                     SmmuIndex;
+  UINT32                                     IdMappingIndex;
+  UINT32                                     Count;
+  BOOLEAN                                    Found;
+  UINT32                                     StartId;
+  UINT32                                     EndId;
+  UINT32                                     CurID;
+
+  if ((IortTable == NULL) || (SmmuNodePtrs == NULL) || (SmmuInfoArray == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  ZeroMem (&StreamEntryConfig, sizeof (SMMU_STREAM_ENTRY_CONFIG));
+
+  Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
+  Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
+
+  for (Count = 0; Count < Iort->NumNodes; Count++) {
+    if ((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP)) {
+      // Extract Cache Coherent and Memory Access Flags based on node type
+      if (Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) {
+        RcNode                                   = (EFI_ACPI_6_0_IO_REMAPPING_RC_NODE *)Node;
+        StreamEntryConfig.CacheCoherentAttribute = RcNode->CacheCoherent;
+        StreamEntryConfig.MemoryAccessFlags      = RcNode->MemoryAccessFlags;
+      } else if (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP) {
+        NamedCompNode                            = (EFI_ACPI_6_0_IO_REMAPPING_NAMED_COMP_NODE *)Node;
+        StreamEntryConfig.CacheCoherentAttribute = NamedCompNode->CacheCoherent;
+        StreamEntryConfig.MemoryAccessFlags      = NamedCompNode->MemoryAccessFlags;
+      }
+
+      if (Node->NumIdMappings > 0) {
+        // Get the ID mapping array
+        IdMapping = (EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE *)((UINT8 *)Node + Node->IdReference);
+
+        for (IdMappingIndex = 0; IdMappingIndex < Node->NumIdMappings; IdMappingIndex++) {
+          // Calculate the absolute offset of the output reference
+          ByteOffset = IdMapping[IdMappingIndex].OutputReference;
+          OutputNode = (VOID *)((UINT8 *)Iort + ByteOffset);
+
+          // Check if the output reference points to an SMMU node
+          Found = FALSE;
+          for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
+            if (OutputNode == SmmuNodePtrs[SmmuIndex]) {
+              // This ID mapping references an SMMU node
+              // Calculate the Stream ID range
+              StartId = IdMapping[IdMappingIndex].OutputBase;
+              EndId   = StartId + IdMapping[IdMappingIndex].NumIds;
+
+              // Store the Stream ID range information
+              for (CurID = StartId; CurID <= EndId; CurID++) {
+                CopyMem (&SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID], &StreamEntryConfig, sizeof (SMMU_STREAM_ENTRY_CONFIG));
+              }
+
+              DEBUG ((
+                DEBUG_VERBOSE,
+                "%a: Added Stream ID range for SMMU[0x%llx]: StartId=0x%x, EndId=0x%x\n",
+                __func__,
+                SmmuInfoArray[SmmuIndex].SmmuBase,
+                StartId,
+                EndId
+                ));
+
+              Found = TRUE;
+              break;
+            }
+          }
+
+          if (!Found) {
+            DEBUG ((
+              DEBUG_ERROR,
+              "%a: ID mapping references a non-SMMU node (offset: 0x%x)\n",
+              __func__,
+              ByteOffset
+              ));
+            return EFI_NOT_FOUND;
+          }
+        }
+      }
+    }
+
+    // Move to the next node
+    Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Node + Node->Length);
+  }
+
+  return EFI_SUCCESS;
+}
+
+/**
+ * Parse IORT table and extract SMMU information
+ *
+ * @param[in]  IortTable    Pointer to the IORT table
+ * @param[out] SmmuInfo     Pointer to store the array of SMMU_INFO structures
+ * @param[out] SmmuCount    Pointer to store the number of SMMU nodes found
+ *
+ * @return EFI_SUCCESS on success
+ * @return EFI_INVALID_PARAMETER if any parameter is NULL
+ * @return EFI_OUT_OF_RESOURCES if memory allocation fails
+ * @return EFI_NOT_FOUND if no SMMU nodes are found
+ * @return EFI_UNSUPPORTED if the IORT table is not supported
+ */
+EFI_STATUS
+SmmuV3ParseIort (
+  IN  VOID       *IortTable,
+  OUT SMMU_INFO  **SmmuInfo,
+  OUT UINT32     *SmmuCount
+  )
+{
+  EFI_STATUS                       Status;
+  EFI_ACPI_6_0_IO_REMAPPING_TABLE  *Iort;
+  SMMU_INFO                        *SmmuInfoArray;
+  VOID                             **SmmuNodePtrs;
+  UINT32                           SmmuNodeCount;
+  UINT32                           SmmuIndex;
+
+  if ((IortTable == NULL) || (SmmuInfo == NULL) || (SmmuCount == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  SmmuInfoArray = NULL;
+  SmmuNodePtrs  = NULL;
+
+  // Cast the void* to the IORT structure
+  Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
+
+  // Verify IORT signature
+  if (Iort->Header.Signature != EFI_ACPI_6_0_IO_REMAPPING_TABLE_SIGNATURE) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: Invalid IORT signature: 0x%08X, expected: 0x%08X\n",
+      __func__,
+      Iort->Header.Signature,
+      EFI_ACPI_6_0_IO_REMAPPING_TABLE_SIGNATURE
+      ));
+    return EFI_UNSUPPORTED;
+  }
+
+  if ((Iort->Header.Revision != EFI_ACPI_IO_REMAPPING_TABLE_REVISION_00) && (Iort->Header.Revision != EFI_ACPI_IO_REMAPPING_TABLE_REVISION_06)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: Unsupported IORT revision: %d, expected: [%d, %d]\n",
+      __func__,
+      Iort->Header.Revision,
+      EFI_ACPI_IO_REMAPPING_TABLE_REVISION_00,
+      EFI_ACPI_IO_REMAPPING_TABLE_REVISION_06
+      ));
+    return EFI_UNSUPPORTED;
+  }
+
+  // First pass: get the number of SMMU nodes
+  Status = SmmuV3NodeCount (IortTable, &SmmuNodeCount);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to get IORT node count\n", __func__));
+    return Status;
+  }
+
+  if (SmmuNodeCount == 0) {
+    *SmmuCount = 0;
+    *SmmuInfo  = NULL;
+    return EFI_NOT_FOUND;
+  }
+
+  // Allocate memory for SMMU info array
+  SmmuInfoArray = AllocateZeroPool (SmmuNodeCount * sizeof (SMMU_INFO));
+  if (SmmuInfoArray == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to allocate memory for SMMU info array\n", __func__));
+    Status = EFI_OUT_OF_RESOURCES;
+    goto Error;
+  }
+
+  // Allocate memory for SMMU node pointers (for output reference lookup)
+  SmmuNodePtrs = AllocateZeroPool (SmmuNodeCount * sizeof (VOID *));
+  if (SmmuNodePtrs == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to allocate memory for SMMU node pointers\n", __func__));
+    Status = EFI_OUT_OF_RESOURCES;
+    goto Error;
+  }
+
+  // Second pass: collect SMMU information
+  Status = SmmuV3GetNodeInfo (IortTable, SmmuInfoArray, SmmuNodePtrs);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to get SMMU node info\n", __func__));
+    goto Error;
+  }
+
+  // Third pass: calculate max Stream ID for each SMMU node
+  Status = SmmuV3GetMaxStreamIds (IortTable, SmmuNodePtrs, SmmuNodeCount, SmmuInfoArray);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to get max Stream ID for SMMU nodes\n", __func__));
+    goto Error;
+  }
+
+  // Allocate memory for Stream ID ranges after knowing the maximum Stream ID
+  for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
+    if (SmmuInfoArray[SmmuIndex].StreamTableEntryMax > 0) {
+      // Allocate space for StreamIdRanges based on MaxStreamId
+      // One entry for each possible StreamId (0 to MaxStreamId inclusive)
+      SmmuInfoArray[SmmuIndex].StreamEntryConfig = AllocateZeroPool ((SmmuInfoArray[SmmuIndex].StreamTableEntryMax + 1) * sizeof (SMMU_STREAM_ENTRY_CONFIG));
+      if (SmmuInfoArray[SmmuIndex].StreamEntryConfig == NULL) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to allocate Stream ID ranges for SMMU[%d]\n", __func__, SmmuInfoArray[SmmuIndex].SmmuBase));
+        Status = EFI_OUT_OF_RESOURCES;
+        goto Error;
+      }
+    }
+  }
+
+  // Fourth pass: collect per Stream ID range info like CCA, CPM, DACS for each RC/NamedComp node
+  Status = SmmuV3GetStreamIdInfo (IortTable, SmmuNodePtrs, SmmuNodeCount, SmmuInfoArray);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to get Stream ID info for SMMU nodes\n", __func__));
+    goto Error;
+  }
+
+  FreePool (SmmuNodePtrs);
+  *SmmuInfo  = SmmuInfoArray;
+  *SmmuCount = SmmuNodeCount;
+  return Status;
+
+Error:
+  if (SmmuInfoArray != NULL) {
+    for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
+      if (SmmuInfoArray[SmmuIndex].StreamEntryConfig != NULL) {
+        FreePool (SmmuInfoArray[SmmuIndex].StreamEntryConfig);
+      }
+    }
+
+    FreePool (SmmuInfoArray);
+  }
+
+  if (SmmuNodePtrs != NULL) {
+    FreePool (SmmuNodePtrs);
+  }
 
   return Status;
 }
