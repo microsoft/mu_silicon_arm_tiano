@@ -1049,7 +1049,7 @@ InitializeSmmuDxe (
   Status = SmmuV3ParseIort (IortData, &mIoMmu->SmmuInfo, &mIoMmu->SmmuCount);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to parse IORT for SMMU\n", __func__));
-    return EFI_NOT_FOUND;
+    return Status;
   }
 
   DEBUG ((DEBUG_VERBOSE, "%a: Found %u SMMUs\n", __func__, mIoMmu->SmmuCount));

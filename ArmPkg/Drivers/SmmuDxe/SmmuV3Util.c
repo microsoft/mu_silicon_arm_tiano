@@ -930,6 +930,7 @@ SmmuV3GetNodeInfo (
  *
  * @retval EFI_SUCCESS            Success.
  * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+ * @retval EFI_NOT_FOUND          IORT table not found.
  */
 EFI_STATUS
 SmmuV3NodeCount (
@@ -1014,53 +1015,51 @@ SmmuV3GetMaxStreamIds (
   Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
 
   for (Count = 0; Count < Iort->NumNodes; Count++) {
-    if ((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP)) {
-      if (Node->NumIdMappings > 0) {
-        // Get the ID mapping array
-        IdMapping = (EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE *)((UINT8 *)Node + Node->IdReference);
+    if (((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP)) && (Node->NumIdMappings > 0)) {
+      // Get the ID mapping array
+      IdMapping = (EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE *)((UINT8 *)Node + Node->IdReference);
 
-        for (IdMappingIndex = 0; IdMappingIndex < Node->NumIdMappings; IdMappingIndex++) {
-          // Calculate the absolute offset of the output reference
-          ByteOffset = IdMapping[IdMappingIndex].OutputReference;
-          OutputNode = (VOID *)((UINT8 *)Iort + ByteOffset);
+      for (IdMappingIndex = 0; IdMappingIndex < Node->NumIdMappings; IdMappingIndex++) {
+        // Calculate the absolute offset of the output reference
+        ByteOffset = IdMapping[IdMappingIndex].OutputReference;
+        OutputNode = (VOID *)((UINT8 *)Iort + ByteOffset);
 
-          // Check if the output reference points to an SMMU node
-          Found = FALSE;
-          for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
-            if (OutputNode == SmmuNodePtrs[SmmuIndex]) {
-              // This ID mapping references an SMMU node
-              // Calculate the max Stream ID for this mapping: OutputBase + NumIds
-              CurMaxMappingStreamId = IdMapping[IdMappingIndex].OutputBase + IdMapping[IdMappingIndex].NumIds;
+        // Check if the output reference points to an SMMU node
+        Found = FALSE;
+        for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
+          if (OutputNode == SmmuNodePtrs[SmmuIndex]) {
+            // This ID mapping references an SMMU node
+            // Calculate the max Stream ID for this mapping: OutputBase + NumIds
+            CurMaxMappingStreamId = IdMapping[IdMappingIndex].OutputBase + IdMapping[IdMappingIndex].NumIds;
 
-              // Update MaxStreamId if this mapping has a higher value
-              if (CurMaxMappingStreamId > SmmuInfoArray[SmmuIndex].StreamTableEntryMax) {
-                SmmuInfoArray[SmmuIndex].StreamTableEntryMax = CurMaxMappingStreamId;
-                DEBUG ((
-                  DEBUG_VERBOSE,
-                  "%a: Updated MaxStreamId for SMMU[0x%llx] to 0x%x (from mapping: InputBase=0x%x, NumIds=0x%x, OutputBase=0x%x)\n",
-                  __func__,
-                  SmmuInfoArray[SmmuIndex].SmmuBase,
-                  SmmuInfoArray[SmmuIndex].StreamTableEntryMax,
-                  IdMapping[IdMappingIndex].InputBase,
-                  IdMapping[IdMappingIndex].NumIds,
-                  IdMapping[IdMappingIndex].OutputBase
-                  ));
-              }
-
-              Found = TRUE;
-              break;
+            // Update MaxStreamId if this mapping has a higher value
+            if (CurMaxMappingStreamId > SmmuInfoArray[SmmuIndex].StreamTableEntryMax) {
+              SmmuInfoArray[SmmuIndex].StreamTableEntryMax = CurMaxMappingStreamId;
+              DEBUG ((
+                DEBUG_VERBOSE,
+                "%a: Updated MaxStreamId for SMMU[0x%llx] to 0x%x (from mapping: InputBase=0x%x, NumIds=0x%x, OutputBase=0x%x)\n",
+                __func__,
+                SmmuInfoArray[SmmuIndex].SmmuBase,
+                SmmuInfoArray[SmmuIndex].StreamTableEntryMax,
+                IdMapping[IdMappingIndex].InputBase,
+                IdMapping[IdMappingIndex].NumIds,
+                IdMapping[IdMappingIndex].OutputBase
+                ));
             }
-          }
 
-          if (!Found) {
-            DEBUG ((
-              DEBUG_ERROR,
-              "%a: ID mapping references a non-SMMU node (offset: 0x%x)\n",
-              __func__,
-              ByteOffset
-              ));
-            return EFI_NOT_FOUND;
+            Found = TRUE;
+            break;
           }
+        }
+
+        if (!Found) {
+          DEBUG ((
+            DEBUG_ERROR,
+            "%a: ID mapping references a non-SMMU node (offset: 0x%x)\n",
+            __func__,
+            ByteOffset
+            ));
+          return EFI_NOT_FOUND;
         }
       }
     }
@@ -1082,6 +1081,7 @@ SmmuV3GetMaxStreamIds (
  *
  * @retval EFI_SUCCESS            Success.
  * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+ * @retval EFI_NOT_FOUND          SMMU node not found.
  */
 EFI_STATUS
 SmmuV3GetStreamIdInfo (
@@ -1112,12 +1112,13 @@ SmmuV3GetStreamIdInfo (
     return EFI_INVALID_PARAMETER;
   }
 
+  ZeroMem (&StreamEntryConfig, sizeof (SMMU_STREAM_ENTRY_CONFIG));
+
   Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
   Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
 
   for (Count = 0; Count < Iort->NumNodes; Count++) {
     if ((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP)) {
-      ZeroMem (&StreamEntryConfig, sizeof (SMMU_STREAM_ENTRY_CONFIG));
       // Extract Cache Coherent and Memory Access Flags based on node type
       if (Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) {
         RcNode                                   = (EFI_ACPI_6_0_IO_REMAPPING_RC_NODE *)Node;
