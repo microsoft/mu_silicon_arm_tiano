@@ -140,6 +140,8 @@ SmmuV3SetTranslationStartingLevel (
   } else {
     SmmuInfo->TranslationStartingLevel = 1; // 3 level paging
     *S2Sl0                             = 0x1;
+    // If the output address width is greater than PAGE_TABLE_CONCATENATED_PAGES_BITS_CUTOFF, the page table root must be concatenated.
+    SmmuInfo->PageTableRootConcatenated = (OutputAddressWidth > PAGE_TABLE_CONCATENATED_PAGES_BITS_CUTOFF);
   }
 
   return EFI_SUCCESS;
@@ -606,7 +608,7 @@ SmmuV3DumpPageTableEntries (
   Current = Root;
 
   for (Level = SmmuInfo->TranslationStartingLevel; Level < PAGE_TABLE_DEPTH; Level++) {
-    Index = PAGE_TABLE_INDEX (VirtualAddress, Level);
+    Index = PAGE_TABLE_INDEX (VirtualAddress, Level, SmmuInfo->OutputAddressWidth, SmmuInfo->TranslationStartingLevel, SmmuInfo->PageTableRootConcatenated);
     if (Current->Entries[Index] == 0) {
       DEBUG ((DEBUG_ERROR, "%a: Invalid entry at level %d, index %d\n", __func__, Level, Index));
       break;

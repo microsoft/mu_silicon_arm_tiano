@@ -18,10 +18,19 @@
 
 // Number of levels in the page table
 #define PAGE_TABLE_DEPTH  4
-#define PAGE_TABLE_INDEX(VirtualAddress, Level)  (((VirtualAddress) >> (12 + (9 * (PAGE_TABLE_DEPTH - 1 - (Level))))) & 0x1FF)
+// If the starting level is 1, and the address width exceeds 39 bits, then the page table is concatenated
+#define PAGE_TABLE_CONCATENATED_PAGES_BITS_CUTOFF  39
+// Page Table Index macro to calculate the index of the page table entry based on the level and address width, supports concatenated page tables
+#define PAGE_TABLE_INDEX(VirtualAddress, Level, OutputAddressWidth, TranslationStartingLevel, PageTableRootConcatenated) \
+    (PageTableRootConcatenated && (Level == 1) && (TranslationStartingLevel == Level)) ? \
+        (((VirtualAddress) >> (12 + (9 * ((PAGE_TABLE_DEPTH - 1) - (Level))))) & \
+         ((1 << (9 + ((OutputAddressWidth) - PAGE_TABLE_CONCATENATED_PAGES_BITS_CUTOFF))) - 1)) : \
+        (((VirtualAddress) >> (12 + (9 * ((PAGE_TABLE_DEPTH - 1) - (Level))))) & 0x1FF)
+
 #define PAGE_TABLE_4_LEVEL_OUTPUT_ADDRESS_WIDTH_MIN  44
 #define PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MAX          48
 #define PAGE_TABLE_OUTPUT_ADDRESS_WIDTH_MIN          32
+#define PAGE_TABLE_ROOT_CONCATENATED_PAGES_MAX       16
 
 // Macro to align values down. Alignment is required to be power of 2.
 #define ALIGN_DOWN_BY(length, alignment) \
@@ -164,7 +173,6 @@ typedef struct _SMMU_INFO {
   VOID                        *CommandQueue;
   VOID                        *EventQueue;
   SMMU_STREAM_ENTRY_CONFIG    *StreamEntryConfig;
-  UINT8                       TranslationStartingLevel;
   UINT64                      SmmuBase;
   UINT32                      StreamTableSize;
   UINT32                      StreamTableEntryMax;
@@ -174,6 +182,9 @@ typedef struct _SMMU_INFO {
   UINT32                      StreamTableLog2Size;
   UINT32                      CommandQueueLog2Size;
   UINT32                      EventQueueLog2Size;
+  UINT32                      OutputAddressWidth;
+  UINT8                       TranslationStartingLevel;
+  BOOLEAN                     PageTableRootConcatenated;
 } SMMU_INFO;
 
 // IoMmu configuration structure
