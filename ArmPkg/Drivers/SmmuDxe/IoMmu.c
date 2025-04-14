@@ -117,12 +117,12 @@ UpdateMapping (
     goto End;
   }
 
-  Status = EFI_SUCCESS;
+  Status  = EFI_SUCCESS;
   Current = Root;
 
   // Traverse the page table to the leaf level
   for (Level = mIoMmu->SmmuInfo->TranslationStartingLevel; Level < PAGE_TABLE_DEPTH - 1; Level++) {
-    Index = PAGE_TABLE_INDEX (VirtualAddress, Level);
+    Index = PAGE_TABLE_INDEX (VirtualAddress, Level, mIoMmu->SmmuInfo->OutputAddressWidth, mIoMmu->SmmuInfo->TranslationStartingLevel, mIoMmu->SmmuInfo->PageTableRootConcatenated);
 
     if (Current->Entries[Index] == 0) {
       PAGE_TABLE  *NewPage = (PAGE_TABLE *)AllocatePages (1);
@@ -143,7 +143,7 @@ UpdateMapping (
 
   // leaf level
   if (Current != 0) {
-    Index = PAGE_TABLE_INDEX (VirtualAddress, Level);
+    Index = PAGE_TABLE_INDEX (VirtualAddress, Level, mIoMmu->SmmuInfo->OutputAddressWidth, mIoMmu->SmmuInfo->TranslationStartingLevel, mIoMmu->SmmuInfo->PageTableRootConcatenated);
 
     if (Valid && ((Current->Entries[Index] & PAGE_TABLE_ENTRY_VALID_BIT) != 0)) {
       DEBUG ((DEBUG_VERBOSE, "%a: Page already mapped. VirtualAddress = 0x%llx PhysicalAddress=0x%llx\n", __func__, VirtualAddress, PhysicalAddress));
