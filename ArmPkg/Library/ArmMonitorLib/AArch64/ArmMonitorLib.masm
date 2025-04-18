@@ -6,8 +6,7 @@
 //
 //
 
-    AREA |.text|, CODE, READONLY
-    ALIGN 3
+    AREA |.text|,ALIGN=3,CODE, READONLY
 
     EXPORT ArmMonitorCall
 
