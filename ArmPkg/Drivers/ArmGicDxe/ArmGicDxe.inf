@@ -29,6 +29,7 @@
 
 [Sources.AARCH64]
   GicV3/AArch64/ArmGicV3.S
+  GicV3/AArch64/ArmGicV3.masm  | MSFT
 
 [Packages]
   MdePkg/MdePkg.dec

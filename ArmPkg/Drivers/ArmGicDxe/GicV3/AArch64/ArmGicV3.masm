@@ -23,6 +23,8 @@
     EXPORT ArmGicV3AcknowledgeInterrupt
     EXPORT ArmGicV3SetPriorityMask
     EXPORT ArmGicV3SetBinaryPointer
+    EXPORT ArmGicV3SetControlRegister
+    EXPORT ArmGicV3GetControlRegister
 
 //UINT32
 //EFIAPI
@@ -118,5 +120,25 @@ ArmGicV3SetBinaryPointer PROC
         msr     ICC_BPR1_EL1, x0
         ret
 ArmGicV3SetBinaryPointer ENDP
+
+//UINTN
+//EFIAPI
+//ArmGicV3GetControlRegister (
+//  VOID
+//  );
+ArmGicV3GetControlRegister PROC
+        mrs     x0, ICC_CTLR_EL1
+        ret
+ArmGicV3GetControlRegister ENDP
+
+//VOID
+//EFIAPI
+//ArmGicV3SetControlRegister (
+//  IN UINTN         Value
+//  );
+ArmGicV3SetControlRegister PROC
+        msr     ICC_CTLR_EL1, x0
+        ret
+ArmGicV3SetControlRegister ENDP
 
     END
