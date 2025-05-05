@@ -104,7 +104,7 @@ FindPoolToAllocateFrom (
   @retval A pointer to the allocated page table memory or NULL if the
           allocation failed.
 **/
-STATIC
+static
 VOID *
 AllocatePageTableMemory (
   IN UINTN  Pages
@@ -153,7 +153,7 @@ AllocatePageTableMemory (
   return Buffer;
 }
 
-STATIC PAGE_TABLE_MEM_ALLOC_PROTOCOL  mPageTableMemAllocProtocol = {
+static PAGE_TABLE_MEM_ALLOC_PROTOCOL  mPageTableMemAllocProtocol = {
   AllocatePageTableMemory
 };
 
