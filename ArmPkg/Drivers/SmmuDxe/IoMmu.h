@@ -23,6 +23,39 @@
 #define PAGE_TABLE_DESCRIPTOR       (0x1 << 1)
 #define PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS(IoMmuAccess)  (IoMmuAccess << 6)
 
+typedef UINT64 PAGE_TABLE_ENTRY;
+
+#define PAGE_TABLE_SIZE  (EFI_PAGE_SIZE / sizeof(PAGE_TABLE_ENTRY))  // Number of entries in a page table
+
+// Page Table Structure used by SMMU
+typedef struct _PAGE_TABLE {
+  PAGE_TABLE_ENTRY    Entries[PAGE_TABLE_SIZE];
+} PAGE_TABLE;
+
+/**
+  Update the page table mapping with the given physical address and flags.
+
+  @param [in]  Root                       Pointer to the root page table.
+  @param [in]  PhysicalAddress            Physical address to map.
+  @param [in]  Bytes                      Number of bytes to map.
+  @param [in]  Flags                      Flags to set for the mapping. 12 bits or less.
+  @param [in]  Valid                      Boolean to indicate if the entry is valid.
+  @param [in]  SetReadWriteFlagsOnly      Boolean to indicate if only R/W flags should be set.
+
+  @retval EFI_SUCCESS            Success.
+  @retval EFI_INVALID_PARAMETER  Invalid parameter.
+  @retval EFI_OUT_OF_RESOURCES   Out of resources.
+**/
+EFI_STATUS
+UpdatePageTable (
+  IN PAGE_TABLE  *Root,
+  IN UINT64      PhysicalAddress,
+  IN UINT64      Bytes,
+  IN UINT16      Flags,
+  IN BOOLEAN     Valid,
+  IN BOOLEAN     SetReadWriteFlagsOnly
+  );
+
 /**
   Installs the IOMMU Protocol on this SMMU instance.
 
