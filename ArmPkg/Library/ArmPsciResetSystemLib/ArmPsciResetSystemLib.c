@@ -71,8 +71,8 @@ ResetWarm (
 {
   ARM_MONITOR_ARGS  Args;
 
-  Args.Arg0 = ARM_SMC_ID_PSCI_SYSTEM_RESET2_AARCH64;
-
+  Args.Arg0 = ARM_SMC_ID_PSCI_FEATURES;              // MU_CHANGE
+  Args.Arg1 = ARM_SMC_ID_PSCI_SYSTEM_RESET2_AARCH64; // MU_CHANGE
   // Is SYSTEM_RESET2 supported?
   ArmMonitorCall (&Args);
   if (Args.Arg0 == ARM_SMC_PSCI_RET_SUCCESS) {
