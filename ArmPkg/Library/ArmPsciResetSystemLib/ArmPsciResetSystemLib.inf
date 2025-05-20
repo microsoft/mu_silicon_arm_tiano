@@ -28,5 +28,6 @@
 
 [LibraryClasses]
   ArmMonitorLib
+  BaseMemoryLib # MU_CHANGE
   BaseLib
   DebugLib
