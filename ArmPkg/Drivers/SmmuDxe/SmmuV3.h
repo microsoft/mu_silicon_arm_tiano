@@ -15,6 +15,7 @@
 #include <Register/SmmuV3Registers.h>
 #include <Uefi/UefiBaseType.h>
 #include <IndustryStandard/IoRemappingTable.h>
+#include "IoMmu.h"
 
 // Number of levels in the page table
 #define PAGE_TABLE_DEPTH  4
@@ -142,10 +143,6 @@
 #define SMMUV3_CR0_VMW_DISABLED             0                // Disable VMID wildcard matching
 #define SMMUV3_CR0_ATS_CHK_DISABLE          1                // Disable bypass for ATS translated traffic
 
-typedef UINT64 PAGE_TABLE_ENTRY;
-
-#define PAGE_TABLE_SIZE  EFI_PAGE_SIZE / sizeof(PAGE_TABLE_ENTRY)  // Number of entries in a page table
-
 typedef enum _SMMU_ADDRESS_SIZE_TYPE {
   SmmuAddressSize32Bit = 0,
   SmmuAddressSize36Bit = 1,
@@ -156,14 +153,10 @@ typedef enum _SMMU_ADDRESS_SIZE_TYPE {
   SmmuAddressSize52Bit = 6,
 } SMMU_ADDRESS_SIZE_TYPE;
 
-// Page Table Structure used by SMMU
-typedef struct _PAGE_TABLE {
-  PAGE_TABLE_ENTRY    Entries[PAGE_TABLE_SIZE];
-} PAGE_TABLE;
-
 typedef struct _SMMU_STREAM_ENTRY_CONFIG {
-  UINT32    CacheCoherentAttribute;
-  UINT32    MemoryAccessFlags;
+  UINT32                                CacheCoherentAttribute;
+  UINT32                                MemoryAccessFlags;
+  EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE    *RmrNode;
 } SMMU_STREAM_ENTRY_CONFIG;
 
 // General SMMU Information for a SMMU instance
@@ -410,6 +403,23 @@ SmmuV3ConsumeEventQueueForErrors (
   );
 
 /**
+  Dump the page table entries for a given virtual address.
+  Dumps PTE's for all levels regardless of the starting level chosen for translation.
+
+  @param [in]  SmmuInfo        Pointer to the SMMU_INFO structure.
+  @param [in]  VirtualAddress  The virtual address to dump.
+  @param [in]  Root            Pointer to the root page table.
+
+  @retval None.
+**/
+VOID
+SmmuV3DumpPageTableEntries (
+  IN SMMU_INFO   *SmmuInfo,
+  IN UINT64      VirtualAddress,
+  IN PAGE_TABLE  *Root
+  );
+
+/**
   Log the errors if found from the SMMUv3. Prints Event Queue entries and GError register.
   Does nothing if no errors found.
 
@@ -448,6 +458,22 @@ SmmuV3SendCommand (
 EFI_STATUS
 SmmuV3TLBInvalidateAll (
   IN SMMU_INFO  *SmmuInfo
+  );
+
+/**
+  Invalidate TLB entries for specified InputAddress for Stage 2 of SmmuV3.
+
+  @param [in]  SmmuInfo      Pointer to the SMMU_INFO structure.
+  @param [in]  InputAddress  The input address to invalidate.
+
+  @retval EFI_SUCCESS            Success.
+  @retval EFI_TIMEOUT            Timeout.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+**/
+EFI_STATUS
+SmmuV3TLBInvalidateAddress (
+  IN SMMU_INFO  *SmmuInfo,
+  IN UINT64     InputAddress
   );
 
 /**

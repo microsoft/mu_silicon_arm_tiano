@@ -109,6 +109,7 @@ UpdateMapping (
   UINT32      Index;
   PAGE_TABLE  *Current;
   UINT64      Entry;
+  UINT32      SmmuIndex;
 
   // Flags must be 12 bits or less
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0)) {
@@ -153,7 +154,7 @@ UpdateMapping (
       if (Valid) {
         Entry = (PhysicalAddress & ~PAGE_TABLE_BLOCK_OFFSET); // Assign PA
         // validate entry and set leaf level flags
-        Entry                  |= PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
+        Entry                  |= Flags | PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
         Current->Entries[Index] =  Entry;
       } else {
         Current->Entries[Index] = Current->Entries[Index] & ~PAGE_TABLE_ENTRY_VALID_BIT; // only invalidate leaf entry
@@ -166,7 +167,24 @@ UpdateMapping (
     }
   }
 
-  ArmDataSynchronizationBarrier ();
+  // Invalidate TLBI Command.
+  // Current implementation of IoMmu protocol doesnt distinguish between stream id's or Smmu's.
+  // As a result we have to invalidate TLB for all SMMU's for the given virtual address to make
+  // sure that the correct smmu's streamid's page table's TLB is invalidated.
+  // To workaround the limitations of the IoMmu protocol, we globally set the page table root
+  // for all SMMU's and stream id's to be the same.
+  // Todo: Update the IoMmu protocol to support multiple SMMU's and stream id's so we don't have to
+  // invalidate all SMMU's TLB for a given virtual address, just the one that was updated.
+  if (!Valid) {
+    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+      Status = SmmuV3TLBInvalidateAddress (&mIoMmu->SmmuInfo[SmmuIndex], VirtualAddress);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
+        goto End;
+      }
+    }
+  }
+
   SpeculationBarrier ();
 
 End:
@@ -188,7 +206,6 @@ End:
   @retval EFI_INVALID_PARAMETER  Invalid parameter.
   @retval EFI_OUT_OF_RESOURCES   Out of resources.
 **/
-STATIC
 EFI_STATUS
 UpdatePageTable (
   IN PAGE_TABLE  *Root,
@@ -202,7 +219,6 @@ UpdatePageTable (
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddressEnd;
   EFI_PHYSICAL_ADDRESS  CurPhysicalAddress;
-  UINT32                SmmuIndex;
 
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0) || (Bytes == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
@@ -221,17 +237,6 @@ UpdatePageTable (
     }
 
     CurPhysicalAddress += EFI_PAGE_SIZE;
-  }
-
-  // Invalidate TLBI Command
-  if (!Valid) {
-    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-      Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
-      if (EFI_ERROR (Status)) {
-        DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB.\n", __func__));
-        goto End;
-      }
-    }
   }
 
 End:
@@ -492,7 +497,7 @@ IoMmuSetAttribute (
              mIoMmu->SmmuInfo->PageTableRoot,
              MapInfo->PhysicalAddress,
              MapInfo->NumberOfBytes,
-             PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS (IoMmuAccess),
+             PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)), // TODO: https://github.com/microsoft/mu_silicon_arm_tiano/issues/375 debug issue on physical platform and revert the permissions
              FALSE,
              TRUE
              );

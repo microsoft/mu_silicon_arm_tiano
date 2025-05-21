@@ -327,18 +327,21 @@ SmmuV3BuildStreamTableEntry (
   OUT SMMUV3_STREAM_TABLE_ENTRY  *StreamEntry
   )
 {
-  EFI_STATUS   Status;
-  UINT32       InputSize;
-  SMMUV3_IDR0  Idr0;
-  SMMUV3_IDR1  Idr1;
-  SMMUV3_IDR5  Idr5;
-  UINT8        IortCohac;
-  UINT32       CCA;
-  UINT8        CPM;
-  UINT8        DACS;
-  UINT64       S2Sl0;
+  EFI_STATUS                                Status;
+  UINT32                                    InputSize;
+  SMMUV3_IDR0                               Idr0;
+  SMMUV3_IDR1                               Idr1;
+  SMMUV3_IDR5                               Idr5;
+  UINT8                                     IortCohac;
+  UINT32                                    CCA;
+  UINT8                                     CPM;
+  UINT8                                     DACS;
+  UINT64                                    S2Sl0;
+  EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE        *RmrNode;
+  EFI_ACPI_6_0_IO_REMAPPING_MEM_RANGE_DESC  *IortMemRangeDesc;
+  UINT32                                    NumMemRangeDesc;
 
-  if ((SmmuInfo == NULL) || (SmmuInfo->StreamEntryConfig == NULL) || (StreamEntry == NULL)) {
+  if ((SmmuInfo == NULL) || (SmmuInfo->StreamEntryConfig == NULL) || (StreamEntry == NULL) || (StreamId > SmmuInfo->StreamTableEntryMax)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
@@ -349,6 +352,29 @@ SmmuV3BuildStreamTableEntry (
 
   // Device attributes are Cacheable and Inner-Shareable
   DACS = (SmmuInfo->StreamEntryConfig[StreamId].MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_DACS) >> 1;      // Shift by 1 to isolate DACS bit.
+
+  RmrNode = SmmuInfo->StreamEntryConfig[StreamId].RmrNode;
+
+  // Process memory range descriptors
+  if (RmrNode != NULL) {
+    for (NumMemRangeDesc = 0; NumMemRangeDesc < RmrNode->NumMemRangeDesc; NumMemRangeDesc++) {
+      IortMemRangeDesc = (EFI_ACPI_6_0_IO_REMAPPING_MEM_RANGE_DESC *)((UINT8 *)RmrNode + RmrNode->MemRangeDescRef);
+      if ((IortMemRangeDesc[NumMemRangeDesc].Base > 0) && (IortMemRangeDesc[NumMemRangeDesc].Length > 0)) {
+        Status = UpdatePageTable (
+                   SmmuInfo->PageTableRoot,
+                   IortMemRangeDesc[NumMemRangeDesc].Base,
+                   IortMemRangeDesc[NumMemRangeDesc].Length,
+                   PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)),
+                   TRUE,
+                   FALSE
+                   );
+        if (EFI_ERROR (Status)) {
+          DEBUG ((DEBUG_ERROR, "%a: Failed to update RMR mapping.\n", __func__));
+          return Status;
+        }
+      }
+    }
+  }
 
   ZeroMem ((VOID *)StreamEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
 

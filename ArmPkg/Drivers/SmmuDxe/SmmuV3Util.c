@@ -823,7 +823,6 @@ SmmuV3SendCommand (
 
 /**
   Invalidate all TLB entries in the SMMUv3.
-  TODO: Change to use CMD_TLBI_S2_IPA instead of ALL.
 
   @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
 
@@ -853,6 +852,52 @@ SmmuV3TLBInvalidateAll (
   }
 
   SMMUV3_BUILD_CMD_TLBI_EL2_ALL (&Command);
+  Status = SmmuV3SendCommand (SmmuInfo, &Command);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
+    return Status;
+  }
+
+  // Issue a CMD_SYNC command to guarantee that any previously issued TLB
+  // invalidations (CMD_TLBI_*) are completed (SMMUv3.2 spec section 4.6.3).
+  SMMUV3_BUILD_CMD_SYNC_NO_INTERRUPT (&Command);
+  Status = SmmuV3SendCommand (SmmuInfo, &Command);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: CMD_SYNC_NO_INTERRUPT failed.\n", __func__));
+    return Status;
+  }
+
+  ArmDataSynchronizationBarrier ();
+
+  return Status;
+}
+
+/**
+  Invalidate TLB entries for specified InputAddress for Stage 2 of SmmuV3.
+
+  @param [in]  SmmuInfo      Pointer to the SMMU_INFO structure.
+  @param [in]  InputAddress  The input address to invalidate.
+
+  @retval EFI_SUCCESS            Success.
+  @retval EFI_TIMEOUT            Timeout.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+**/
+EFI_STATUS
+SmmuV3TLBInvalidateAddress (
+  IN SMMU_INFO  *SmmuInfo,
+  IN UINT64     InputAddress
+  )
+{
+  SMMUV3_CMD_GENERIC  Command;
+  EFI_STATUS          Status;
+
+  if (SmmuInfo == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Invalidate with TLBI_S2_IPA Commands
+  SMMUV3_BUILD_CMD_TLBI_S2_IPA (&Command, SMMUV3_STREAM_TABLE_ENTRY_S2VMID, InputAddress);
   Status = SmmuV3SendCommand (SmmuInfo, &Command);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
@@ -1120,7 +1165,7 @@ SmmuV3GetStreamIdInfo (
   Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
 
   for (Count = 0; Count < Iort->NumNodes; Count++) {
-    if ((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP)) {
+    if ((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP) || (Node->Type == EFI_ACPI_IORT_TYPE_RMR)) {
       // Extract Cache Coherent and Memory Access Flags based on node type
       if (Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) {
         RcNode                                   = (EFI_ACPI_6_0_IO_REMAPPING_RC_NODE *)Node;
@@ -1152,7 +1197,12 @@ SmmuV3GetStreamIdInfo (
 
               // Store the Stream ID range information
               for (CurID = StartId; CurID <= EndId; CurID++) {
-                CopyMem (&SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID], &StreamEntryConfig, sizeof (SMMU_STREAM_ENTRY_CONFIG));
+                if (Node->Type == EFI_ACPI_IORT_TYPE_RMR) {
+                  SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].RmrNode = (EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE *)Node;
+                } else {
+                  SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].CacheCoherentAttribute = StreamEntryConfig.CacheCoherentAttribute;
+                  SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].MemoryAccessFlags      = StreamEntryConfig.MemoryAccessFlags;
+                }
               }
 
               DEBUG ((
