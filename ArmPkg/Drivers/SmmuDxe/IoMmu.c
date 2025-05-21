@@ -497,7 +497,7 @@ IoMmuSetAttribute (
              mIoMmu->SmmuInfo->PageTableRoot,
              MapInfo->PhysicalAddress,
              MapInfo->NumberOfBytes,
-             PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS (IoMmuAccess),
+             PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)), // TODO: https://github.com/microsoft/mu_silicon_arm_tiano/issues/375 debug issue on physical platform and revert the permissions
              FALSE,
              TRUE
              );
