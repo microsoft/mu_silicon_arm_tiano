@@ -16,6 +16,7 @@
 #include <IndustryStandard/ArmStdSmc.h>
 
 #include <Library/ArmMonitorLib.h>
+#include <Library/BaseMemoryLib.h> // MU_CHANGE
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/ResetSystemLib.h>
@@ -51,6 +52,7 @@ ResetCold (
 {
   ARM_MONITOR_ARGS  Args;
 
+  ZeroMem (&Args, sizeof (ARM_MONITOR_ARGS)); // MU_CHANGE
   // Send a PSCI 0.2 SYSTEM_RESET command
   Args.Arg0 = ARM_SMC_ID_PSCI_SYSTEM_RESET;
 
@@ -71,12 +73,15 @@ ResetWarm (
 {
   ARM_MONITOR_ARGS  Args;
 
-  Args.Arg0 = ARM_SMC_ID_PSCI_SYSTEM_RESET2_AARCH64;
+  ZeroMem (&Args, sizeof (ARM_MONITOR_ARGS)); // MU_CHANGE
 
+  Args.Arg0 = ARM_SMC_ID_PSCI_FEATURES;              // MU_CHANGE
+  Args.Arg1 = ARM_SMC_ID_PSCI_SYSTEM_RESET2_AARCH64; // MU_CHANGE
   // Is SYSTEM_RESET2 supported?
   ArmMonitorCall (&Args);
   if (Args.Arg0 == ARM_SMC_PSCI_RET_SUCCESS) {
     // Send PSCI SYSTEM_RESET2 command
+    ZeroMem (&Args, sizeof (ARM_MONITOR_ARGS)); // MU_CHANGE
     Args.Arg0 = ARM_SMC_ID_PSCI_SYSTEM_RESET2_AARCH64;
 
     ArmMonitorCall (&Args);
@@ -104,6 +109,7 @@ ResetShutdown (
 {
   ARM_MONITOR_ARGS  Args;
 
+  ZeroMem (&Args, sizeof (ARM_MONITOR_ARGS)); // MU_CHANGE
   // Send a PSCI 0.2 SYSTEM_RESET command
   Args.Arg0 = ARM_SMC_ID_PSCI_SYSTEM_OFF;
 

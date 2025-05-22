@@ -5,7 +5,7 @@
 //
 //------------------------------------------------------------------------------
 
-    AREA    |.text|,ALIGN=8,CODE,READONLY
+    AREA    |.text|,ALIGN=3,CODE,READONLY
 
     EXPORT ArmCallSmc
 
