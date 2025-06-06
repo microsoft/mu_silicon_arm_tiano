@@ -177,10 +177,12 @@ UpdateMapping (
   // invalidate all SMMU's TLB for a given virtual address, just the one that was updated.
   if (!Valid) {
     for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-      Status = SmmuV3TLBInvalidateAddress (&mIoMmu->SmmuInfo[SmmuIndex], VirtualAddress);
-      if (EFI_ERROR (Status)) {
-        DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
-        goto End;
+      if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+        Status = SmmuV3TLBInvalidateAddress (&mIoMmu->SmmuInfo[SmmuIndex], VirtualAddress);
+        if (EFI_ERROR (Status)) {
+          DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
+          goto End;
+        }
       }
     }
   }
@@ -306,7 +308,9 @@ IoMmuMap (
 End:
   // Only prints errors if Event Queue is not empty and GError != 0
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+      SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+    }
   }
 
   ASSERT_EFI_ERROR (Status);
@@ -357,7 +361,9 @@ IoMmuUnmap (
 End:
   // Only prints errors if Event Queue is not empty and GError != 0
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+      SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+    }
   }
 
   ASSERT_EFI_ERROR (Status);
@@ -509,7 +515,9 @@ IoMmuSetAttribute (
 End:
   // Only prints errors if Event Queue is not empty and GError != 0
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+      SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+    }
   }
 
   ASSERT_EFI_ERROR (Status);

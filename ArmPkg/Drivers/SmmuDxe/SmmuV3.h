@@ -178,6 +178,7 @@ typedef struct _SMMU_INFO {
   UINT32                      OutputAddressWidth;
   UINT8                       TranslationStartingLevel;
   BOOLEAN                     PageTableRootConcatenated;
+  BOOLEAN                     Enabled;
 } SMMU_INFO;
 
 // IoMmu configuration structure
