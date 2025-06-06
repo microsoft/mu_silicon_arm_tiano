@@ -992,13 +992,13 @@ SmmuV3ExitBootServices (
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
     Status = SmmuV3DisableTranslation (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu translation.\n", __func__));
+      DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu 0x%llx translation.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
       ASSERT_EFI_ERROR (Status);
     }
 
     Status = SmmuV3SetGlobalBypass (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Failed to set global bypass.\n", __func__));
+      DEBUG ((DEBUG_ERROR, "%a: Failed to set smmu 0x%llx global bypass.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
       ASSERT_EFI_ERROR (Status);
     }
   }
@@ -1035,6 +1035,7 @@ InitializeSmmuDxe (
   EFI_STATUS               Status;
   EFI_EVENT                Event;
   UINT32                   SmmuIndex;
+  UINT32                   SmmuStatusIndex;
   EFI_ACPI_TABLE_PROTOCOL  *AcpiTable;
   SMMU_CONFIG              *SmmuConfig;
   PAGE_TABLE               *PageTableRoot;
@@ -1110,12 +1111,43 @@ InitializeSmmuDxe (
     goto Error;
   }
 
+  // Set SMMUs' Enabled status based on the SMMU_STATUS in the SMMU_CONFIG HOB structure.
+  for (SmmuStatusIndex = 0; SmmuStatusIndex < SmmuConfig->SmmuCount; SmmuStatusIndex++) {
+    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+      if (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase == SmmuConfig->SmmuStatus[SmmuStatusIndex].SmmuBase) {
+        mIoMmu->SmmuInfo[SmmuIndex].Enabled = SmmuConfig->SmmuStatus[SmmuStatusIndex].Enabled;
+      }
+    }
+  }
+
   // Configure SMMUv3 hardware
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    Status = SmmuV3Configure (&mIoMmu->SmmuInfo[SmmuIndex], PageTableRoot);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Failed to configure SMMUv3 hardware\n", __func__));
-      goto Error;
+    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+      Status = SmmuV3Configure (&mIoMmu->SmmuInfo[SmmuIndex], PageTableRoot);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to configure SMMUv3 hardware\n", __func__));
+        goto Error;
+      }
+    }
+  }
+
+  // Disable any SMMU that is not enabled.
+  // Disables translation and sets global bypass.
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled == FALSE) {
+      Status = SmmuV3DisableTranslation (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu 0x%llx translation.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+        ASSERT_EFI_ERROR (Status);
+      }
+
+      Status = SmmuV3SetGlobalBypass (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to set smmu 0x%llx global bypass.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+        ASSERT_EFI_ERROR (Status);
+      }
+
+      DEBUG ((DEBUG_INFO, "%a: SMMUv3 0x%llx is disabled\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
     }
   }
 
