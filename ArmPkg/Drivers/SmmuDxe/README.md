@@ -244,12 +244,22 @@ Generic Platform Integration:
 - Append the IORT structure to this struct and update the fields accordingly.
 
   ```c
-  typedef struct _SMMU_CONFIG {
-    UINT32    VersionMajor;
-    UINT32    VersionMinor;
-    UINT32    IortSize;
-    UINT32    IortOffset;
-  } SMMU_CONFIG;
+   // SMMU_STATUS structure to hold the status of each SMMU instance.
+   // Contains the base address of the SMMU and whether it is enabled or not.
+   typedef struct _SMMU_STATUS {
+      UINT64     SmmuBase;
+      BOOLEAN    Enabled;
+   } SMMU_STATUS;
+
+   // SMMU_CONFIG structure to pass the SMMU configuration data from the platform to the SMMU driver.
+   typedef struct _SMMU_CONFIG {
+      UINT32         VersionMajor;
+      UINT32         VersionMinor;
+      UINT32         SmmuCount;
+      SMMU_STATUS    *SmmuStatus;
+      UINT32         IortSize;
+      UINT32         IortOffset;
+   } SMMU_CONFIG;
   ```
 
 - Essentialy the same as IORT we want to publish
