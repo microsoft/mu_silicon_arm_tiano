@@ -26,25 +26,20 @@
   SmmuDxe driver will check and enforce the version of the SMMU_CONFIG structure to this current version set here.
 */
 #define CURRENT_SMMU_CONFIG_VERSION_MAJOR  0
-#define CURRENT_SMMU_CONFIG_VERSION_MINOR  8
+#define CURRENT_SMMU_CONFIG_VERSION_MINOR  9
 
 #pragma pack(push, 1)
 
-// SMMU_STATUS structure to hold the status of each SMMU instance.
-// Contains the base address of the SMMU and whether it is enabled or not.
-typedef struct _SMMU_STATUS {
-  UINT64     SmmuBase;
-  BOOLEAN    Enabled;
-} SMMU_STATUS;
-
 // SMMU_CONFIG structure to pass the SMMU configuration data from the platform to the SMMU driver.
+// Platform will configure SmmuDisabledList size and offset to the SMMU disabled list appropriatley
+// for any SMMU that needs be disabled in UEFI and set to bypass.
 typedef struct _SMMU_CONFIG {
-  UINT32         VersionMajor;
-  UINT32         VersionMinor;
-  UINT32         SmmuCount;
-  SMMU_STATUS    *SmmuStatus;
-  UINT32         IortSize;
-  UINT32         IortOffset;
+  UINT32    VersionMajor;
+  UINT32    VersionMinor;
+  UINT32    SmmuDisabledListSize;   // Size of SmmuDisabledList in bytes.
+  UINT32    SmmuDisabledListOffset; // Offset in bytes to the SmmuDisabledList from the start of the HOB structure.
+  UINT32    IortSize;
+  UINT32    IortOffset;             // Offset in bytes to the IORT table from the start of the HOB structure.
 } SMMU_CONFIG;
 
 #pragma pack(pop)

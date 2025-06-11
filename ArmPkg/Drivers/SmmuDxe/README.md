@@ -244,27 +244,23 @@ Generic Platform Integration:
 - Append the IORT structure to this struct and update the fields accordingly.
 
   ```c
-   // SMMU_STATUS structure to hold the status of each SMMU instance.
-   // Contains the base address of the SMMU and whether it is enabled or not.
-   typedef struct _SMMU_STATUS {
-      UINT64     SmmuBase;
-      BOOLEAN    Enabled;
-   } SMMU_STATUS;
-
    // SMMU_CONFIG structure to pass the SMMU configuration data from the platform to the SMMU driver.
+   // Platform will configure SmmuDisabledList size and offset to the SMMU disabled list appropriatley
+   // for any SMMU that needs be disabled in UEFI and set to bypass.
    typedef struct _SMMU_CONFIG {
-      UINT32         VersionMajor;
-      UINT32         VersionMinor;
-      UINT32         SmmuCount;
-      SMMU_STATUS    *SmmuStatus;
-      UINT32         IortSize;
-      UINT32         IortOffset;
+      UINT32    VersionMajor;
+      UINT32    VersionMinor;
+      UINT32    SmmuDisabledListSize;   // Size of SmmuDisabledList in bytes.
+      UINT32    SmmuDisabledListOffset; // Offset in bytes to the SmmuDisabledList from the start of the HOB structure.
+      UINT32    IortSize;
+      UINT32    IortOffset;             // Offset in bytes to the IORT table from the start of the HOB structure.
    } SMMU_CONFIG;
   ```
 
 - Essentialy the same as IORT we want to publish
 - The SMMU expects the entire IORT data to be passed into a HOB gSmmuConfigHobGuid.
 - The platform must create the IORT structure and create gSmmuConfigHobGuid with that data using BuildGuidDataHob.
+- If the platform needs to disable/bypass any Smmu, they can add the SMMU base address to the SmmuDisabledList in the HOB.
 - This structure is consumed by SmmuDxe to configure the SMMU hardware
 
 Integration with Qemu:
