@@ -851,12 +851,17 @@ GetSmmuConfigHobData (
 **/
 STATIC
 EFI_STATUS
-CheckSmmuConfigVersion (
+CheckSmmuConfigStructure (
   IN SMMU_CONFIG  *SmmuConfig
   )
 {
   if (SmmuConfig == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: SMMU_CONFIG structure is NULL\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if ((SmmuConfig->SmmuDisabledCount > 0) && (SmmuConfig->SmmuDisabledList == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: SMMU_CONFIG structure has SmmuDisabledCount > 0 but SmmuDisabledList is NULL\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -1049,7 +1054,7 @@ InitializeSmmuDxe (
   }
 
   // Check SMMU_CONFIG version, return error if incompatible. Backwards compatibility not supported.
-  Status = CheckSmmuConfigVersion (SmmuConfig);
+  Status = CheckSmmuConfigStructure (SmmuConfig);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: SMMU_CONFIG version check failed\n", __func__));
     return Status;
@@ -1086,7 +1091,7 @@ InitializeSmmuDxe (
     return Status;
   }
 
-  IortData = (VOID *)((UINT8 *)SmmuConfig + SmmuConfig->IortOffset);
+  IortData = (VOID *)((UINTN)SmmuConfig + (UINTN)SmmuConfig->IortOffset);
 
   Status = SmmuV3ParseIort (IortData, &mIoMmu->SmmuInfo, &mIoMmu->SmmuCount);
   if (EFI_ERROR (Status)) {
@@ -1111,11 +1116,12 @@ InitializeSmmuDxe (
     goto Error;
   }
 
-  // Set SMMUs' Enabled status based on the SMMU_STATUS in the SMMU_CONFIG HOB structure.
-  for (SmmuStatusIndex = 0; SmmuStatusIndex < SmmuConfig->SmmuCount; SmmuStatusIndex++) {
-    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-      if (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase == SmmuConfig->SmmuStatus[SmmuStatusIndex].SmmuBase) {
-        mIoMmu->SmmuInfo[SmmuIndex].Enabled = SmmuConfig->SmmuStatus[SmmuStatusIndex].Enabled;
+  // Set SMMUs' Enabled status based on the SmmuDisabledList in the SMMU_CONFIG HOB structure.
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    mIoMmu->SmmuInfo[SmmuIndex].Enabled = TRUE;
+    for (SmmuStatusIndex = 0; SmmuStatusIndex < SmmuConfig->SmmuDisabledCount; SmmuStatusIndex++) {
+      if (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase == SmmuConfig->SmmuDisabledList[SmmuStatusIndex]) {
+        mIoMmu->SmmuInfo[SmmuIndex].Enabled = FALSE;
       }
     }
   }
@@ -1128,6 +1134,8 @@ InitializeSmmuDxe (
         DEBUG ((DEBUG_ERROR, "%a: Failed to configure SMMUv3 hardware\n", __func__));
         goto Error;
       }
+
+      DEBUG ((DEBUG_INFO, "%a: SMMUv3 0x%llx is configured for Stage2 Translation\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
     }
   }
 
@@ -1147,7 +1155,7 @@ InitializeSmmuDxe (
         ASSERT_EFI_ERROR (Status);
       }
 
-      DEBUG ((DEBUG_INFO, "%a: SMMUv3 0x%llx is disabled\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+      DEBUG ((DEBUG_INFO, "%a: SMMUv3 0x%llx is disabled/global bypass.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
     }
   }
 
