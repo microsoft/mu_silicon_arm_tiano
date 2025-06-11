@@ -245,13 +245,15 @@ Generic Platform Integration:
 
   ```c
    // SMMU_CONFIG structure to pass the SMMU configuration data from the platform to the SMMU driver.
+   // Platform will configure SmmuDisabledList size and offset to the SMMU disabled list appropriatley
+   // for any SMMU that needs be disabled in UEFI and set to bypass.
    typedef struct _SMMU_CONFIG {
       UINT32    VersionMajor;
       UINT32    VersionMinor;
-      UINT64    SmmuDisabledCount;                // Number of SMMU instances to be disabled.
-      UINT64    SmmuDisabledList[MAX_SMMU_COUNT]; // Array of disabled SMMU stream IDs.
+      UINT32    SmmuDisabledListSize;   // Size of SmmuDisabledList in bytes.
+      UINT32    SmmuDisabledListOffset; // Offset in bytes to the SmmuDisabledList from the start of the HOB structure.
       UINT32    IortSize;
-      UINT32    IortOffset;      // Offset in bytes to the IORT table from the start of the HOB structure.
+      UINT32    IortOffset;             // Offset in bytes to the IORT table from the start of the HOB structure.
    } SMMU_CONFIG;
   ```
 

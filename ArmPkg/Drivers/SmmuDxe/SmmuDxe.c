@@ -860,11 +860,6 @@ CheckSmmuConfigStructure (
     return EFI_INVALID_PARAMETER;
   }
 
-  if ((SmmuConfig->SmmuDisabledCount > 0) && (SmmuConfig->SmmuDisabledList == NULL)) {
-    DEBUG ((DEBUG_ERROR, "%a: SMMU_CONFIG structure has SmmuDisabledCount > 0 but SmmuDisabledList is NULL\n", __func__));
-    return EFI_INVALID_PARAMETER;
-  }
-
   if ((SmmuConfig->VersionMajor == CURRENT_SMMU_CONFIG_VERSION_MAJOR) && (SmmuConfig->VersionMinor == CURRENT_SMMU_CONFIG_VERSION_MINOR)) {
     return EFI_SUCCESS;
   }
@@ -1041,6 +1036,8 @@ InitializeSmmuDxe (
   EFI_EVENT                Event;
   UINT32                   SmmuIndex;
   UINT32                   SmmuStatusIndex;
+  UINT32                   SmmuDisabledCount;
+  UINT64                   *SmmuDisabledList;
   EFI_ACPI_TABLE_PROTOCOL  *AcpiTable;
   SMMU_CONFIG              *SmmuConfig;
   PAGE_TABLE               *PageTableRoot;
@@ -1117,10 +1114,13 @@ InitializeSmmuDxe (
   }
 
   // Set SMMUs' Enabled status based on the SmmuDisabledList in the SMMU_CONFIG HOB structure.
+  SmmuDisabledCount = SmmuConfig->SmmuDisabledListSize / sizeof (UINT64);
+  SmmuDisabledList  = (UINT64 *)((UINTN)SmmuConfig + (UINTN)SmmuConfig->SmmuDisabledListOffset);
+
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
     mIoMmu->SmmuInfo[SmmuIndex].Enabled = TRUE;
-    for (SmmuStatusIndex = 0; SmmuStatusIndex < SmmuConfig->SmmuDisabledCount; SmmuStatusIndex++) {
-      if (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase == SmmuConfig->SmmuDisabledList[SmmuStatusIndex]) {
+    for (SmmuStatusIndex = 0; SmmuStatusIndex < SmmuDisabledCount; SmmuStatusIndex++) {
+      if (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase == SmmuDisabledList[SmmuStatusIndex]) {
         mIoMmu->SmmuInfo[SmmuIndex].Enabled = FALSE;
       }
     }
