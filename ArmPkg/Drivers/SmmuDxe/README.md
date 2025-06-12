@@ -1,10 +1,17 @@
-# SMMU/IOMMU Driver
+# SmmuDxe Driver
 
 This document describes the System Memory Management Unit (SMMU) driver implementation, and how it integrates with the
 PCI I/O subsystem. The driver configures the SMMUv3 hardware and implements the IOMMU protocol to provide address
 translation and memory protection for DMA operations.
 
 ## Architecture Overview
+
+The SmmuDxe driver will consume the SMMU_CONFIG HOB with the IORT data to configure the SMMU's found on the platform.
+It will set them up for Stage 2 Translation by default. SmmuDxe will install the IoMmu Protocol.
+Translation table mapping can be done by leveraging the IoMmu Protocol. The protocol functions are outlined below.
+Seperatley, an IoMmuLib is be provided for platforms to use to do DMA mappings for the SMMU.
+SmmuDxe will install the IORT ACPI Table. Platform should not install the IORT, but instead pass in the IORT data
+with the SMMU_CONFIG HOB.
 
 The system consists of three main components working together:
 
@@ -44,11 +51,11 @@ SMMU Hardware
      };
      ```
 
-   - Configures IOMMU page tables with PageTableInit()
+   - SmmuDxe will handle Translation Table initialization
 
-### DMA Mapping
+### DMA Mapping with IoMmuLib and IoMmu Protocol
 
-- Maintains a 4-level page table to map HostAddress and DeviceAddress
+- Maintains up to 4-level page table, depending on configuration, to map HostAddress and DeviceAddress
 - Identity Mapped
 
 1. **IoMmu Map**:
@@ -57,7 +64,6 @@ SMMU Hardware
    EFI_STATUS
    EFIAPI
    IoMmuMap (
-     IN     EDKII_IOMMU_PROTOCOL   *This,
      IN     EDKII_IOMMU_OPERATION  Operation,
      IN     VOID                   *HostAddress,
      IN OUT UINTN                  *NumberOfBytes,
@@ -66,16 +72,11 @@ SMMU Hardware
      );
    ```
 
-- Sets access permissions based on operation type:
-  - BusMasterRead: READ access
-  - BusMasterWrite: WRITE access
-  - BusMasterCommonBuffer: READ/WRITE access
-
 - Maps HostAddress to DeviceAddress
 - Validates operation type
 - Called by PciIo protocol for mapping
 
-### DMA Unmapping
+### DMA Unmapping with IoMmuLib and IoMmu Protocol
 
 1. **PCI Driver Completes DMA**:
    - Calls PciIo->Unmap()
@@ -87,13 +88,32 @@ SMMU Hardware
    EFI_STATUS
    EFIAPI
    IoMmuUnmap (
-     IN  EDKII_IOMMU_PROTOCOL  *This,
      IN  VOID                  *Mapping
      );
    ```
 
    - Invalidates mapping in Page Table
    - Invalidates TLB entries
+
+### DMA Access Attributes with IoMmuLib and IoMmu Protocol
+
+1. IoMmu SetAttribute
+   - To set R/W permissions, use IoMmuSetAttribute after IoMmuMap()
+
+   ```c
+   EFI_STATUS
+   EFIAPI
+   IoMmuSetAttribute (
+      IN EFI_HANDLE            DeviceHandle,
+      IN VOID                  *Mapping,
+      IN UINT64                IoMmuAccess
+   );
+   ```
+
+- Sets access permissions based on IoMmuAccess type:
+  - EDKII_IOMMU_ACCESS_READ: READ only access
+  - EDKII_IOMMU_ACCESS_WRITE: WRITE only access
+  - EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE: READ/WRITE access
 
 ## SMMU Configuration
 
@@ -108,7 +128,7 @@ The SMMU is configured in stage 2 translation mode with:
 
 ### 2. Page Table Structure
 
-The IOMMU uses a 4-level page table structure for DMA address translation:
+The IOMMU uses up to a 4-level page table structure for DMA address translation:
 <https://developer.arm.com/documentation/101811/0104/Translation-granule/The-starting-level-of-address-translation>
 
 ```text
@@ -122,6 +142,10 @@ Level 3 Table (L3)
     ↓
 Physical Page
 ```
+
+Depending on configuration from the SMMU registers, the starting level of translation is chosen.
+Depending on the SMMU configuration found, also supports Concatenated Translation Tables for the
+Translation Table Base.
 
 ### 3. Address Translation Process
 
@@ -194,17 +218,7 @@ The implementation includes optimizations for:
 1. **Integration of SmmuV3 with IOMMU Protocol**
 
 2. **TLB Management**:
-   - TLB invalidation for unmapped entries via the command queue
-
-## Configuration Options
-
-Key SMMU settings controlled through the SMMU config HOB:
-
-```text
-- Smmu base address, num ID's, etc.
-- Stream Table Size: Based on num IDs
-- IORT info
-```
+   - TLB invalidation by VA for unmapped entries via the command queue
 
 ## Limitations
 
@@ -227,14 +241,16 @@ Potential improvements:
 4. Different page table mapping schemes
 5. Updated IoMmu Protocol to optimize redundencies
 
-## Relevant Docs
+## Configuration Options
 
-- SMMUv3 specification <https://developer.arm.com/documentation/ihi0070/latest/>
-- Useful ARM SMMU documentation - <https://developer.arm.com/documentation/109242/0100/Programming-the-SMMU>
-- Arm AArch64 memory manegemnt guide - <https://developer.arm.com/documentation/101811/0104>
-- ARM a_a-profile_architecture_reference_manual <https://developer.arm.com/documentation/102105/ka-07>
-- Intel IOMMU for DMA protection in UEFI <https://www.intel.com/content/dam/develop/external/us/en/documents/intel-whitepaper-using-iommu-for-dma-protection-in-uefi.pdf>
-- IORT documentation <https://developer.arm.com/documentation/den0049/latest/>
+Key SMMU settings controlled through the SMMU config HOB:
+
+- IORT data: The complete IORT table data that the SMMU(s) will be configured with.
+
+- SmmuDisabledList: Provides platform the ability to individually disable/bypass an SMMU if needed.
+This list contains a list of Smmu base addresses that the platform wants to disable/bypass.
+By default, all SMMU's found are configured for Stage 2 Translation, otherwise set in the SmmuDisabledList,
+in which case translation for that SMMU is disabled and it is set to global bypass mode.
 
 ## Platform Integration Instructions
 
@@ -242,11 +258,16 @@ Generic Platform Integration:
 
 - The Platform will construct a SMMU config HOB and publish for SmmuDxe to consume:
 - Append the IORT structure to this struct and update the fields accordingly.
+- Append the SmmuDisabledList as a UINT64 array. SmmuDxe will parse this Offset and
+interpret as a `(UINT64*)` and iterate on that array of smmu base addresses based on the SmmuDisabledSize.
+SmmuDxe will derive the number of SMMU's in the SmmuDisabledListOffset with
+`SmmuDisabledListSize / sizeof(UINT64)`
 
   ```c
    // SMMU_CONFIG structure to pass the SMMU configuration data from the platform to the SMMU driver.
+   // Platform will pass in the IORT structure through here.
    // Platform will configure SmmuDisabledList size and offset to the SMMU disabled list appropriatley
-   // for any SMMU that needs be disabled in UEFI and set to bypass.
+   // with the base address for any SMMU that needs be disabled in UEFI and set to bypass.
    typedef struct _SMMU_CONFIG {
       UINT32    VersionMajor;
       UINT32    VersionMinor;
@@ -260,9 +281,18 @@ Generic Platform Integration:
 - Essentialy the same as IORT we want to publish
 - The SMMU expects the entire IORT data to be passed into a HOB gSmmuConfigHobGuid.
 - The platform must create the IORT structure and create gSmmuConfigHobGuid with that data using BuildGuidDataHob.
-- If the platform needs to disable/bypass any Smmu, they can add the SMMU base address to the SmmuDisabledList in the HOB.
+- If the platform needs to disable/bypass any SMMU, they can add the SMMU base address to the SmmuDisabledList in the HOB.
 - This structure is consumed by SmmuDxe to configure the SMMU hardware
 
 Integration with Qemu:
 
 - SMMU is supported on Qemu but on v9.1.50+ <https://gitlab.com/qemu-project/qemu>
+
+## Relevant Docs
+
+- SMMUv3 specification <https://developer.arm.com/documentation/ihi0070/latest/>
+- Useful ARM SMMU documentation - <https://developer.arm.com/documentation/109242/0100/Programming-the-SMMU>
+- Arm AArch64 memory manegemnt guide - <https://developer.arm.com/documentation/101811/0104>
+- ARM a_a-profile_architecture_reference_manual <https://developer.arm.com/documentation/102105/ka-07>
+- Intel IOMMU for DMA protection in UEFI <https://www.intel.com/content/dam/develop/external/us/en/documents/intel-whitepaper-using-iommu-for-dma-protection-in-uefi.pdf>
+- IORT documentation <https://developer.arm.com/documentation/den0049/latest/>
