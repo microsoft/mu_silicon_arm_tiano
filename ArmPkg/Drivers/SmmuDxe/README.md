@@ -97,8 +97,15 @@ SMMU Hardware
 
 ### DMA Access Attributes with IoMmuLib and IoMmu Protocol
 
-1. IoMmu SetAttribute
-   - To set R/W permissions, use IoMmuSetAttribute after IoMmuMap()
+1. Setting R/W permissions
+   - After mapping an address with IoMmuMap()
+   - Clearning R/W permissions before unmmapping an address with IoMmuUnmap()
+   - Sets access permissions based on IoMmuAccess type:
+      - EDKII_IOMMU_ACCESS_READ: READ only access
+      - EDKII_IOMMU_ACCESS_WRITE: WRITE only access
+      - EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE: READ/WRITE access
+
+2. IoMmu SetAttribute
 
    ```c
    EFI_STATUS
@@ -109,11 +116,6 @@ SMMU Hardware
       IN UINT64                IoMmuAccess
    );
    ```
-
-- Sets access permissions based on IoMmuAccess type:
-  - EDKII_IOMMU_ACCESS_READ: READ only access
-  - EDKII_IOMMU_ACCESS_WRITE: WRITE only access
-  - EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE: READ/WRITE access
 
 ## SMMU Configuration
 
@@ -248,7 +250,7 @@ Key SMMU settings controlled through the SMMU config HOB:
 - IORT data: The complete IORT table data that the SMMU(s) will be configured with.
 
 - SmmuDisabledList: Provides platform the ability to individually disable/bypass an SMMU if needed.
-This list contains a list of Smmu base addresses that the platform wants to disable/bypass.
+This list is a set of SMMU base addresses that the platform wants to disable/bypass.
 By default, all SMMU's found are configured for Stage 2 Translation, otherwise set in the SmmuDisabledList,
 in which case translation for that SMMU is disabled and it is set to global bypass mode.
 
@@ -259,7 +261,7 @@ Generic Platform Integration:
 - The Platform will construct a SMMU config HOB and publish for SmmuDxe to consume:
 - Append the IORT structure to this struct and update the fields accordingly.
 - Append the SmmuDisabledList as a UINT64 array. SmmuDxe will parse this Offset and
-interpret as a `(UINT64*)` and iterate on that array of smmu base addresses based on the SmmuDisabledSize.
+interpret as a `(UINT64*)` and iterate on that array of SMMU base addresses based on the SmmuDisabledSize.
 SmmuDxe will derive the number of SMMU's in the SmmuDisabledListOffset with
 `SmmuDisabledListSize / sizeof(UINT64)`
 
