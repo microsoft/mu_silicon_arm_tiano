@@ -9,7 +9,7 @@ translation and memory protection for DMA operations.
 The SmmuDxe driver will consume the SMMU_CONFIG HOB with the IORT data to configure the SMMU's found on the platform.
 It will set them up for Stage 2 Translation by default. SmmuDxe will install the IoMmu Protocol.
 Translation table mapping can be done by leveraging the IoMmu Protocol. The protocol functions are outlined below.
-Seperatley, an IoMmuLib is be provided for platforms to use to do DMA mappings for the SMMU.
+Seperatley, an IoMmuLib is provided for platforms to use to do DMA mappings for the SMMU.
 SmmuDxe will install the IORT ACPI Table. Platform should not install the IORT, but instead pass in the IORT data
 with the SMMU_CONFIG HOB.
 
@@ -55,7 +55,7 @@ SMMU Hardware
 
 ### DMA Mapping with IoMmuLib and IoMmu Protocol
 
-- Maintains up to 4-level page table, depending on configuration, to map HostAddress and DeviceAddress
+- Maintains up to a 4-level page table, depending on configuration, to map HostAddress and DeviceAddress
 - Identity Mapped
 
 1. **IoMmu Map**:
