@@ -41,9 +41,6 @@
   gArmTokenSpaceGuid.PcdFfaTxRxPageCount
   gArmTokenSpaceGuid.PcdFfaExitBootEventRegistered
 
-[FixedPcd]
-  gArmTokenSpaceGuid.PcdSxcUse18Registers # MU_CHANGE: Add 18 registers support
-
 [Guids]
   gArmFfaRxTxBufferInfoGuid
   gEfiEventExitBootServicesGuid
