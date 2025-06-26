@@ -52,9 +52,7 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
         ''' return iterable of edk2 packages supported by this build.
         These should be edk2 workspace relative paths '''
 
-        return ("ArmPkg",
-                "ArmPlatformPkg"
-                )
+        return ()
 
     def GetArchitecturesSupported(self):
         ''' return iterable of edk2 architectures supported by this build '''
@@ -180,18 +178,7 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
             ReferencePath: <optional> Workspace relative path to git repo to use as "reference"
         }
         '''
-        return [
-            {
-                "Path": "Common/MU_TIANO",
-                "Url": "https://github.com/microsoft/mu_tiano_plus.git",
-                "Branch": "release/202502"
-            },
-            {
-                "Path": "MU_BASECORE",
-                "Url": "https://github.com/microsoft/mu_basecore.git",
-                "Branch": "release/202502"
-            }
-        ]
+        return []
 
     def GetPackagesPath(self):
         ''' Return a list of workspace relative paths that should be mapped as edk2 PackagesPath '''

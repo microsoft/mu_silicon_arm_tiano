@@ -11,47 +11,26 @@ Ubuntu_GCC5_                  |UbuntuCiBuild|   |UbuntuCiTest|  |UbuntuCiCoverag
 
 This repository is part of Project Mu.  Please see Project Mu for details https://microsoft.github.io/mu
 
-Branch Status - release/202502
+Branch Status - release/202511
 ==============================
 
-:Status:git
+:Status:
   In Development
 
 :Entered Development:
-  2025/02/21 (Date Edk2 started accepting changes which were not in a previous release)
+  2025/11/22 (Date Edk2 started accepting changes which were not in a previous release)
 
 :Anticipated Stabilization:
-  May 2025
+  no stabilization
 
-Branch Changes - release/202502
+Branch Changes - release/202511
 ===============================
 
-Breaking Changes-dev
---------------------
-- ArmPkg: ArmGicLib (SEC version) has been dropped.
-- ArmPkg: ArmPkg\Drivers\ArmGic\ArmGicDxeLib.inf has been moved to ArmPkg\Drivers\ArmGicDxe\ArmGicDxe.inf
-- ArmPkg: Include files in ArmPkg\Include\Chipset has been moved into Mdepkg\Include and refactored.
-- ArmPkg: ArmDisassemblerLib has been dropped.
-- ArmPkg: ArmGicArchLib has been refactored and dropped.
-- ArmPkg: ArmLib.h has been moved to MdePkg.
-- ArmPkg: AsmMacroIoLibV8.h has been renamed and moved into MdePkg under Aarch64/AsmMacroLib.h.
-- ArmPkg: ArmGicArchLib has been refactored and dropped.
-- ArmPkg: ArmGicArchSecLib has been refactored and dropped.
-- ArmPkg: ArmSmcPsciResetSystemLib has been refactored and dropped. Use ArmPsciResetSystemLib instead.
-- ArmPkg: ArmSoftFloatLib has been dropped.
-- ArmPlatformPkg: ArmPlatformStackLib has been dropped.
-- ArmPlatformPkg: PrePeiCoreMPCore and PrePeiCoreUniCore have been refactored and dropped. Use ArmPlatformPkg/Sec/Sec.inf
-- ArmPlatformPkg: PeiMPCore.inf and PeiUniCore.inf have been refactored and dropped. Use ArmPlatformPkg/PeilessSec/PeilessSec.inf
-
-MU Overrides on EDK2
---------------------
-- At the end of 202405, mu_silicon_arm_tiano contained 135 commits on top of edk2-stable202405.
-- At the start of 202502, mu_silicon_arm_tiano contains 33 commits on top of edk2-stable202502.
-Full MU changes list can be viewed `in the changelog <https://github.com/microsoft/mu_silicon_arm_tiano/compare/fbe0805b2091393406952e84724188f8c1941837...dev/202502>`_.
+mu_tiano_plus repository is deprecated. The functionality in this repository has been merged into mu_basecore. Consuming projects should be updated to no longer rely on this repo.
 
 Platform Integration Reference
 ------------------------------
-Reference platforms which consume release/202502 are available in `mu_tiano_platforms <https://github.com/microsoft/mu_tiano_platforms>`_.
+Reference platforms which consume release/202511 are available in `mu_tiano_platforms <https://github.com/microsoft/mu_tiano_platforms>`_.
 
 Please note that this version of EDK2 has specific requirements when it comes to TF-A support. 
 Platforms that consume this version of EDK2 must ensure their TF-A `contains this set of patches <https://review.trustedfirmware.org/q/topic:%22hob_creation_in_tf_a%22>`_.
@@ -139,12 +118,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 .. CoreCI
 
-.. _Windows_VS2022: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202502
-.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status%2FCI%2FMu%20Silicon%20Arm%20Tiano%20CI%20VS?repoName=microsoft%2Fmu_silicon_arm_tiano&branchName=release%2F202502
+.. _Windows_VS2022: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=51&&branchName=release%2F202511
+.. |WindowsCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status%2FCI%2FMu%20Silicon%20Arm%20Tiano%20CI%20VS?repoName=microsoft%2Fmu_silicon_arm_tiano&branchName=release%2F202511
 .. |WindowsCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/51.svg
 .. |WindowsCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
 
-.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202502
-.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status%2FCI%2FMu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?repoName=microsoft%2Fmu_silicon_arm_tiano&branchName=release%2F202502
+.. _Ubuntu_GCC5: https://dev.azure.com/projectmu/mu/_build/latest?definitionId=52&&branchName=release%2F202511
+.. |UbuntuCiBuild| image:: https://dev.azure.com/projectmu/mu/_apis/build/status%2FCI%2FMu%20Silicon%20Arm%20Tiano%20CI%20Ubuntu%20GCC5?repoName=microsoft%2Fmu_silicon_arm_tiano&branchName=release%2F202511
 .. |UbuntuCiTest| image:: https://img.shields.io/azure-devops/tests/projectmu/mu/52.svg
 .. |UbuntuCiCoverage| image:: https://img.shields.io/badge/coverage-coming_soon-blue
