@@ -42,6 +42,9 @@ Breaking Changes-dev
 - ArmPlatformPkg: ArmPlatformStackLib has been dropped.
 - ArmPlatformPkg: PrePeiCoreMPCore and PrePeiCoreUniCore have been refactored and dropped. Use ArmPlatformPkg/Sec/Sec.inf
 - ArmPlatformPkg: PeiMPCore.inf and PeiUniCore.inf have been refactored and dropped. Use ArmPlatformPkg/PeilessSec/PeilessSec.inf
+- ArmPkg: ArmSvcLib has been moved to MdePkg/Library/ArmSvcLib.
+- ArmPkg: ArmSmcLib has been moved to MdePkg/Library/ArmSmcLib.
+- ArmPkg: ArmFfaLib has been moved to MdeModulePkg/Library/ArmFfaLib.
 
 MU Overrides on EDK2
 --------------------
