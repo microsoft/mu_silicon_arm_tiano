@@ -70,7 +70,7 @@
   UefiRuntimeLib|MdePkg/Library/UefiRuntimeLib/UefiRuntimeLib.inf
   DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
-  ArmSvcLib|ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf                              # MU_CHANGE
+  ArmSvcLib|MdePkg/Library/ArmSvcLib/ArmSvcLib.inf                              # MU_CHANGE
 
 # MU_CHANGE [BEGIN]: Use the PEI ARM Mmu Lib for PEIMs and PEI_CORE
 [LibraryClasses.common.PEIM, LibraryClasses.common.PEI_CORE, LibraryClasses.common.SEC]
