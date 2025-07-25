@@ -128,6 +128,9 @@
 // SMMUV3 Configuration bit definitions
 //
 #define SMMUV3_STR_TAB_BASE_CFG_FMT_LINEAR  0                // Linear Stream Table format
+#define SMMUV3_STR_TAB_BASE_CFG_FMT_2LEVEL  1                // 2-Level Stream Table format
+#define SMMUV3_STR_TAB_BASE_CFG_SPLIT       6                // Split bit for 2-Level Stream Table
+#define SMMUV3_STR_TAB_BASE_L2_PTR_OFFSET   6                // Offset of L2 pointer in the L1 stream table entry
 #define SMMUV3_STR_TAB_BASE_ADDR_OFFSET     6                // Stream Table base address offset
 #define SMMUV3_STR_TAB_BASE_CMDQ_OFFSET     5                // Command queue base address offset
 #define SMMUV3_STR_TAB_BASE_EVENTQ_OFFSET   5                // Event queue base address offset
@@ -154,31 +157,31 @@ typedef enum _SMMU_ADDRESS_SIZE_TYPE {
 } SMMU_ADDRESS_SIZE_TYPE;
 
 typedef struct _SMMU_STREAM_ENTRY_CONFIG {
-  UINT32                                CacheCoherentAttribute;
-  UINT32                                MemoryAccessFlags;
-  EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE    *RmrNode;
+  UINT32    CacheCoherentAttribute;
+  UINT32    MemoryAccessFlags;
 } SMMU_STREAM_ENTRY_CONFIG;
 
 // General SMMU Information for a SMMU instance
 typedef struct _SMMU_INFO {
-  PAGE_TABLE                  *PageTableRoot;
-  VOID                        *StreamTable;
-  VOID                        *CommandQueue;
-  VOID                        *EventQueue;
-  SMMU_STREAM_ENTRY_CONFIG    *StreamEntryConfig;
-  UINT64                      SmmuBase;
-  UINT32                      StreamTableSize;
-  UINT32                      StreamTableEntryMax;
-  UINT32                      Flags;
-  UINT32                      CommandQueueSize;
-  UINT32                      EventQueueSize;
-  UINT32                      StreamTableLog2Size;
-  UINT32                      CommandQueueLog2Size;
-  UINT32                      EventQueueLog2Size;
-  UINT32                      OutputAddressWidth;
-  UINT8                       TranslationStartingLevel;
-  BOOLEAN                     PageTableRootConcatenated;
-  BOOLEAN                     Enabled;
+  PAGE_TABLE                            *PageTableRoot;
+  VOID                                  *StreamTable;
+  VOID                                  *CommandQueue;
+  VOID                                  *EventQueue;
+  SMMU_STREAM_ENTRY_CONFIG              *StreamEntryConfig;
+  EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE    *RmrNode;
+  UINT64                                SmmuBase;
+  UINT32                                StreamTableSize;
+  UINT32                                StreamTableEntryMax;
+  UINT32                                Flags;
+  UINT32                                CommandQueueSize;
+  UINT32                                EventQueueSize;
+  UINT32                                StreamTableLog2Size;
+  UINT32                                CommandQueueLog2Size;
+  UINT32                                EventQueueLog2Size;
+  UINT32                                OutputAddressWidth;
+  UINT8                                 TranslationStartingLevel;
+  BOOLEAN                               PageTableRootConcatenated;
+  BOOLEAN                               Enabled;
 } SMMU_INFO;
 
 // IoMmu configuration structure

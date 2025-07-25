@@ -1191,15 +1191,17 @@ SmmuV3GetStreamIdInfo (
           for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
             if (OutputNode == SmmuNodePtrs[SmmuIndex]) {
               // This ID mapping references an SMMU node
-              // Calculate the Stream ID range
-              StartId = IdMapping[IdMappingIndex].OutputBase;
-              EndId   = StartId + IdMapping[IdMappingIndex].NumIds;
+              // If RMR Node store the RMR node pointer for this SMMU
+              if (Node->Type == EFI_ACPI_IORT_TYPE_RMR) {
+                SmmuInfoArray[SmmuIndex].RmrNode = (EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE *)Node;
+              } else {
+                // RC or Named Comp Node
+                // Calculate the Stream ID range
+                StartId = IdMapping[IdMappingIndex].OutputBase;
+                EndId   = StartId + IdMapping[IdMappingIndex].NumIds;
 
-              // Store the Stream ID range information
-              for (CurID = StartId; CurID <= EndId; CurID++) {
-                if (Node->Type == EFI_ACPI_IORT_TYPE_RMR) {
-                  SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].RmrNode = (EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE *)Node;
-                } else {
+                // Store the Stream ID range information
+                for (CurID = StartId; CurID <= EndId; CurID++) {
                   SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].CacheCoherentAttribute = StreamEntryConfig.CacheCoherentAttribute;
                   SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].MemoryAccessFlags      = StreamEntryConfig.MemoryAccessFlags;
                 }

@@ -84,30 +84,15 @@ AddIortTable (
   IN UINT32                   IortSize
   )
 {
-  EFI_STATUS            Status;
-  UINTN                 TableHandle;
-  EFI_PHYSICAL_ADDRESS  PageAddress;
+  EFI_STATUS  Status;
+  UINTN       TableHandle;
 
   if ((AcpiTable == NULL) || (IortData == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  Status = gBS->AllocatePages (
-                  AllocateAnyPages,
-                  EfiACPIReclaimMemory,
-                  EFI_SIZE_TO_PAGES (IortSize),
-                  &PageAddress
-                  );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to allocate pages for IORT table\n", __func__));
-    return EFI_OUT_OF_RESOURCES;
-  }
-
-  ZeroMem ((VOID *)(UINTN)PageAddress, EFI_SIZE_TO_PAGES (IortSize) * EFI_PAGE_SIZE);
-  CopyMem ((VOID *)(UINTN)PageAddress, IortData, IortSize);
-
-  Status = AcpiPlatformChecksum ((UINT8 *)(UINTN)PageAddress, IortSize);
+  Status = AcpiPlatformChecksum ((UINT8 *)(UINTN)IortData, IortSize);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to calculate checksum for IORT table\n", __func__));
     return Status;
@@ -115,7 +100,7 @@ AddIortTable (
 
   Status = AcpiTable->InstallAcpiTable (
                         AcpiTable,
-                        (EFI_ACPI_COMMON_HEADER *)(UINTN)PageAddress,
+                        (EFI_ACPI_COMMON_HEADER *)(UINTN)IortData,
                         IortSize,
                         &TableHandle
                         );
@@ -353,7 +338,7 @@ SmmuV3BuildStreamTableEntry (
   // Device attributes are Cacheable and Inner-Shareable
   DACS = (SmmuInfo->StreamEntryConfig[StreamId].MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_DACS) >> 1;      // Shift by 1 to isolate DACS bit.
 
-  RmrNode = SmmuInfo->StreamEntryConfig[StreamId].RmrNode;
+  RmrNode = SmmuInfo->RmrNode;
 
   // Process memory range descriptors
   if (RmrNode != NULL) {
@@ -478,7 +463,7 @@ SmmuV3BuildStreamTableEntry (
 }
 
 /**
-  Allocate a linear stream table for SMMUv3.
+  Allocate a linear or 2-Level stream table for SMMUv3.
 
   For allocating a 2-level or linear stream table, the stream table alignment
   requirements per SMMUv3 spec:
@@ -486,24 +471,25 @@ SmmuV3BuildStreamTableEntry (
     table size or 64 bytes.
   - For linear table, the table needs to be aligned to its size.
 
-  This function uses the linear stream table.
-
-  @param [in]  SmmuInfo       Pointer to the SMMU_INFO structure.
-  @param [out] Log2Size       Pointer to store the log2 size of the stream table.
-  @param [out] Size           Pointer to store the size of the stream table.
+  @param [in]  SmmuInfo             Pointer to the SMMU_INFO structure.
+  @param [in]  TwoLevelStreamTable  Flag to indicate if a two-level stream table is used.
+  @param [out] Log2Size             Pointer to store the log2 size of the stream table.
+  @param [out] Size                 Pointer to store the size of the stream table.
 
   @retval Pointer to the allocated stream table, or NULL on failure.
 **/
 STATIC
-SMMUV3_STREAM_TABLE_ENTRY *
+VOID *
 SmmuV3AllocateStreamTable (
   IN SMMU_INFO  *SmmuInfo,
+  IN BOOLEAN    TwoLevelStreamTable,
   OUT UINT32    *Log2Size,
   OUT UINT32    *Size
   )
 {
   UINT32  MaxStreamId;
   UINT32  SidMsb;
+  UINT32  L1Bits;
   UINT32  Alignment;
   UINTN   Pages;
   VOID    *AllocatedAddress;
@@ -514,17 +500,31 @@ SmmuV3AllocateStreamTable (
   }
 
   // The max stream id is calculated as the output base + the number of stream ids
-  MaxStreamId      = SmmuInfo->StreamTableEntryMax;
-  SidMsb           = HighBitSet32 (MaxStreamId);
-  *Log2Size        = SidMsb + 1;
-  *Size            = SMMUV3_LINEAR_STREAM_TABLE_SIZE_FROM_LOG2 (*Log2Size);
+  MaxStreamId = SmmuInfo->StreamTableEntryMax;
+  if (TwoLevelStreamTable && (MaxStreamId < (EFI_PAGE_SIZE / sizeof (SMMUV3_STREAM_TABLE_ENTRY)))) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid MaxStreamId for 2-Level table%u\n", __func__, MaxStreamId));
+    return NULL;
+  }
+
+  SidMsb    = HighBitSet32 (MaxStreamId);
+  *Log2Size = SidMsb + 1;
+  *Size     = SMMUV3_LINEAR_STREAM_TABLE_SIZE_FROM_LOG2 (*Log2Size);
+  if (TwoLevelStreamTable) {
+    L1Bits = *Log2Size - SMMUV3_STR_TAB_BASE_CFG_SPLIT; // L1 table log2 size
+    *Size  = SMMUV3_L1_STREAM_TABLE_SIZE_FROM_LOG2 (L1Bits);
+  }
+
   *Size            = ALIGN_VALUE (*Size, EFI_PAGE_SIZE);
   Alignment        = *Size; // Aligned to the size of the table, linear stream table
   Pages            = EFI_SIZE_TO_PAGES (*Size);
   AllocatedAddress = AllocateAlignedPages (Pages, Alignment);
+  if (AllocatedAddress == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Allocation failed for stream table\n", __func__));
+    return NULL;
+  }
 
   ZeroMem (AllocatedAddress, *Size);
-  return (SMMUV3_STREAM_TABLE_ENTRY *)AllocatedAddress;
+  return AllocatedAddress;
 }
 
 /**
@@ -576,26 +576,31 @@ SmmuV3Configure (
   IN PAGE_TABLE  *PageTableRoot
   )
 {
-  EFI_STATUS                 Status;
-  UINT32                     Index;
-  UINT32                     StreamTableLog2Size;
-  UINT32                     StreamTableSize;
-  UINT32                     CommandQueueLog2Size;
-  UINT32                     EventQueueLog2Size;
-  UINT8                      ReadWriteAllocationHint;
-  SMMUV3_STRTAB_BASE         StrTabBase;
-  SMMUV3_STRTAB_BASE_CFG     StrTabBaseCfg;
-  SMMUV3_STREAM_TABLE_ENTRY  *StreamTablePtr;
-  SMMUV3_CMDQ_BASE           CommandQueueBase;
-  SMMUV3_EVENTQ_BASE         EventQueueBase;
-  SMMUV3_CR0                 Cr0;
-  SMMUV3_CR1                 Cr1;
-  SMMUV3_CR2                 Cr2;
-  SMMUV3_IDR0                Idr0;
-  SMMUV3_CMD_GENERIC         Command;
-  SMMUV3_GERROR              GError;
-  VOID                       *CommandQueue;
-  VOID                       *EventQueue;
+  EFI_STATUS                         Status;
+  UINT32                             Index;
+  UINT32                             StreamTableLog2Size;
+  UINT32                             StreamTableSize;
+  UINT32                             CommandQueueLog2Size;
+  UINT32                             EventQueueLog2Size;
+  UINT8                              ReadWriteAllocationHint;
+  SMMUV3_STRTAB_BASE                 StrTabBase;
+  SMMUV3_STRTAB_BASE_CFG             StrTabBaseCfg;
+  VOID                               *StreamTablePtr;
+  SMMUV3_STREAM_TABLE_ENTRY          *StreamTableEntryPtr;
+  SMMUV3_STREAM_TABLE_ENTRY          *L2StreamTablePtr;
+  SMMUV3_L1_STREAM_TABLE_DESCRIPTOR  *L1Table;
+  SMMUV3_STREAM_TABLE_ENTRY          TemplateEntry;
+  SMMUV3_CMDQ_BASE                   CommandQueueBase;
+  SMMUV3_EVENTQ_BASE                 EventQueueBase;
+  SMMUV3_CR0                         Cr0;
+  SMMUV3_CR1                         Cr1;
+  SMMUV3_CR2                         Cr2;
+  SMMUV3_IDR0                        Idr0;
+  SMMUV3_CMD_GENERIC                 Command;
+  SMMUV3_GERROR                      GError;
+  VOID                               *CommandQueue;
+  VOID                               *EventQueue;
+  BOOLEAN                            TwoLevelStreamTable;
 
   if ((SmmuInfo == NULL) || (PageTableRoot == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
@@ -623,8 +628,8 @@ SmmuV3Configure (
     goto End;
   }
 
-  // Allocate Linear Stream Table
-  StreamTablePtr = SmmuV3AllocateStreamTable (SmmuInfo, &StreamTableLog2Size, &StreamTableSize);
+  TwoLevelStreamTable = (SmmuInfo->StreamTableEntryMax >= (EFI_PAGE_SIZE / sizeof (SMMUV3_STREAM_TABLE_ENTRY)));
+  StreamTablePtr      = SmmuV3AllocateStreamTable (SmmuInfo, TwoLevelStreamTable, &StreamTableLog2Size, &StreamTableSize);
   if (StreamTablePtr == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Error allocating stream table\n", __func__));
     Status = EFI_OUT_OF_RESOURCES;
@@ -643,11 +648,41 @@ SmmuV3Configure (
   }
 
   // Load default STE values
-  for (Index = 0; Index <= SmmuInfo->StreamTableEntryMax; Index++) {
-    Status = SmmuV3BuildStreamTableEntry (SmmuInfo, Index, &StreamTablePtr[Index]);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Error building stream table\n", __func__));
+  if (!TwoLevelStreamTable) {
+    StreamTableEntryPtr = (SMMUV3_STREAM_TABLE_ENTRY *)StreamTablePtr;
+    for (Index = 0; Index <= SmmuInfo->StreamTableEntryMax; Index++) {
+      Status = SmmuV3BuildStreamTableEntry (SmmuInfo, Index, &StreamTableEntryPtr[Index]);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Error building stream table entry\n", __func__));
+        goto End;
+      }
+    }
+  } else {
+    L2StreamTablePtr = (SMMUV3_STREAM_TABLE_ENTRY *)AllocatePages (1);
+    if (L2StreamTablePtr == NULL) {
+      DEBUG ((DEBUG_ERROR, "%a: Error allocating L2 stream table\n", __func__));
+      Status = EFI_OUT_OF_RESOURCES;
       goto End;
+    }
+
+    ZeroMem (L2StreamTablePtr, EFI_PAGE_SIZE);
+    Status = SmmuV3BuildStreamTableEntry (SmmuInfo, SmmuInfo->StreamTableEntryMax, &TemplateEntry);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Error building stream table entry\n", __func__));
+      goto End;
+    }
+
+    for (Index = 0; Index < (EFI_PAGE_SIZE / sizeof (SMMUV3_STREAM_TABLE_ENTRY)); Index++) {
+      CopyMem (&L2StreamTablePtr[Index], &TemplateEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
+    }
+
+    L1Table = (SMMUV3_L1_STREAM_TABLE_DESCRIPTOR *)StreamTablePtr;
+    for (Index = 0; Index < (SMMUV3_L1_STREAM_TABLE_SIZE_FROM_LOG2 (StreamTableLog2Size - SMMUV3_STR_TAB_BASE_CFG_SPLIT) / sizeof (UINT64)); Index++) {
+      L1Table[Index].L2Ptr = (UINT64)(UINTN)L2StreamTablePtr >> SMMUV3_STR_TAB_BASE_L2_PTR_OFFSET;
+      // Per SmmuV3 spec: Span must be within the range of 0 to (SMMU_STRTAB_BASE_CFG.SPLIT + 1)
+      // That is it must stay within the bounds of the Stream table split point.
+      // Cannot have Span of 0, means invalid L2 table ptr in the L1 table entry.
+      L1Table[Index].Span = SMMUV3_STR_TAB_BASE_CFG_SPLIT + 1;
     }
   }
 
@@ -671,6 +706,11 @@ SmmuV3Configure (
   // Configure Stream Table Base
   StrTabBaseCfg.AsUINT32 = 0;
   StrTabBaseCfg.Fmt      = SMMUV3_STR_TAB_BASE_CFG_FMT_LINEAR; // Linear format
+  if (TwoLevelStreamTable) {
+    StrTabBaseCfg.Fmt   = SMMUV3_STR_TAB_BASE_CFG_FMT_2LEVEL; // 2-Level format
+    StrTabBaseCfg.Split = SMMUV3_STR_TAB_BASE_CFG_SPLIT;
+  }
+
   StrTabBaseCfg.Log2Size = StreamTableLog2Size;
 
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_STRTAB_BASE_CFG, StrTabBaseCfg.AsUINT32);
@@ -1166,11 +1206,19 @@ InitializeSmmuDxe (
     goto Error;
   }
 
+  // Free StreamEntryConfig temp buffer
+  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+    if (mIoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig != NULL) {
+      FreePool (mIoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig);
+    }
+  }
+
   DEBUG ((DEBUG_INFO, "%a: Status = %llx\n", __func__, Status));
 
   return Status;
 
 Error:
+  DEBUG ((DEBUG_ERROR, "%a: SMMU DMA protection failed to initialize. Status = %llx\n", __func__, Status));
   IoMmuDeInit (mIoMmu);
   mIoMmu = NULL;
   return Status;
