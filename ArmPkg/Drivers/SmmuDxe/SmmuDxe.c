@@ -24,7 +24,6 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiDriverEntryPoint.h>
 #include <Protocol/AcpiTable.h>
-#include <Protocol/IoMmu.h>
 #include <Guid/SmmuConfig.h>
 #include "IoMmu.h"
 #include "SmmuV3.h"
@@ -295,10 +294,9 @@ SmmuV3FreeQueue (
 }
 
 /**
-  Build the stream table for SMMUv3.
+  Build the default stream table entry for SMMUv3.
 
   @param [in]  SmmuInfo       Pointer to the SMMU_INFO structure.
-  @param [in]  StreamId       Stream ID.
   @param [out] StreamEntry    Pointer to the stream table entry.
 
   @retval EFI_SUCCESS         Success.
@@ -308,58 +306,29 @@ STATIC
 EFI_STATUS
 SmmuV3BuildStreamTableEntry (
   IN SMMU_INFO                   *SmmuInfo,
-  IN UINT32                      StreamId,
   OUT SMMUV3_STREAM_TABLE_ENTRY  *StreamEntry
   )
 {
-  EFI_STATUS                                Status;
-  UINT32                                    InputSize;
-  SMMUV3_IDR0                               Idr0;
-  SMMUV3_IDR1                               Idr1;
-  SMMUV3_IDR5                               Idr5;
-  UINT8                                     IortCohac;
-  UINT32                                    CCA;
-  UINT8                                     CPM;
-  UINT8                                     DACS;
-  UINT64                                    S2Sl0;
-  EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE        *RmrNode;
-  EFI_ACPI_6_0_IO_REMAPPING_MEM_RANGE_DESC  *IortMemRangeDesc;
-  UINT32                                    NumMemRangeDesc;
+  EFI_STATUS   Status;
+  UINT32       InputSize;
+  SMMUV3_IDR0  Idr0;
+  SMMUV3_IDR1  Idr1;
+  SMMUV3_IDR5  Idr5;
+  UINT8        IortCohac;
+  UINT32       CCA;
+  UINT8        CPM;
+  UINT8        DACS;
+  UINT64       S2Sl0;
 
-  if ((SmmuInfo == NULL) || (SmmuInfo->StreamEntryConfig == NULL) || (StreamEntry == NULL) || (StreamId > SmmuInfo->StreamTableEntryMax)) {
+  if ((SmmuInfo == NULL) || (StreamEntry == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  IortCohac = SmmuInfo->Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE;                              // Cohac override flag
-  CCA       = SmmuInfo->StreamEntryConfig[StreamId].CacheCoherentAttribute;                            // Cache Coherent Attribute
-  CPM       = SmmuInfo->StreamEntryConfig[StreamId].MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_CPM; // Coherent Path to Memory
-
-  // Device attributes are Cacheable and Inner-Shareable
-  DACS = (SmmuInfo->StreamEntryConfig[StreamId].MemoryAccessFlags & SMMUV3_STREAM_TABLE_ENTRY_DACS) >> 1;      // Shift by 1 to isolate DACS bit.
-
-  RmrNode = SmmuInfo->RmrNode;
-
-  // Process memory range descriptors
-  if (RmrNode != NULL) {
-    for (NumMemRangeDesc = 0; NumMemRangeDesc < RmrNode->NumMemRangeDesc; NumMemRangeDesc++) {
-      IortMemRangeDesc = (EFI_ACPI_6_0_IO_REMAPPING_MEM_RANGE_DESC *)((UINT8 *)RmrNode + RmrNode->MemRangeDescRef);
-      if ((IortMemRangeDesc[NumMemRangeDesc].Base > 0) && (IortMemRangeDesc[NumMemRangeDesc].Length > 0)) {
-        Status = UpdatePageTable (
-                   SmmuInfo->PageTableRoot,
-                   IortMemRangeDesc[NumMemRangeDesc].Base,
-                   IortMemRangeDesc[NumMemRangeDesc].Length,
-                   PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)),
-                   TRUE,
-                   FALSE
-                   );
-        if (EFI_ERROR (Status)) {
-          DEBUG ((DEBUG_ERROR, "%a: Failed to update RMR mapping.\n", __func__));
-          return Status;
-        }
-      }
-    }
-  }
+  IortCohac = SmmuInfo->Flags & EFI_ACPI_IORT_SMMUv3_FLAG_COHAC_OVERRIDE; // Cohac override flag
+  CCA       = SMMUV3_STREAM_TABLE_ENTRY_CCA;
+  CPM       = SMMUV3_STREAM_TABLE_ENTRY_CPM;
+  DACS      = SMMUV3_STREAM_TABLE_ENTRY_DACS;
 
   ZeroMem ((VOID *)StreamEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
 
@@ -647,17 +616,20 @@ SmmuV3Configure (
     goto End;
   }
 
+  Status = SmmuV3AddRMRMapping (SmmuInfo);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Error adding RMR mapping\n", __func__));
+    goto End;
+  }
+
   // Load default STE values
-  if (!TwoLevelStreamTable) {
-    StreamTableEntryPtr = (SMMUV3_STREAM_TABLE_ENTRY *)StreamTablePtr;
-    for (Index = 0; Index <= SmmuInfo->StreamTableEntryMax; Index++) {
-      Status = SmmuV3BuildStreamTableEntry (SmmuInfo, Index, &StreamTableEntryPtr[Index]);
-      if (EFI_ERROR (Status)) {
-        DEBUG ((DEBUG_ERROR, "%a: Error building stream table entry\n", __func__));
-        goto End;
-      }
-    }
-  } else {
+  Status = SmmuV3BuildStreamTableEntry (SmmuInfo, &TemplateEntry);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: Error building stream table entry\n", __func__));
+    goto End;
+  }
+
+  if (TwoLevelStreamTable) {
     L2StreamTablePtr = (SMMUV3_STREAM_TABLE_ENTRY *)AllocatePages (1);
     if (L2StreamTablePtr == NULL) {
       DEBUG ((DEBUG_ERROR, "%a: Error allocating L2 stream table\n", __func__));
@@ -666,11 +638,6 @@ SmmuV3Configure (
     }
 
     ZeroMem (L2StreamTablePtr, EFI_PAGE_SIZE);
-    Status = SmmuV3BuildStreamTableEntry (SmmuInfo, SmmuInfo->StreamTableEntryMax, &TemplateEntry);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Error building stream table entry\n", __func__));
-      goto End;
-    }
 
     for (Index = 0; Index < (EFI_PAGE_SIZE / sizeof (SMMUV3_STREAM_TABLE_ENTRY)); Index++) {
       CopyMem (&L2StreamTablePtr[Index], &TemplateEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
@@ -683,6 +650,11 @@ SmmuV3Configure (
       // That is it must stay within the bounds of the Stream table split point.
       // Cannot have Span of 0, means invalid L2 table ptr in the L1 table entry.
       L1Table[Index].Span = SMMUV3_STR_TAB_BASE_CFG_SPLIT + 1;
+    }
+  } else {
+    StreamTableEntryPtr = (SMMUV3_STREAM_TABLE_ENTRY *)StreamTablePtr;
+    for (Index = 0; Index <= SmmuInfo->StreamTableEntryMax; Index++) {
+      CopyMem (&StreamTableEntryPtr[Index], &TemplateEntry, sizeof (SMMUV3_STREAM_TABLE_ENTRY));
     }
   }
 
@@ -972,11 +944,6 @@ IoMmuDeInit (
       IoMmu->SmmuInfo->PageTableRoot = NULL;
     }
 
-    if (IoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig != NULL) {
-      FreePool (IoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig);
-      IoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig = NULL;
-    }
-
     if (IoMmu->SmmuInfo[SmmuIndex].StreamTable != NULL) {
       SmmuV3FreeStreamTable (IoMmu->SmmuInfo[SmmuIndex].StreamTable, IoMmu->SmmuInfo[SmmuIndex].StreamTableSize);
       IoMmu->SmmuInfo[SmmuIndex].StreamTable = NULL;
@@ -1204,13 +1171,6 @@ InitializeSmmuDxe (
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to intall IoMmuProtocol\n", __func__));
     goto Error;
-  }
-
-  // Free StreamEntryConfig temp buffer
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    if (mIoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig != NULL) {
-      FreePool (mIoMmu->SmmuInfo[SmmuIndex].StreamEntryConfig);
-    }
   }
 
   DEBUG ((DEBUG_INFO, "%a: Status = %llx\n", __func__, Status));
