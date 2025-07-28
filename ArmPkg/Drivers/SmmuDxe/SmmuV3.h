@@ -15,6 +15,7 @@
 #include <Register/SmmuV3Registers.h>
 #include <Uefi/UefiBaseType.h>
 #include <IndustryStandard/IoRemappingTable.h>
+#include <Protocol/IoMmu.h>
 #include "IoMmu.h"
 
 // Number of levels in the page table
@@ -105,8 +106,9 @@
 //
 // SMMUV3 Stream Table Entry bit definitions
 //
+#define SMMUV3_STREAM_TABLE_ENTRY_CCA                                      1     // Cache Coherent Attribute
 #define SMMUV3_STREAM_TABLE_ENTRY_CPM                                      1     // Coherent Path to Memory
-#define SMMUV3_STREAM_TABLE_ENTRY_DACS                                     2     // Device attributes are Cacheable and Inner-Shareable
+#define SMMUV3_STREAM_TABLE_ENTRY_DACS                                     1     // Device attributes are Cacheable and Inner-Shareable
 #define SMMUV3_STREAM_TABLE_ENTRY_CONFIG_STAGE_2_TRANSLATE_STAGE_1_BYPASS  0x6   // Stage 2 Translate, Stage 1 Bypass
 #define SMMUV3_STREAM_TABLE_ENTRY_CONFIG_STAGE_2_BYPASS_STAGE_1_BYPASS     0x4   // Stage 2 Bypass, Stage 1 Bypass
 #define SMMUV3_STREAM_TABLE_ENTRY_EATS_NOT_SUPPORTED                       0     // ATS not supported
@@ -128,6 +130,9 @@
 // SMMUV3 Configuration bit definitions
 //
 #define SMMUV3_STR_TAB_BASE_CFG_FMT_LINEAR  0                // Linear Stream Table format
+#define SMMUV3_STR_TAB_BASE_CFG_FMT_2LEVEL  1                // 2-Level Stream Table format
+#define SMMUV3_STR_TAB_BASE_CFG_SPLIT       6                // Split bit for 2-Level Stream Table
+#define SMMUV3_STR_TAB_BASE_L2_PTR_OFFSET   6                // Offset of L2 pointer in the L1 stream table entry
 #define SMMUV3_STR_TAB_BASE_ADDR_OFFSET     6                // Stream Table base address offset
 #define SMMUV3_STR_TAB_BASE_CMDQ_OFFSET     5                // Command queue base address offset
 #define SMMUV3_STR_TAB_BASE_EVENTQ_OFFSET   5                // Event queue base address offset
@@ -153,32 +158,31 @@ typedef enum _SMMU_ADDRESS_SIZE_TYPE {
   SmmuAddressSize52Bit = 6,
 } SMMU_ADDRESS_SIZE_TYPE;
 
-typedef struct _SMMU_STREAM_ENTRY_CONFIG {
-  UINT32                                CacheCoherentAttribute;
-  UINT32                                MemoryAccessFlags;
-  EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE    *RmrNode;
-} SMMU_STREAM_ENTRY_CONFIG;
+typedef struct _RMR_NODE_INFO {
+  EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE    *RmrNode; // Pointer to the RMR node
+  LIST_ENTRY                            Link;     // Link to the RMR node in the list
+} RMR_NODE_INFO;
 
 // General SMMU Information for a SMMU instance
 typedef struct _SMMU_INFO {
-  PAGE_TABLE                  *PageTableRoot;
-  VOID                        *StreamTable;
-  VOID                        *CommandQueue;
-  VOID                        *EventQueue;
-  SMMU_STREAM_ENTRY_CONFIG    *StreamEntryConfig;
-  UINT64                      SmmuBase;
-  UINT32                      StreamTableSize;
-  UINT32                      StreamTableEntryMax;
-  UINT32                      Flags;
-  UINT32                      CommandQueueSize;
-  UINT32                      EventQueueSize;
-  UINT32                      StreamTableLog2Size;
-  UINT32                      CommandQueueLog2Size;
-  UINT32                      EventQueueLog2Size;
-  UINT32                      OutputAddressWidth;
-  UINT8                       TranslationStartingLevel;
-  BOOLEAN                     PageTableRootConcatenated;
-  BOOLEAN                     Enabled;
+  PAGE_TABLE    *PageTableRoot;
+  VOID          *StreamTable;
+  VOID          *CommandQueue;
+  VOID          *EventQueue;
+  LIST_ENTRY    RmrNodeList;
+  UINT64        SmmuBase;
+  UINT32        StreamTableSize;
+  UINT32        StreamTableEntryMax;
+  UINT32        Flags;
+  UINT32        CommandQueueSize;
+  UINT32        EventQueueSize;
+  UINT32        StreamTableLog2Size;
+  UINT32        CommandQueueLog2Size;
+  UINT32        EventQueueLog2Size;
+  UINT32        OutputAddressWidth;
+  UINT8         TranslationStartingLevel;
+  BOOLEAN       PageTableRootConcatenated;
+  BOOLEAN       Enabled;
 } SMMU_INFO;
 
 // IoMmu configuration structure
@@ -475,6 +479,22 @@ EFI_STATUS
 SmmuV3TLBInvalidateAddress (
   IN SMMU_INFO  *SmmuInfo,
   IN UINT64     InputAddress
+  );
+
+/**
+ * Add RMR mappings for each SMMU node in the SmmuInfo structure.
+ * This function iterates through the RMR nodes and updates the page table
+ * for each memory range described in the RMR node.
+ *
+ * @param [in] SmmuInfo  Pointer to the SMMU_INFO structure.
+ *
+ * @retval EFI_SUCCESS            Success.
+ * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+ * @retval Other                  RMR mapping update failure.
+ */
+EFI_STATUS
+SmmuV3AddRMRMapping (
+  IN SMMU_INFO  *SmmuInfo
   );
 
 /**
