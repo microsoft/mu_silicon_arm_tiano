@@ -641,10 +641,14 @@ SmmuV3LogErrors (
     return;
   }
 
-  Status = SmmuV3ConsumeEventQueueForErrors (SmmuInfo, &FaultRecord, &IsEmpty);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
-  } else {
+  do {
+    // Only consumes one entry at a time, so we loop until empty
+    Status = SmmuV3ConsumeEventQueueForErrors (SmmuInfo, &FaultRecord, &IsEmpty);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
+      break;
+    }
+
     if (IsEmpty == FALSE) {
       DEBUG ((DEBUG_ERROR, "%a: %llx FaultRecord:\n", __func__, SmmuInfo->SmmuBase));
       for (Index = 0; Index < sizeof (FaultRecord.Fault) / sizeof (FaultRecord.Fault[0]); Index++) {
@@ -658,7 +662,7 @@ SmmuV3LogErrors (
         SmmuV3DumpPageTableEntries (SmmuInfo, FaultRecord.Fault[2], SmmuInfo->PageTableRoot);
       }
     }
-  }
+  } while (IsEmpty == FALSE);
 
   GError.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_GERROR);
   if (GError.AsUINT32 != 0) {
@@ -796,24 +800,27 @@ SmmuV3SendCommand (
 
   ArmDataSynchronizationBarrier ();
 
-  NewProducerIndex = ProducerIndex + 1;
+  NewProducerIndex = Producer.WriteIndex + 1;
 
   Producer.AsUINT32   = 0;
   Producer.WriteIndex = NewProducerIndex & (QueueMask | WrapMask);
+  ProducerIndex       = NewProducerIndex & (QueueMask | WrapMask);
 
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, Producer.AsUINT32);
 
   Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+  ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
   Count             = 10; // Set 0.1ms timeout value
 
   // Wait for the command to be consumed
-  while (Count > 0 && Consumer.ReadIndex < Producer.WriteIndex) {
+  while ((Count > 0) && (ConsumerIndex != ProducerIndex)) {
     MicroSecondDelay (10);
     Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+    ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
     Count--;
   }
 
-  if ((Count == 0) && (Consumer.ReadIndex < Producer.WriteIndex)) {
+  if ((Count == 0) || (ConsumerIndex != ProducerIndex)) {
     DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for command queue to be consumed\n", __func__));
     return EFI_TIMEOUT;
   }
