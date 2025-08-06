@@ -110,20 +110,16 @@ UpdateMapping (
   PAGE_TABLE  *Current;
   UINT64      Entry;
   UINT32      SmmuIndex;
-  EFI_TPL     OldTpl;
 
   // Flags must be 12 bits or less
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter.\n", __func__));
     Status = EFI_INVALID_PARAMETER;
-    ASSERT_EFI_ERROR (Status);
-    return Status;
+    goto End;
   }
 
   Status  = EFI_SUCCESS;
   Current = Root;
-
-  OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
   // Traverse the page table to the leaf level
   for (Level = mIoMmu->SmmuInfo->TranslationStartingLevel; Level < PAGE_TABLE_DEPTH - 1; Level++) {
@@ -191,9 +187,9 @@ UpdateMapping (
     }
   }
 
-End:
   SpeculationBarrier ();
-  gBS->RestoreTPL (OldTpl);
+
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
