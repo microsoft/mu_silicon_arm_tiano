@@ -8,6 +8,7 @@
 
 **/
 
+#include <Uefi.h>
 #include <Library/ArmLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -641,10 +642,14 @@ SmmuV3LogErrors (
     return;
   }
 
-  Status = SmmuV3ConsumeEventQueueForErrors (SmmuInfo, &FaultRecord, &IsEmpty);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
-  } else {
+  do {
+    // Only consumes one entry at a time, so we loop until empty
+    Status = SmmuV3ConsumeEventQueueForErrors (SmmuInfo, &FaultRecord, &IsEmpty);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
+      break;
+    }
+
     if (IsEmpty == FALSE) {
       DEBUG ((DEBUG_ERROR, "%a: %llx FaultRecord:\n", __func__, SmmuInfo->SmmuBase));
       for (Index = 0; Index < sizeof (FaultRecord.Fault) / sizeof (FaultRecord.Fault[0]); Index++) {
@@ -658,7 +663,7 @@ SmmuV3LogErrors (
         SmmuV3DumpPageTableEntries (SmmuInfo, FaultRecord.Fault[2], SmmuInfo->PageTableRoot);
       }
     }
-  }
+  } while (IsEmpty == FALSE);
 
   GError.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_GERROR);
   if (GError.AsUINT32 != 0) {
@@ -736,6 +741,7 @@ SmmuV3SendCommand (
   SMMUV3_CMDQ_CONS  Consumer;
   UINT8             Count;
   EFI_STATUS        Status;
+  EFI_TPL           OldTpl;
 
   if ((SmmuInfo == NULL) || (Command == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
@@ -743,6 +749,8 @@ SmmuV3SendCommand (
   }
 
   Count = 10; // Set 0.1ms timeout value.
+  // Synchronize access to the command queue.
+  OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
   Producer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD);
   Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
@@ -785,39 +793,45 @@ SmmuV3SendCommand (
                          ) != FALSE))
   {
     DEBUG ((DEBUG_ERROR, "%a: Command Queue Full, Timeout\n", __func__));
-    return EFI_TIMEOUT;
+    Status = EFI_TIMEOUT;
+    goto End;
   }
 
   Status = SmmuV3WriteCommands (SmmuInfo, ProducerIndex, 1, Command);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Error writing command to queue\n", __func__));
-    return Status;
+    goto End;
   }
 
   ArmDataSynchronizationBarrier ();
 
-  NewProducerIndex = ProducerIndex + 1;
+  NewProducerIndex = Producer.WriteIndex + 1;
 
   Producer.AsUINT32   = 0;
   Producer.WriteIndex = NewProducerIndex & (QueueMask | WrapMask);
+  ProducerIndex       = NewProducerIndex & (QueueMask | WrapMask);
 
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, Producer.AsUINT32);
 
   Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+  ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
   Count             = 10; // Set 0.1ms timeout value
 
   // Wait for the command to be consumed
-  while (Count > 0 && Consumer.ReadIndex < Producer.WriteIndex) {
+  while ((Count > 0) && (ConsumerIndex != ProducerIndex)) {
     MicroSecondDelay (10);
     Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+    ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
     Count--;
   }
 
-  if ((Count == 0) && (Consumer.ReadIndex < Producer.WriteIndex)) {
+  if ((Count == 0) || (ConsumerIndex != ProducerIndex)) {
     DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for command queue to be consumed\n", __func__));
-    return EFI_TIMEOUT;
+    Status = EFI_TIMEOUT;
   }
 
+End:
+  gBS->RestoreTPL (OldTpl);
   return Status;
 }
 
