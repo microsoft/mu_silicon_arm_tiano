@@ -448,6 +448,12 @@ IoMmuAllocateBuffer (
     goto End;
   }
 
+  if ((Attributes & EDKII_IOMMU_ATTRIBUTE_DUAL_ADDRESS_CYCLE) == 0) {
+    // Limit allocations to memory below 4GB
+    PhysicalAddress = SIZE_4GB - 1;
+    Type            = AllocateMaxAddress;
+  }
+
   Status = gBS->AllocatePages (
                   Type,
                   MemoryType,

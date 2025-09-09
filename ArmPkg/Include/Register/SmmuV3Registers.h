@@ -1766,6 +1766,10 @@ typedef union _SMMUV3_FAULT_RECORD {
     (UINT32)((UINT32)(1UL << (Log2Size)) * \
                 (UINT16)sizeof(SMMUV3_STREAM_TABLE_ENTRY))
 
+#define SMMUV3_L1_STREAM_TABLE_SIZE_FROM_LOG2(Log2Size) \
+    (UINT32)((UINT32)(1UL << (Log2Size)) * \
+                (UINT32)sizeof(UINT64))
+
 //
 // Register offsets for Page0.
 //

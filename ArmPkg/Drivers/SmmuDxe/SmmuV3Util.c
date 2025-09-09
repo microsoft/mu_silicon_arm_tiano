@@ -8,6 +8,7 @@
 
 **/
 
+#include <Uefi.h>
 #include <Library/ArmLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -641,10 +642,14 @@ SmmuV3LogErrors (
     return;
   }
 
-  Status = SmmuV3ConsumeEventQueueForErrors (SmmuInfo, &FaultRecord, &IsEmpty);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
-  } else {
+  do {
+    // Only consumes one entry at a time, so we loop until empty
+    Status = SmmuV3ConsumeEventQueueForErrors (SmmuInfo, &FaultRecord, &IsEmpty);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
+      break;
+    }
+
     if (IsEmpty == FALSE) {
       DEBUG ((DEBUG_ERROR, "%a: %llx FaultRecord:\n", __func__, SmmuInfo->SmmuBase));
       for (Index = 0; Index < sizeof (FaultRecord.Fault) / sizeof (FaultRecord.Fault[0]); Index++) {
@@ -658,7 +663,7 @@ SmmuV3LogErrors (
         SmmuV3DumpPageTableEntries (SmmuInfo, FaultRecord.Fault[2], SmmuInfo->PageTableRoot);
       }
     }
-  }
+  } while (IsEmpty == FALSE);
 
   GError.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_GERROR);
   if (GError.AsUINT32 != 0) {
@@ -736,6 +741,7 @@ SmmuV3SendCommand (
   SMMUV3_CMDQ_CONS  Consumer;
   UINT8             Count;
   EFI_STATUS        Status;
+  EFI_TPL           OldTpl;
 
   if ((SmmuInfo == NULL) || (Command == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
@@ -743,6 +749,8 @@ SmmuV3SendCommand (
   }
 
   Count = 10; // Set 0.1ms timeout value.
+  // Synchronize access to the command queue.
+  OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
   Producer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD);
   Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
@@ -785,39 +793,45 @@ SmmuV3SendCommand (
                          ) != FALSE))
   {
     DEBUG ((DEBUG_ERROR, "%a: Command Queue Full, Timeout\n", __func__));
-    return EFI_TIMEOUT;
+    Status = EFI_TIMEOUT;
+    goto End;
   }
 
   Status = SmmuV3WriteCommands (SmmuInfo, ProducerIndex, 1, Command);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Error writing command to queue\n", __func__));
-    return Status;
+    goto End;
   }
 
   ArmDataSynchronizationBarrier ();
 
-  NewProducerIndex = ProducerIndex + 1;
+  NewProducerIndex = Producer.WriteIndex + 1;
 
   Producer.AsUINT32   = 0;
   Producer.WriteIndex = NewProducerIndex & (QueueMask | WrapMask);
+  ProducerIndex       = NewProducerIndex & (QueueMask | WrapMask);
 
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, Producer.AsUINT32);
 
   Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+  ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
   Count             = 10; // Set 0.1ms timeout value
 
   // Wait for the command to be consumed
-  while (Count > 0 && Consumer.ReadIndex < Producer.WriteIndex) {
+  while ((Count > 0) && (ConsumerIndex != ProducerIndex)) {
     MicroSecondDelay (10);
     Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+    ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
     Count--;
   }
 
-  if ((Count == 0) && (Consumer.ReadIndex < Producer.WriteIndex)) {
+  if ((Count == 0) || (ConsumerIndex != ProducerIndex)) {
     DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for command queue to be consumed\n", __func__));
-    return EFI_TIMEOUT;
+    Status = EFI_TIMEOUT;
   }
 
+End:
+  gBS->RestoreTPL (OldTpl);
   return Status;
 }
 
@@ -953,11 +967,11 @@ SmmuV3GetNodeInfo (
 
   for (Count = 0; Count < Iort->NumNodes; Count++) {
     if (Node->Type == EFI_ACPI_IORT_TYPE_SMMUv3) {
+      InitializeListHead (&SmmuInfoArray[SmmuIndex].RmrNodeList);
       SmmuNode                                     = (EFI_ACPI_6_0_IO_REMAPPING_SMMU3_NODE *)Node;
       SmmuInfoArray[SmmuIndex].SmmuBase            = SmmuNode->Base;
       SmmuInfoArray[SmmuIndex].Flags               = SmmuNode->Flags;
       SmmuInfoArray[SmmuIndex].StreamTableEntryMax = 0;  // Initialize max stream ID to 0
-      SmmuInfoArray[SmmuIndex].StreamEntryConfig   = NULL;
       SmmuNodePtrs[SmmuIndex]                      = (VOID *)SmmuNode;
       SmmuIndex++;
     }
@@ -1119,7 +1133,34 @@ SmmuV3GetMaxStreamIds (
 }
 
 /**
- * Collect Stream ID specific information for each SMMU.
+ * Add a new RMR node to the SMMU_INFO structure's RMR node list.
+ *
+ * @param [in] SmmuInfo  Pointer to the SMMU_INFO structure.
+ * @param [in] RmrNode   Pointer to the RMR node to add.
+ *
+ * @return EFI_SUCCESS on success, or EFI_OUT_OF_RESOURCES on failure.
+ */
+EFI_STATUS
+SmmuV3AddRmrNodeToList (
+  IN SMMU_INFO                           *SmmuInfo,
+  IN EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE  *RmrNode
+  )
+{
+  RMR_NODE_INFO  *Item;
+
+  Item = AllocateZeroPool (sizeof (RMR_NODE_INFO));
+  if (Item == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to allocate memory for RMR_NODE_INFO\n", __func__));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  Item->RmrNode = RmrNode;
+  InsertTailList (&SmmuInfo->RmrNodeList, &Item->Link);
+  return EFI_SUCCESS;
+}
+
+/**
+ * Collect RMR Node information for each SMMU and add it to the RmrNodeList
  *
  * @param [in]  IortTable      Pointer to the IORT table.
  * @param [in]  SmmuNodePtrs   Pointer to the array of SMMU node pointers.
@@ -1131,52 +1172,34 @@ SmmuV3GetMaxStreamIds (
  * @retval EFI_NOT_FOUND          SMMU node not found.
  */
 EFI_STATUS
-SmmuV3GetStreamIdInfo (
+SmmuV3GetRMRNodeInfo (
   IN  VOID       *IortTable,
   IN  VOID       **SmmuNodePtrs,
   IN  UINT32     SmmuNodeCount,
   OUT SMMU_INFO  *SmmuInfoArray
   )
 {
-  EFI_ACPI_6_0_IO_REMAPPING_TABLE            *Iort;
-  EFI_ACPI_6_0_IO_REMAPPING_NODE             *Node;
-  EFI_ACPI_6_0_IO_REMAPPING_RC_NODE          *RcNode;
-  EFI_ACPI_6_0_IO_REMAPPING_NAMED_COMP_NODE  *NamedCompNode;
-  EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE         *IdMapping;
-  VOID                                       *OutputNode;
-  SMMU_STREAM_ENTRY_CONFIG                   StreamEntryConfig;
-  UINT32                                     ByteOffset;
-  UINT32                                     SmmuIndex;
-  UINT32                                     IdMappingIndex;
-  UINT32                                     Count;
-  BOOLEAN                                    Found;
-  UINT32                                     StartId;
-  UINT32                                     EndId;
-  UINT32                                     CurID;
+  EFI_ACPI_6_0_IO_REMAPPING_TABLE     *Iort;
+  EFI_ACPI_6_0_IO_REMAPPING_NODE      *Node;
+  EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE  *IdMapping;
+  VOID                                *OutputNode;
+  UINT32                              ByteOffset;
+  UINT32                              SmmuIndex;
+  UINT32                              IdMappingIndex;
+  UINT32                              Count;
+  BOOLEAN                             Found;
+  EFI_STATUS                          Status;
 
   if ((IortTable == NULL) || (SmmuNodePtrs == NULL) || (SmmuInfoArray == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  ZeroMem (&StreamEntryConfig, sizeof (SMMU_STREAM_ENTRY_CONFIG));
-
   Iort = (EFI_ACPI_6_0_IO_REMAPPING_TABLE *)IortTable;
   Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Iort + Iort->NodeOffset);
 
   for (Count = 0; Count < Iort->NumNodes; Count++) {
-    if ((Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) || (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP) || (Node->Type == EFI_ACPI_IORT_TYPE_RMR)) {
-      // Extract Cache Coherent and Memory Access Flags based on node type
-      if (Node->Type == EFI_ACPI_IORT_TYPE_ROOT_COMPLEX) {
-        RcNode                                   = (EFI_ACPI_6_0_IO_REMAPPING_RC_NODE *)Node;
-        StreamEntryConfig.CacheCoherentAttribute = RcNode->CacheCoherent;
-        StreamEntryConfig.MemoryAccessFlags      = RcNode->MemoryAccessFlags;
-      } else if (Node->Type == EFI_ACPI_IORT_TYPE_NAMED_COMP) {
-        NamedCompNode                            = (EFI_ACPI_6_0_IO_REMAPPING_NAMED_COMP_NODE *)Node;
-        StreamEntryConfig.CacheCoherentAttribute = NamedCompNode->CacheCoherent;
-        StreamEntryConfig.MemoryAccessFlags      = NamedCompNode->MemoryAccessFlags;
-      }
-
+    if (Node->Type == EFI_ACPI_IORT_TYPE_RMR) {
       if (Node->NumIdMappings > 0) {
         // Get the ID mapping array
         IdMapping = (EFI_ACPI_6_0_IO_REMAPPING_ID_TABLE *)((UINT8 *)Node + Node->IdReference);
@@ -1191,28 +1214,12 @@ SmmuV3GetStreamIdInfo (
           for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
             if (OutputNode == SmmuNodePtrs[SmmuIndex]) {
               // This ID mapping references an SMMU node
-              // Calculate the Stream ID range
-              StartId = IdMapping[IdMappingIndex].OutputBase;
-              EndId   = StartId + IdMapping[IdMappingIndex].NumIds;
-
-              // Store the Stream ID range information
-              for (CurID = StartId; CurID <= EndId; CurID++) {
-                if (Node->Type == EFI_ACPI_IORT_TYPE_RMR) {
-                  SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].RmrNode = (EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE *)Node;
-                } else {
-                  SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].CacheCoherentAttribute = StreamEntryConfig.CacheCoherentAttribute;
-                  SmmuInfoArray[SmmuIndex].StreamEntryConfig[CurID].MemoryAccessFlags      = StreamEntryConfig.MemoryAccessFlags;
-                }
+              // If RMR Node store the RMR node pointer for this SMMU
+              Status = SmmuV3AddRmrNodeToList (&SmmuInfoArray[SmmuIndex], (EFI_ACPI_6_0_IO_REMAPPING_RMR_NODE *)Node);
+              if (EFI_ERROR (Status)) {
+                DEBUG ((DEBUG_ERROR, "%a: Failed to add RMR node to list for SMMU[0x%llx]\n", __func__, SmmuInfoArray[SmmuIndex].SmmuBase));
+                return Status;
               }
-
-              DEBUG ((
-                DEBUG_VERBOSE,
-                "%a: Added Stream ID range for SMMU[0x%llx]: StartId=0x%x, EndId=0x%x\n",
-                __func__,
-                SmmuInfoArray[SmmuIndex].SmmuBase,
-                StartId,
-                EndId
-                ));
 
               Found = TRUE;
               break;
@@ -1234,6 +1241,73 @@ SmmuV3GetStreamIdInfo (
 
     // Move to the next node
     Node = (EFI_ACPI_6_0_IO_REMAPPING_NODE *)((UINT8 *)Node + Node->Length);
+  }
+
+  return EFI_SUCCESS;
+}
+
+/**
+ * Add RMR mappings for each SMMU node in the SmmuInfo structure.
+ * This function iterates through the RMR nodes and updates the page table
+ * for each memory range described in the RMR node.
+ *
+ * @param [in] SmmuInfo  Pointer to the SMMU_INFO structure.
+ *
+ * @retval EFI_SUCCESS            Success.
+ * @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+ * @retval Other                  RMR mapping update failure.
+ */
+EFI_STATUS
+SmmuV3AddRMRMapping (
+  IN SMMU_INFO  *SmmuInfo
+  )
+{
+  EFI_ACPI_6_0_IO_REMAPPING_MEM_RANGE_DESC  *IortMemRangeDesc;
+  UINT32                                    NumMemRangeDesc;
+  LIST_ENTRY                                *Entry;
+  RMR_NODE_INFO                             *Item;
+  EFI_STATUS                                Status;
+
+  if (SmmuInfo == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Entry = GetFirstNode (&SmmuInfo->RmrNodeList);
+  while (!IsNull (&SmmuInfo->RmrNodeList, Entry)) {
+    Item  = BASE_CR (Entry, RMR_NODE_INFO, Link);
+    Entry = GetNextNode (&SmmuInfo->RmrNodeList, Entry);
+
+    if ((Item != NULL) && (Item->RmrNode != NULL)) {
+      for (NumMemRangeDesc = 0; NumMemRangeDesc < Item->RmrNode->NumMemRangeDesc; NumMemRangeDesc++) {
+        IortMemRangeDesc = (EFI_ACPI_6_0_IO_REMAPPING_MEM_RANGE_DESC *)((UINT8 *)Item->RmrNode + Item->RmrNode->MemRangeDescRef);
+        if ((IortMemRangeDesc[NumMemRangeDesc].Base > 0) && (IortMemRangeDesc[NumMemRangeDesc].Length > 0)) {
+          DEBUG ((
+            DEBUG_INFO,
+            "%a: Adding RMR mapping for SMMU[0x%llx]: Base=0x%llx, Length=0x%llx\n",
+            __func__,
+            SmmuInfo->SmmuBase,
+            IortMemRangeDesc[NumMemRangeDesc].Base,
+            IortMemRangeDesc[NumMemRangeDesc].Length
+            ));
+          Status = UpdatePageTable (
+                     SmmuInfo->PageTableRoot,
+                     IortMemRangeDesc[NumMemRangeDesc].Base,
+                     IortMemRangeDesc[NumMemRangeDesc].Length,
+                     PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)),
+                     TRUE,
+                     FALSE
+                     );
+          if (EFI_ERROR (Status)) {
+            DEBUG ((DEBUG_ERROR, "%a: Failed to update RMR mapping.\n", __func__));
+            return Status;
+          }
+        }
+      }
+
+      RemoveEntryList (&Item->Link);
+      FreePool (Item);
+    }
   }
 
   return EFI_SUCCESS;
@@ -1264,7 +1338,6 @@ SmmuV3ParseIort (
   SMMU_INFO                        *SmmuInfoArray;
   VOID                             **SmmuNodePtrs;
   UINT32                           SmmuNodeCount;
-  UINT32                           SmmuIndex;
 
   if ((IortTable == NULL) || (SmmuInfo == NULL) || (SmmuCount == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameters\n", __func__));
@@ -1344,22 +1417,8 @@ SmmuV3ParseIort (
     goto Error;
   }
 
-  // Allocate memory for Stream ID ranges after knowing the maximum Stream ID
-  for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
-    if (SmmuInfoArray[SmmuIndex].StreamTableEntryMax > 0) {
-      // Allocate space for StreamIdRanges based on MaxStreamId
-      // One entry for each possible StreamId (0 to MaxStreamId inclusive)
-      SmmuInfoArray[SmmuIndex].StreamEntryConfig = AllocateZeroPool ((SmmuInfoArray[SmmuIndex].StreamTableEntryMax + 1) * sizeof (SMMU_STREAM_ENTRY_CONFIG));
-      if (SmmuInfoArray[SmmuIndex].StreamEntryConfig == NULL) {
-        DEBUG ((DEBUG_ERROR, "%a: Failed to allocate Stream ID ranges for SMMU[%d]\n", __func__, SmmuInfoArray[SmmuIndex].SmmuBase));
-        Status = EFI_OUT_OF_RESOURCES;
-        goto Error;
-      }
-    }
-  }
-
   // Fourth pass: collect per Stream ID range info like CCA, CPM, DACS for each RC/NamedComp node
-  Status = SmmuV3GetStreamIdInfo (IortTable, SmmuNodePtrs, SmmuNodeCount, SmmuInfoArray);
+  Status = SmmuV3GetRMRNodeInfo (IortTable, SmmuNodePtrs, SmmuNodeCount, SmmuInfoArray);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to get Stream ID info for SMMU nodes\n", __func__));
     goto Error;
@@ -1372,12 +1431,6 @@ SmmuV3ParseIort (
 
 Error:
   if (SmmuInfoArray != NULL) {
-    for (SmmuIndex = 0; SmmuIndex < SmmuNodeCount; SmmuIndex++) {
-      if (SmmuInfoArray[SmmuIndex].StreamEntryConfig != NULL) {
-        FreePool (SmmuInfoArray[SmmuIndex].StreamEntryConfig);
-      }
-    }
-
     FreePool (SmmuInfoArray);
   }
 
