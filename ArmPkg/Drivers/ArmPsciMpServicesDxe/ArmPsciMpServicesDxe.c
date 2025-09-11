@@ -887,10 +887,8 @@ EnableDisableAP (
     return EFI_INVALID_PARAMETER;
   }
 
-  // MU_CHANGE Starts: Fix for invocation on timer expired APs.
   if ((GetApState (CpuData) != CpuStateIdle) &&
       (GetApState (CpuData) != CpuStateFinished)) {
-  // MU_CHANGE Ends
     return EFI_UNSUPPORTED;
   }
 
