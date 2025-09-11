@@ -887,8 +887,7 @@ EnableDisableAP (
     return EFI_INVALID_PARAMETER;
   }
 
-  if ((GetApState (CpuData) != CpuStateIdle) &&
-      (GetApState (CpuData) != CpuStateFinished)) {
+  if (GetApState (CpuData) != CpuStateIdle) {
     return EFI_UNSUPPORTED;
   }
 
