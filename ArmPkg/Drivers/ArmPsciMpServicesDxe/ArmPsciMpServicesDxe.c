@@ -1334,7 +1334,7 @@ MpServicesInitialize (
   ASSERT (gApStacksBase != NULL);
 
   for (Index = 0; Index < mCpuMpData.NumberOfProcessors; Index++) {
-    if (GET_MPIDR_AFFINITY_BITS (ArmReadMpidr ()) == CoreInfo[Index].Mpidr) {
+    if (GET_MPIDR_AFFINITY_BITS (ArmReadMpidr ()) == GET_MPIDR_AFFINITY_BITS (CoreInfo[Index].Mpidr)) {
       IsBsp = TRUE;
     } else {
       IsBsp = FALSE;
@@ -1862,3 +1862,4 @@ StartupAllAPsNoWaitEvent (
 
   return Status;
 }
+
