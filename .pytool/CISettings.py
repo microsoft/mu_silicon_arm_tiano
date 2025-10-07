@@ -163,8 +163,6 @@ class Settings(CiSetupSettingsManager, CiBuildSettingsManager, UpdateSettingsMan
         If no RequiredSubmodules return an empty iterable
         '''
         rs = []
-        rs.append(RequiredSubmodule(
-            "ArmPkg/Library/ArmSoftFloatLib/berkeley-softfloat-3", False))
         return rs
 
     def GetName(self):
