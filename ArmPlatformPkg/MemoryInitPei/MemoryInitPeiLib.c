@@ -103,7 +103,7 @@ MemoryPeim (
   NextHob.Raw = GetHobList ();
   while ((NextHob.Raw = GetNextHob (EFI_HOB_TYPE_RESOURCE_DESCRIPTOR, NextHob.Raw)) != NULL) {
     if ((NextHob.ResourceDescriptor->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY) &&
-        (SystemMemoryBase >= NextHob.ResourceDescriptor->PhysicalStart) && // MU_CHANGE
+        (SystemMemoryBase >= NextHob.ResourceDescriptor->PhysicalStart) &&                                           // MU_CHANGE
         (NextHob.ResourceDescriptor->PhysicalStart + NextHob.ResourceDescriptor->ResourceLength <= SystemMemoryTop)) // MU_CHANGE
     {
       Found = TRUE;
@@ -120,14 +120,10 @@ MemoryPeim (
     MmBufferTop  = MmBufferBase + PcdGet64 (PcdMmBufferSize);
 
     // But pay attention to the potential overlap with the mm communication buffer
-    if (MmBufferBase >= SystemMemoryBase &&
-        MmBufferBase < SystemMemoryTop) {
+    if ((MmBufferBase >= SystemMemoryBase) && (MmBufferBase < SystemMemoryTop)) {
       // The mm communication buffer is in the system memory range
       if (MmBufferBase > SystemMemoryBase) {
         // There is a gap between the start of system memory and the mm communication buffer
-        DEBUG ((DEBUG_INFO, "Build Resource Descriptor Hob for System Memory: 0x%lx - 0x%lx\n",
-          SystemMemoryBase,
-          MmBufferBase - SystemMemoryBase));
         BuildResourceDescriptorV2 (
           EFI_RESOURCE_SYSTEM_MEMORY,
           ResourceAttributes,
@@ -138,13 +134,8 @@ MemoryPeim (
           );
       }
 
-      if (MmBufferTop <
-          SystemMemoryTop) {
+      if (MmBufferTop < SystemMemoryTop) {
         // There is a gap between the end of mm communication buffer and the end of system memory
-        DEBUG ((DEBUG_INFO, "Build Resource Descriptor Hob for System Memory: 0x%lx - 0x%lx\n",
-          MmBufferTop,
-          SystemMemoryTop -
-          MmBufferTop));
         BuildResourceDescriptorV2 (
           EFI_RESOURCE_SYSTEM_MEMORY,
           ResourceAttributes,
@@ -155,10 +146,7 @@ MemoryPeim (
           NULL
           );
       }
-    } else if (MmBufferTop >
-               SystemMemoryBase &&
-               MmBufferTop <=
-               SystemMemoryTop) {
+    } else if ((MmBufferTop > SystemMemoryBase) && (MmBufferTop <= SystemMemoryTop)) {
       // The end of mm communication buffer is in the system memory range
       BuildResourceDescriptorV2 (
         EFI_RESOURCE_SYSTEM_MEMORY,
@@ -180,6 +168,7 @@ MemoryPeim (
         NULL
         );
     }
+
     // MU_CHANGE END
   }
 
@@ -188,12 +177,13 @@ MemoryPeim (
   //
 
   // SystemMemoryTop = (EFI_PHYSICAL_ADDRESS)PcdGet64 (PcdSystemMemoryBase) + (EFI_PHYSICAL_ADDRESS)PcdGet64 (PcdSystemMemorySize); // MU_CHANGE
-  FdTop           = (EFI_PHYSICAL_ADDRESS)PcdGet64 (PcdFdBaseAddress) + (EFI_PHYSICAL_ADDRESS)PcdGet32 (PcdFdSize);
+  FdTop = (EFI_PHYSICAL_ADDRESS)PcdGet64 (PcdFdBaseAddress) + (EFI_PHYSICAL_ADDRESS)PcdGet32 (PcdFdSize);
 
   // EDK2 does not have the concept of boot firmware copied into DRAM. To avoid the DXE
   // core to overwrite this area we must create a memory allocation HOB for the region,
   // but this only works if we split off the underlying resource descriptor as well.
-  if ((PcdGet64 (PcdFdBaseAddress) >= SystemMemoryBase) && (FdTop <= SystemMemoryTop)) { // MU_CHANGE
+  if ((PcdGet64 (PcdFdBaseAddress) >= SystemMemoryBase) && (FdTop <= SystemMemoryTop)) {
+    // MU_CHANGE
     Found = FALSE;
 
     // Search for System Memory Hob that contains the firmware
