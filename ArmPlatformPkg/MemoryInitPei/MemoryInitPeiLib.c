@@ -108,14 +108,69 @@ MemoryPeim (
 
   if (!Found) {
     // Reserved the memory space occupied by the firmware volume
-    BuildResourceDescriptorV2 (
-      EFI_RESOURCE_SYSTEM_MEMORY,
-      ResourceAttributes,
-      PcdGet64 (PcdSystemMemoryBase),
-      PcdGet64 (PcdSystemMemorySize),
-      EFI_MEMORY_WB,
-      NULL
-      );
+    // MU_CHANGE: Carve out MM communication buffer from system memory
+    // But pay attention to the potential overlap with the mm communication buffer
+    if (PcdGet64 (PcdMmBufferBase) >= PcdGet64 (PcdSystemMemoryBase) &&
+        PcdGet64 (PcdMmBufferBase) < (PcdGet64 (PcdSystemMemoryBase) + PcdGet64 (PcdSystemMemorySize))) {
+      // The mm communication buffer is in the system memory range
+      if (PcdGet64 (PcdMmBufferBase) > PcdGet64 (PcdSystemMemoryBase)) {
+        // There is a gap between the start of system memory and the mm communication buffer
+        DEBUG ((DEBUG_INFO, "Build Resource Descriptor Hob for System Memory: 0x%lx - 0x%lx\n",
+          PcdGet64 (PcdSystemMemoryBase),
+          PcdGet64 (PcdMmBufferBase) - PcdGet64 (PcdSystemMemoryBase)));
+        BuildResourceDescriptorV2 (
+          EFI_RESOURCE_SYSTEM_MEMORY,
+          ResourceAttributes,
+          PcdGet64 (PcdSystemMemoryBase),
+          PcdGet64 (PcdMmBufferBase) - PcdGet64 (PcdSystemMemoryBase),
+          EFI_MEMORY_WB,
+          NULL
+          );
+      }
+
+      if ((PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize)) <
+          (PcdGet64 (PcdSystemMemoryBase) + PcdGet64 (PcdSystemMemorySize))) {
+        // There is a gap between the end of mm communication buffer and the end of system memory
+        DEBUG ((DEBUG_INFO, "Build Resource Descriptor Hob for System Memory: 0x%lx - 0x%lx\n",
+          PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize),
+          (PcdGet64 (PcdSystemMemoryBase) + PcdGet64 (PcdSystemMemorySize)) -
+          (PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize))));
+        BuildResourceDescriptorV2 (
+          EFI_RESOURCE_SYSTEM_MEMORY,
+          ResourceAttributes,
+          PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize),
+          (PcdGet64 (PcdSystemMemoryBase) + PcdGet64 (PcdSystemMemorySize)) -
+          (PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize)),
+          EFI_MEMORY_WB,
+          NULL
+          );
+      }
+    } else if ((PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize)) >
+               PcdGet64 (PcdSystemMemoryBase) &&
+               (PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize)) <=
+               (PcdGet64 (PcdSystemMemoryBase) + PcdGet64 (PcdSystemMemorySize))) {
+      // The end of mm communication buffer is in the system memory range
+      BuildResourceDescriptorV2 (
+        EFI_RESOURCE_SYSTEM_MEMORY,
+        ResourceAttributes,
+        PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize),
+        (PcdGet64 (PcdSystemMemoryBase) + PcdGet64 (PcdSystemMemorySize)) -
+        (PcdGet64 (PcdMmBufferBase) + PcdGet64 (PcdMmBufferSize)),
+        EFI_MEMORY_WB,
+        NULL
+        );
+    } else {
+      // The mm communication buffer is out of the system memory range
+      BuildResourceDescriptorV2 (
+        EFI_RESOURCE_SYSTEM_MEMORY,
+        ResourceAttributes,
+        PcdGet64 (PcdSystemMemoryBase),
+        PcdGet64 (PcdSystemMemorySize),
+        EFI_MEMORY_WB,
+        NULL
+        );
+    }
+    // MU_CHANGE END
   }
 
   //
