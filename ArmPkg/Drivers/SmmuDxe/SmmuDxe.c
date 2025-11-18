@@ -700,6 +700,8 @@ SmmuV3Configure (
   SmmuV3WriteRegister64 (SmmuInfo->SmmuBase, SMMU_CMDQ_BASE, CommandQueueBase.AsUINT64);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, 0);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS, 0);
+  SmmuInfo->CachedConsumer = 0;
+  SmmuInfo->CachedProducer = 0;
 
   // Configure Event Queue Base
   EventQueueBase.AsUINT64 = 0;

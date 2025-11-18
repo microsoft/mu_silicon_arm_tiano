@@ -171,6 +171,8 @@ typedef struct _SMMU_INFO {
   VOID          *EventQueue;
   LIST_ENTRY    RmrNodeList;
   UINT64        SmmuBase;
+  UINT64        CachedProducer;
+  UINT64        CachedConsumer;
   UINT32        StreamTableSize;
   UINT32        StreamTableEntryMax;
   UINT32        Flags;

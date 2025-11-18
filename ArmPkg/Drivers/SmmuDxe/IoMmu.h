@@ -40,7 +40,6 @@ typedef struct _PAGE_TABLE {
   @param [in]  Bytes                      Number of bytes to map.
   @param [in]  Flags                      Flags to set for the mapping. 12 bits or less.
   @param [in]  Valid                      Boolean to indicate if the entry is valid.
-  @param [in]  SetReadWriteFlagsOnly      Boolean to indicate if only R/W flags should be set.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_INVALID_PARAMETER  Invalid parameter.
@@ -52,8 +51,7 @@ UpdatePageTable (
   IN UINT64      PhysicalAddress,
   IN UINT64      Bytes,
   IN UINT16      Flags,
-  IN BOOLEAN     Valid,
-  IN BOOLEAN     SetReadWriteFlagsOnly
+  IN BOOLEAN     Valid
   );
 
 /**
