@@ -710,7 +710,56 @@ SmmuV3WriteCommands (
     CommandQueue[ProducerIndex] = Commands[Index];
   }
 
+  // This DSB ensures that all commands written to the command queue before this point will be visible
+  // before we update the producer index register to actually trigger processing of the commands.
+  ArmDataSynchronizationBarrier ();
+
   return EFI_SUCCESS;
+}
+
+/**
+  Update the cached consumer index for the SMMUv3 command queue.
+
+  @param [in]  SmmuInfo            Pointer to the SMMU_INFO structure.
+  @param [in]  QueueMask           The queue mask.
+  @param [in]  WrapMask            The wrap mask.
+  @param [in]  TotalQueueEntries   The total number of entries in the queue.
+  @param [out] ConsumerIndexOut    Pointer to store the consumer index.
+  @param [out] ConsumerWrapOut     Pointer to store the consumer wrap.
+**/
+VOID
+SmmuV3CmdQueueUpdateCachedConsumer (
+  IN  SMMU_INFO  *SmmuInfo,
+  IN  UINT32     QueueMask,
+  IN  UINT32     WrapMask,
+  IN  UINT32     TotalQueueEntries,
+  OUT UINT32     *ConsumerIndexOut,
+  OUT UINT32     *ConsumerWrapOut
+  )
+{
+  SMMUV3_CMDQ_CONS  Consumer;
+  UINT32            ConsumerIndex;
+  UINT32            ConsumerWrap;
+  UINT64            CachedConsumerWrap;
+
+  if ((SmmuInfo == NULL) || (ConsumerIndexOut == NULL) || (ConsumerWrapOut == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
+    ASSERT (FALSE);
+    return;
+  }
+
+  Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+  ConsumerIndex     = Consumer.ReadIndex & QueueMask;
+  ConsumerWrap      = Consumer.ReadIndex & WrapMask;
+  *ConsumerIndexOut = ConsumerIndex;
+  *ConsumerWrapOut  = ConsumerWrap;
+
+  CachedConsumerWrap       = SmmuInfo->CachedConsumer & WrapMask;
+  SmmuInfo->CachedConsumer = (SmmuInfo->CachedConsumer & ~QueueMask) | ConsumerIndex;
+
+  if (CachedConsumerWrap != ConsumerWrap) {
+    SmmuInfo->CachedConsumer += TotalQueueEntries;
+  }
 }
 
 /**
@@ -732,106 +781,60 @@ SmmuV3SendCommand (
   UINT32            QueueMask;
   UINT32            WrapMask;
   UINT32            TotalQueueEntries;
-  UINT32            NewProducerIndex;
   UINT32            ProducerIndex;
   UINT32            ConsumerIndex;
   UINT32            ProducerWrap;
   UINT32            ConsumerWrap;
   SMMUV3_CMDQ_PROD  Producer;
-  SMMUV3_CMDQ_CONS  Consumer;
-  UINT8             Count;
   EFI_STATUS        Status;
   EFI_TPL           OldTpl;
+  UINT64            NewProducer;
 
   if ((SmmuInfo == NULL) || (Command == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  Count = 10; // Set 0.1ms timeout value.
-  // Synchronize access to the command queue.
-  OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
-
-  Producer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD);
-  Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
-
   TotalQueueEntries = SMMUV3_COUNT_FROM_LOG2 (SmmuInfo->CommandQueueLog2Size);
   WrapMask          = TotalQueueEntries;
   QueueMask         = WrapMask - 1;
-  ProducerWrap      = Producer.WriteIndex & WrapMask;
-  ConsumerWrap      = Consumer.ReadIndex & WrapMask;
 
-  ProducerIndex = Producer.WriteIndex & QueueMask;
-  ConsumerIndex = Consumer.ReadIndex & QueueMask;
+  // We need to synchronize the the entire command queue write and producer update with the TPL locks.
+  // As a result we don't just lock SmmuV3CmdQueueUpdateCachedConsumer but the entire process of writing the command
+  // and updating the producer index.
+  OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
-  while (Count > 0 && SMMUV3_IS_QUEUE_FULL (
-                        ProducerIndex,
-                        ProducerWrap,
-                        ConsumerIndex,
-                        ConsumerWrap
-                        ) != FALSE)
-  {
-    MicroSecondDelay (10);
-
+  // Loop until there is space in the command queue
+  do {
     Producer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD);
-    Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
+    ProducerWrap      = Producer.WriteIndex & WrapMask;
+    ProducerIndex     = Producer.WriteIndex & QueueMask;
 
-    ProducerWrap = Producer.WriteIndex & WrapMask;
-    ConsumerWrap = Consumer.ReadIndex & WrapMask;
-
-    ProducerIndex = Producer.WriteIndex & QueueMask;
-    ConsumerIndex = Consumer.ReadIndex & QueueMask;
-
-    Count--;
-  }
-
-  if ((Count == 0) && (SMMUV3_IS_QUEUE_FULL (
-                         ProducerIndex,
-                         ProducerWrap,
-                         ConsumerIndex,
-                         ConsumerWrap
-                         ) != FALSE))
-  {
-    DEBUG ((DEBUG_ERROR, "%a: Command Queue Full, Timeout\n", __func__));
-    Status = EFI_TIMEOUT;
-    goto End;
-  }
+    SmmuV3CmdQueueUpdateCachedConsumer (SmmuInfo, QueueMask, WrapMask, TotalQueueEntries, &ConsumerIndex, &ConsumerWrap);
+  } while (SMMUV3_IS_QUEUE_FULL (ProducerIndex, ProducerWrap, ConsumerIndex, ConsumerWrap) != FALSE);
 
   Status = SmmuV3WriteCommands (SmmuInfo, ProducerIndex, 1, Command);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Error writing command to queue\n", __func__));
-    goto End;
+    gBS->RestoreTPL (OldTpl);
+    return Status;
   }
 
-  ArmDataSynchronizationBarrier ();
+  SmmuInfo->CachedProducer += 1;
+  NewProducer               = SmmuInfo->CachedProducer;
+  SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, (UINT32)NewProducer);
 
-  NewProducerIndex = Producer.WriteIndex + 1;
-
-  Producer.AsUINT32   = 0;
-  Producer.WriteIndex = NewProducerIndex & (QueueMask | WrapMask);
-  ProducerIndex       = NewProducerIndex & (QueueMask | WrapMask);
-
-  SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, Producer.AsUINT32);
-
-  Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
-  ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
-  Count             = 10; // Set 0.1ms timeout value
-
-  // Wait for the command to be consumed
-  while ((Count > 0) && (ConsumerIndex != ProducerIndex)) {
-    MicroSecondDelay (10);
-    Consumer.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS);
-    ConsumerIndex     = Consumer.ReadIndex & (QueueMask | WrapMask);
-    Count--;
-  }
-
-  if ((Count == 0) || (ConsumerIndex != ProducerIndex)) {
-    DEBUG ((DEBUG_ERROR, "%a: Timeout waiting for command queue to be consumed\n", __func__));
-    Status = EFI_TIMEOUT;
-  }
-
-End:
   gBS->RestoreTPL (OldTpl);
+
+  // Loop until the command is consumed
+  do {
+    // SmmuV3CmdQueueUpdateCachedConsumer needs to be within the scope of this lock because we want to make sure we have
+    // the synchronized view of the consumer index when checking against the current local producer index.
+    OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+    SmmuV3CmdQueueUpdateCachedConsumer (SmmuInfo, QueueMask, WrapMask, TotalQueueEntries, &ConsumerIndex, &ConsumerWrap);
+    gBS->RestoreTPL (OldTpl);
+  } while (SmmuInfo->CachedConsumer < NewProducer);
+
   return Status;
 }
 
@@ -1295,8 +1298,7 @@ SmmuV3AddRMRMapping (
                      IortMemRangeDesc[NumMemRangeDesc].Base,
                      IortMemRangeDesc[NumMemRangeDesc].Length,
                      PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)),
-                     TRUE,
-                     FALSE
+                     TRUE
                      );
           if (EFI_ERROR (Status)) {
             DEBUG ((DEBUG_ERROR, "%a: Failed to update RMR mapping.\n", __func__));
