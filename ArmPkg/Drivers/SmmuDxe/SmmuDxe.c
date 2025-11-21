@@ -565,6 +565,7 @@ SmmuV3Configure (
   SMMUV3_CR1                         Cr1;
   SMMUV3_CR2                         Cr2;
   SMMUV3_IDR0                        Idr0;
+  SMMUV3_IDR3                        Idr3;
   SMMUV3_CMD_GENERIC                 Command;
   SMMUV3_GERROR                      GError;
   VOID                               *CommandQueue;
@@ -711,6 +712,10 @@ SmmuV3Configure (
   SmmuV3WriteRegister64 (SmmuInfo->SmmuBase, SMMU_EVENTQ_BASE, EventQueueBase.AsUINT64);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase + SMMUV3_PAGE_1_OFFSET, SMMU_EVENTQ_PROD, 0);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase + SMMUV3_PAGE_1_OFFSET, SMMU_EVENTQ_CONS, 0);
+
+  // Check if Range-based invalidation and level hint are supported.
+  Idr3.AsUINT32                        = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_IDR3);
+  SmmuInfo->RangeInvalidationSupported = (Idr3.Ril != 0);
 
   // Enable GError and event interrupts
   Status = SmmuV3EnableInterrupts (SmmuInfo->SmmuBase);

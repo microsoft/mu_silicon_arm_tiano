@@ -184,6 +184,7 @@ typedef struct _SMMU_INFO {
   UINT32        OutputAddressWidth;
   UINT8         TranslationStartingLevel;
   BOOLEAN       PageTableRootConcatenated;
+  BOOLEAN       RangeInvalidationSupported;
   BOOLEAN       Enabled;
 } SMMU_INFO;
 
@@ -431,8 +432,12 @@ SmmuV3DumpPageTableEntries (
   Does nothing if no errors found.
 
   @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
+
+  @retval EFI_SUCCESS            No SMMU errors found.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+  @retval EFI_DEVICE_ERROR       SMMU error found.
 **/
-VOID
+EFI_STATUS
 SmmuV3LogErrors (
   IN SMMU_INFO  *SmmuInfo
   );
@@ -468,19 +473,21 @@ SmmuV3TLBInvalidateAll (
   );
 
 /**
-  Invalidate TLB entries for specified InputAddress for Stage 2 of SmmuV3.
+  Invalidate TLB entries for specified address range for Stage 2 of SmmuV3.
 
   @param [in]  SmmuInfo      Pointer to the SMMU_INFO structure.
   @param [in]  InputAddress  The input address to invalidate.
+  @param [in]  PageNum       Number of pages to invalidate.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_TIMEOUT            Timeout.
   @retval EFI_INVALID_PARAMETER  Invalid Parameters.
 **/
 EFI_STATUS
-SmmuV3TLBInvalidateAddress (
+SmmuV3TLBInvalidateAddressRange (
   IN SMMU_INFO  *SmmuInfo,
-  IN UINT64     InputAddress
+  IN UINT64     InputAddress,
+  IN UINT32     PageNum
   );
 
 /**

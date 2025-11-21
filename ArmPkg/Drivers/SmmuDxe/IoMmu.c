@@ -67,7 +67,6 @@ UpdateMapping (
   UINT32      Index;
   PAGE_TABLE  *Current;
   UINT64      Entry;
-  UINT32      SmmuIndex;
 
   // Flags must be 12 bits or less
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0)) {
@@ -118,28 +117,6 @@ UpdateMapping (
     }
   }
 
-  // Invalidate TLBI Command.
-  // Current implementation of IoMmu protocol doesnt distinguish between stream id's or Smmu's.
-  // As a result we have to invalidate TLB for all SMMU's for the given virtual address to make
-  // sure that the correct smmu's streamid's page table's TLB is invalidated.
-  // To workaround the limitations of the IoMmu protocol, we globally set the page table root
-  // for all SMMU's and stream id's to be the same.
-  // Todo: Update the IoMmu protocol to support multiple SMMU's and stream id's so we don't have to
-  // invalidate all SMMU's TLB for a given virtual address, just the one that was updated.
-  if (!Valid) {
-    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-      if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
-        Status = SmmuV3TLBInvalidateAddress (&mIoMmu->SmmuInfo[SmmuIndex], VirtualAddress);
-        if (EFI_ERROR (Status)) {
-          DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
-          goto End;
-        }
-      }
-    }
-  }
-
-  SpeculationBarrier ();
-
 End:
   ASSERT_EFI_ERROR (Status);
   return Status;
@@ -169,7 +146,9 @@ UpdatePageTable (
 {
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddressEnd;
+  EFI_PHYSICAL_ADDRESS  PhysicalAddressStart;
   EFI_PHYSICAL_ADDRESS  CurPhysicalAddress;
+  UINT32                SmmuIndex;
 
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0) || (Bytes == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
@@ -189,6 +168,34 @@ UpdatePageTable (
 
     CurPhysicalAddress += EFI_PAGE_SIZE;
   }
+
+  // Invalidate TLBI Command.
+  // Current implementation of IoMmu protocol doesnt distinguish between stream id's or Smmu's.
+  // As a result we have to invalidate TLB for all SMMU's for the given virtual address to make
+  // sure that the correct smmu's streamid's page table's TLB is invalidated.
+  // To workaround the limitations of the IoMmu protocol, we globally set the page table root
+  // for all SMMU's and stream id's to be the same.
+  // Todo: Update the IoMmu protocol to support multiple SMMU's and stream id's so we don't have to
+  // invalidate all SMMU's TLB for a given virtual address, just the one that was updated.
+  if (!Valid) {
+    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+      if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+        if (mIoMmu->SmmuInfo[SmmuIndex].RangeInvalidationSupported) {
+          PhysicalAddressStart = ALIGN_DOWN_BY (PhysicalAddress, EFI_PAGE_SIZE);
+          Status               = SmmuV3TLBInvalidateAddressRange (&mIoMmu->SmmuInfo[SmmuIndex], PhysicalAddressStart, EFI_SIZE_TO_PAGES (PhysicalAddressEnd - PhysicalAddressStart));
+        } else {
+          Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
+        }
+
+        if (EFI_ERROR (Status)) {
+          DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
+          goto End;
+        }
+      }
+    }
+  }
+
+  SpeculationBarrier ();
 
 End:
   ASSERT_EFI_ERROR (Status);

@@ -625,8 +625,12 @@ SmmuV3DumpPageTableEntries (
   Does nothing if no errors found.
 
   @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
+
+  @retval EFI_SUCCESS            No SMMU errors found.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+  @retval EFI_DEVICE_ERROR       SMMU error found.
 **/
-VOID
+EFI_STATUS
 SmmuV3LogErrors (
   IN SMMU_INFO  *SmmuInfo
   )
@@ -639,7 +643,7 @@ SmmuV3LogErrors (
 
   if (SmmuInfo == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
-    return;
+    return EFI_INVALID_PARAMETER;
   }
 
   do {
@@ -647,10 +651,11 @@ SmmuV3LogErrors (
     Status = SmmuV3ConsumeEventQueueForErrors (SmmuInfo, &FaultRecord, &IsEmpty);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a: Error consuming event queue\n", __func__));
-      break;
+      return Status;
     }
 
     if (IsEmpty == FALSE) {
+      Status = EFI_DEVICE_ERROR;
       DEBUG ((DEBUG_ERROR, "%a: %llx FaultRecord:\n", __func__, SmmuInfo->SmmuBase));
       for (Index = 0; Index < sizeof (FaultRecord.Fault) / sizeof (FaultRecord.Fault[0]); Index++) {
         DEBUG ((DEBUG_ERROR, "0x%llx\n", FaultRecord.Fault[Index]));
@@ -667,8 +672,11 @@ SmmuV3LogErrors (
 
   GError.AsUINT32 = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_GERROR);
   if (GError.AsUINT32 != 0) {
+    Status = EFI_DEVICE_ERROR;
     DEBUG ((DEBUG_ERROR, "%a: %llx GError: 0x%lx\n", __func__, SmmuInfo->SmmuBase, GError.AsUINT32));
   }
+
+  return Status;
 }
 
 /**
@@ -832,7 +840,13 @@ SmmuV3SendCommand (
     // the synchronized view of the consumer index when checking against the current local producer index.
     OldTpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
     SmmuV3CmdQueueUpdateCachedConsumer (SmmuInfo, QueueMask, WrapMask, TotalQueueEntries, &ConsumerIndex, &ConsumerWrap);
+    // Only prints errors if Event Queue is not empty and GError != 0. Returns EFI_SUCCESS if no errors found.
+    Status = SmmuV3LogErrors (SmmuInfo);
     gBS->RestoreTPL (OldTpl);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a: Error logged from SMMUv3 during command queue operation.\n", __func__));
+      break;
+    }
   } while (SmmuInfo->CachedConsumer < NewProducer);
 
   return Status;
@@ -890,34 +904,46 @@ SmmuV3TLBInvalidateAll (
 }
 
 /**
-  Invalidate TLB entries for specified InputAddress for Stage 2 of SmmuV3.
+  Invalidate TLB entries for specified address range for Stage 2 of SmmuV3.
 
   @param [in]  SmmuInfo      Pointer to the SMMU_INFO structure.
   @param [in]  InputAddress  The input address to invalidate.
+  @param [in]  PageNum       Number of pages to invalidate.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_TIMEOUT            Timeout.
   @retval EFI_INVALID_PARAMETER  Invalid Parameters.
 **/
 EFI_STATUS
-SmmuV3TLBInvalidateAddress (
+SmmuV3TLBInvalidateAddressRange (
   IN SMMU_INFO  *SmmuInfo,
-  IN UINT64     InputAddress
+  IN UINT64     InputAddress,
+  IN UINT32     PageNum
   )
 {
   SMMUV3_CMD_GENERIC  Command;
   EFI_STATUS          Status;
+  UINT32              Tg;
+  UINT32              Ttl;
 
-  if (SmmuInfo == NULL) {
+  if ((SmmuInfo == NULL) || (PageNum == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  // Invalidate with TLBI_S2_IPA Commands
-  SMMUV3_BUILD_CMD_TLBI_S2_IPA (&Command, SMMUV3_STREAM_TABLE_ENTRY_S2VMID, InputAddress);
+  // Per SmmuV3 spec - 0b01: Entries to be invalidated were inserted using a 4KB Translation Granule.
+  // So we set Tg to 1
+  Tg = 1;
+
+  // Leaf entries at Level 3 for a 4KB Granule table. So we set Ttl to 3.
+  Ttl = PAGE_TABLE_DEPTH - 1;
+
+  // Per SmmuV3 spec - Range = ((NUM+1)*2^SCALE)*Translation_Granule_Size where SCALE = 0, Translation_Granule_Size = 4096
+  // So we pass in (PageNum - 1) to invalidate PageNum pages
+  SMMUV3_BUILD_CMD_TLBI_S2_IPA (&Command, SMMUV3_STREAM_TABLE_ENTRY_S2VMID, InputAddress, (PageNum - 1), Tg, Ttl); // Invalidate with TLBI_S2_IPA Range invalidation Command
   Status = SmmuV3SendCommand (SmmuInfo, &Command);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
+    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_S2_IPA failed.\n", __func__));
     return Status;
   }
 

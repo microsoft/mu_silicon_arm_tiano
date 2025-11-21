@@ -1753,10 +1753,13 @@ typedef union _SMMUV3_FAULT_RECORD {
     (Command)->TlbiS12VmAll.Vmid = InputVmid; \
 }
 
-#define SMMUV3_BUILD_CMD_TLBI_S2_IPA(Command, InputVmid, InputAddress) \
+#define SMMUV3_BUILD_CMD_TLBI_S2_IPA(Command, InputVmid, InputAddress, PageNum, Tg, Ttl) \
 { \
     (Command)->CmdLow = 0; \
     (Command)->CmdHigh = 0; \
+    (Command)->TlbiS2Ipa.Num = PageNum; \
+    (Command)->TlbiS2Ipa.Tg  = Tg; \
+    (Command)->TlbiS2Ipa.Ttl = Ttl; \
     (Command)->TlbiS2Ipa.Opcode = CmdTlbiS2Ipa; \
     (Command)->TlbiS2Ipa.Vmid = InputVmid; \
     (Command)->TlbiS2Ipa.Address = ((InputAddress) >> 12); \
