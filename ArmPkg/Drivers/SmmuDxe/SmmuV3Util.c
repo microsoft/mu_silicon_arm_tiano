@@ -882,13 +882,6 @@ SmmuV3TLBInvalidateAll (
     return Status;
   }
 
-  SMMUV3_BUILD_CMD_TLBI_EL2_ALL (&Command);
-  Status = SmmuV3SendCommand (SmmuInfo, &Command);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_EL2_ALL failed.\n", __func__));
-    return Status;
-  }
-
   // Issue a CMD_SYNC command to guarantee that any previously issued TLB
   // invalidations (CMD_TLBI_*) are completed (SMMUv3.2 spec section 4.6.3).
   SMMUV3_BUILD_CMD_SYNC_NO_INTERRUPT (&Command);
@@ -904,43 +897,31 @@ SmmuV3TLBInvalidateAll (
 }
 
 /**
-  Invalidate TLB entries for specified address range for Stage 2 of SmmuV3.
+  Invalidate TLB entries for specified InputAddress for Stage 2 of SmmuV3.
 
   @param [in]  SmmuInfo      Pointer to the SMMU_INFO structure.
   @param [in]  InputAddress  The input address to invalidate.
-  @param [in]  PageNum       Number of pages to invalidate.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_TIMEOUT            Timeout.
   @retval EFI_INVALID_PARAMETER  Invalid Parameters.
 **/
 EFI_STATUS
-SmmuV3TLBInvalidateAddressRange (
+SmmuV3TLBInvalidateAddress (
   IN SMMU_INFO  *SmmuInfo,
-  IN UINT64     InputAddress,
-  IN UINT32     PageNum
+  IN UINT64     InputAddress
   )
 {
   SMMUV3_CMD_GENERIC  Command;
   EFI_STATUS          Status;
-  UINT32              Tg;
-  UINT32              Ttl;
 
-  if ((SmmuInfo == NULL) || (PageNum == 0)) {
+  if (SmmuInfo == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid Parameters\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
-  // Per SmmuV3 spec - 0b01: Entries to be invalidated were inserted using a 4KB Translation Granule.
-  // So we set Tg to 1
-  Tg = 1;
-
-  // Leaf entries at Level 3 for a 4KB Granule table. So we set Ttl to 3.
-  Ttl = PAGE_TABLE_DEPTH - 1;
-
-  // Per SmmuV3 spec - Range = ((NUM+1)*2^SCALE)*Translation_Granule_Size where SCALE = 0, Translation_Granule_Size = 4096
-  // So we pass in (PageNum - 1) to invalidate PageNum pages
-  SMMUV3_BUILD_CMD_TLBI_S2_IPA (&Command, SMMUV3_STREAM_TABLE_ENTRY_S2VMID, InputAddress, (PageNum - 1), Tg, Ttl); // Invalidate with TLBI_S2_IPA Range invalidation Command
+  // Invalidate with TLBI_S2_IPA Commands
+  SMMUV3_BUILD_CMD_TLBI_S2_IPA (&Command, SMMUV3_STREAM_TABLE_ENTRY_S2VMID, InputAddress);
   Status = SmmuV3SendCommand (SmmuInfo, &Command);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: CMD_TLBI_S2_IPA failed.\n", __func__));
