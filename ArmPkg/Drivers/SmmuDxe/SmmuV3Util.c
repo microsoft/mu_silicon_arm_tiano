@@ -830,7 +830,7 @@ SmmuV3SendCommand (
 
   SmmuInfo->CachedProducer += 1;
   NewProducer               = SmmuInfo->CachedProducer;
-  SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, (UINT32)NewProducer);
+  SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, (UINT32)(NewProducer & (WrapMask | QueueMask)));
 
   gBS->RestoreTPL (OldTpl);
 
