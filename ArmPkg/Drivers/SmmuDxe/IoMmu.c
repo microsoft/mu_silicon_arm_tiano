@@ -146,7 +146,6 @@ UpdatePageTable (
 {
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddressEnd;
-  EFI_PHYSICAL_ADDRESS  PhysicalAddressStart;
   EFI_PHYSICAL_ADDRESS  CurPhysicalAddress;
   UINT32                SmmuIndex;
 
@@ -180,13 +179,7 @@ UpdatePageTable (
   if (!Valid) {
     for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
       if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
-        if (mIoMmu->SmmuInfo[SmmuIndex].RangeInvalidationSupported) {
-          PhysicalAddressStart = ALIGN_DOWN_BY (PhysicalAddress, EFI_PAGE_SIZE);
-          Status               = SmmuV3TLBInvalidateAddressRange (&mIoMmu->SmmuInfo[SmmuIndex], PhysicalAddressStart, EFI_SIZE_TO_PAGES (PhysicalAddressEnd - PhysicalAddressStart));
-        } else {
-          Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
-        }
-
+        Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
         if (EFI_ERROR (Status)) {
           DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
           goto End;
