@@ -473,21 +473,19 @@ SmmuV3TLBInvalidateAll (
   );
 
 /**
-  Invalidate TLB entries for specified address range for Stage 2 of SmmuV3.
+  Invalidate TLB entries for specified InputAddress for Stage 2 of SmmuV3.
 
   @param [in]  SmmuInfo      Pointer to the SMMU_INFO structure.
   @param [in]  InputAddress  The input address to invalidate.
-  @param [in]  PageNum       Number of pages to invalidate.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_TIMEOUT            Timeout.
   @retval EFI_INVALID_PARAMETER  Invalid Parameters.
 **/
 EFI_STATUS
-SmmuV3TLBInvalidateAddressRange (
+SmmuV3TLBInvalidateAddress (
   IN SMMU_INFO  *SmmuInfo,
-  IN UINT64     InputAddress,
-  IN UINT32     PageNum
+  IN UINT64     InputAddress
   );
 
 /**
