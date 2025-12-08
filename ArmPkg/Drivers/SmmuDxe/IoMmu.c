@@ -29,9 +29,10 @@
   Used to pass between IoMmuMap, IoMmuUnmap and IoMmuSetAttribute.
 **/
 typedef struct IOMMU_MAP_INFO {
-  UINTN     NumberOfBytes;
-  UINT64    VirtualAddress;
-  UINT64    PhysicalAddress;
+  UINTN                    NumberOfBytes;
+  UINT64                   VirtualAddress;
+  UINT64                   PhysicalAddress;
+  EDKII_IOMMU_OPERATION    Operation;
 } IOMMU_MAP_INFO;
 
 /**
@@ -221,10 +222,14 @@ IoMmuMap (
   OUT    VOID                   **Mapping
   )
 {
-  EFI_STATUS      Status;
-  IOMMU_MAP_INFO  *MapInfo;
+  EFI_STATUS            Status;
+  IOMMU_MAP_INFO        *MapInfo;
+  EFI_PHYSICAL_ADDRESS  PhysicalAddress;
+  BOOLEAN               NeedRemap;
+  EFI_PHYSICAL_ADDRESS  DmaMemoryTop;
 
-  Status = EFI_SUCCESS;
+  Status    = EFI_SUCCESS;
+  NeedRemap = FALSE;
 
   if ((This == NULL) ||
       (HostAddress == NULL) ||
@@ -246,12 +251,72 @@ IoMmuMap (
     goto End;
   }
 
-  *DeviceAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress; // Identity mapping
+  DmaMemoryTop    = MAX_UINTN;
+  PhysicalAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress;
+
+  if ((Operation != EdkiiIoMmuOperationBusMasterCommonBuffer) && (Operation != EdkiiIoMmuOperationBusMasterCommonBuffer64)) {
+    if ((*NumberOfBytes != ALIGN_VALUE (*NumberOfBytes, SIZE_4KB)) || (PhysicalAddress != ALIGN_VALUE (PhysicalAddress, SIZE_4KB))) {
+      NeedRemap = TRUE;
+    }
+
+    if ((((Operation != EdkiiIoMmuOperationBusMasterRead64) &&
+          (Operation != EdkiiIoMmuOperationBusMasterWrite64))) &&
+        ((PhysicalAddress + *NumberOfBytes) > SIZE_4GB))
+    {
+      //
+      // If the root bridge or the device cannot handle performing DMA above
+      // 4GB but any part of the DMA transfer being mapped is above 4GB, then
+      // map the DMA transfer to a buffer below 4GB.
+      //
+      NeedRemap    = TRUE;
+      DmaMemoryTop = SIZE_4GB - 1;
+    }
+  }
+
+  if ((NeedRemap) && ((Operation == EdkiiIoMmuOperationBusMasterCommonBuffer) || (Operation == EdkiiIoMmuOperationBusMasterCommonBuffer64))) {
+    //
+    // Common Buffer operations can not be remapped.  If the common buffer
+    // is above 4GB, then it is not possible to generate a mapping, so return
+    // an error.
+    //
+    DEBUG ((DEBUG_ERROR, "%a: Common buffer operations cannot be remapped.\n", __func__));
+    ASSERT (FALSE);
+    return EFI_UNSUPPORTED;
+  }
 
   MapInfo->NumberOfBytes   = *NumberOfBytes;
-  MapInfo->VirtualAddress  = *DeviceAddress;
-  MapInfo->PhysicalAddress = *DeviceAddress;
-  *Mapping                 = MapInfo;
+  MapInfo->VirtualAddress  = DmaMemoryTop;
+  MapInfo->PhysicalAddress = PhysicalAddress;
+  MapInfo->Operation       = Operation;
+
+  if (NeedRemap) {
+    Status = gBS->AllocatePages (
+                    AllocateMaxAddress,
+                    EfiBootServicesData,
+                    EFI_SIZE_TO_PAGES (MapInfo->NumberOfBytes),
+                    &MapInfo->VirtualAddress
+                    );
+    if (EFI_ERROR (Status)) {
+      FreePool (MapInfo);
+      *NumberOfBytes = 0;
+      DEBUG ((DEBUG_ERROR, "%a: %r\n", __func__, Status));
+      return Status;
+    }
+
+    //
+    // If this is a read operation from the Bus Master's point of view,
+    // then copy the contents of the real buffer into the mapped buffer
+    // so the Bus Master can read the contents of the real buffer.
+    //
+    if ((Operation == EdkiiIoMmuOperationBusMasterRead) || (Operation == EdkiiIoMmuOperationBusMasterRead64)) {
+      CopyMem ((VOID *)(UINTN)MapInfo->VirtualAddress, (VOID *)(UINTN)MapInfo->PhysicalAddress, MapInfo->NumberOfBytes);
+    }
+  } else {
+    MapInfo->VirtualAddress = MapInfo->PhysicalAddress;
+  }
+
+  *DeviceAddress = MapInfo->VirtualAddress;
+  *Mapping       = MapInfo;
 
 End:
   ASSERT_EFI_ERROR (Status);
@@ -276,10 +341,34 @@ IoMmuUnmap (
   IN  VOID                  *Mapping
   )
 {
+  IOMMU_MAP_INFO  *MapInfo;
+
   if ((This == NULL) || (Mapping == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
     ASSERT (FALSE);
     return EFI_INVALID_PARAMETER;
+  }
+
+  MapInfo = (IOMMU_MAP_INFO *)Mapping;
+
+  if (MapInfo->VirtualAddress != MapInfo->PhysicalAddress) {
+    //
+    // If this is a write operation from the Bus Master's point of view,
+    // then copy the contents of the mapped buffer into the real buffer
+    // so the processor can read the contents of the real buffer.
+    //
+    if ((MapInfo->Operation == EdkiiIoMmuOperationBusMasterWrite) || (MapInfo->Operation == EdkiiIoMmuOperationBusMasterWrite64)) {
+      CopyMem (
+        (VOID *)(UINTN)MapInfo->PhysicalAddress,
+        (VOID *)(UINTN)MapInfo->VirtualAddress,
+        MapInfo->NumberOfBytes
+        );
+    }
+
+    //
+    // Free the mapped buffer and the MAP_INFO structure.
+    //
+    gBS->FreePages (MapInfo->VirtualAddress, EFI_SIZE_TO_PAGES (MapInfo->NumberOfBytes));
   }
 
   // Free the mapping structure allocated in IoMmuMap
@@ -425,7 +514,7 @@ IoMmuSetAttribute (
 
   Status = UpdatePageTable (
              mIoMmu->SmmuInfo->PageTableRoot,
-             MapInfo->PhysicalAddress,
+             MapInfo->VirtualAddress,
              MapInfo->NumberOfBytes,
              PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)), // TODO: https://github.com/microsoft/mu_silicon_arm_tiano/issues/375 debug issue on physical platform and revert the permissions
              (IoMmuAccess != 0)
