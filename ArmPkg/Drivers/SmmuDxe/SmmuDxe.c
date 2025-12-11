@@ -1005,6 +1005,12 @@ SmmuV3ExitBootServices (
 
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
     if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+      Status = SmmuV3DisableTranslation (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu 0x%llx translation.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+        ASSERT_EFI_ERROR (Status);
+      }
+
       if (mIoMmu->SmmuInfo[SmmuIndex].EBSBehaviorAbort) {
         Status = SmmuV3GlobalAbort (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
         if (EFI_ERROR (Status)) {
@@ -1012,12 +1018,6 @@ SmmuV3ExitBootServices (
           ASSERT_EFI_ERROR (Status);
         }
       } else {
-        Status = SmmuV3DisableTranslation (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
-        if (EFI_ERROR (Status)) {
-          DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu 0x%llx translation.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
-          ASSERT_EFI_ERROR (Status);
-        }
-
         Status = SmmuV3SetGlobalBypass (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
         if (EFI_ERROR (Status)) {
           DEBUG ((DEBUG_ERROR, "%a: Failed to set smmu 0x%llx global bypass.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
