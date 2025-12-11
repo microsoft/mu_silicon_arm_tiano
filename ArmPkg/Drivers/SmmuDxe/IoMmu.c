@@ -273,16 +273,8 @@ IoMmuMap (
     }
   }
 
-  if ((NeedRemap) && ((Operation == EdkiiIoMmuOperationBusMasterCommonBuffer) || (Operation == EdkiiIoMmuOperationBusMasterCommonBuffer64))) {
-    //
-    // Common Buffer operations can not be remapped.  If the common buffer
-    // is above 4GB, then it is not possible to generate a mapping, so return
-    // an error.
-    //
-    DEBUG ((DEBUG_ERROR, "%a: Common buffer operations cannot be remapped.\n", __func__));
-    ASSERT (FALSE);
-    return EFI_UNSUPPORTED;
-  }
+  // Assert that CommonBuffer operations do not require remapping
+  ASSERT (!((NeedRemap) && ((Operation == EdkiiIoMmuOperationBusMasterCommonBuffer) || (Operation == EdkiiIoMmuOperationBusMasterCommonBuffer64))));
 
   MapInfo->NumberOfBytes   = *NumberOfBytes;
   MapInfo->VirtualAddress  = DmaMemoryTop;
