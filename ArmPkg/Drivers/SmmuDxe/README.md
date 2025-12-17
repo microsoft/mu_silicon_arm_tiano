@@ -53,7 +53,7 @@ SMMU Hardware
 
    - SmmuDxe will handle Translation Table initialization
 
-### DMA Mapping with IoMmuLib and IoMmu Protocol
+## DMA Mapping with IoMmuLib and IoMmu Protocol
 
 - Maintains up to a 4-level page table, depending on configuration, to map HostAddress and DeviceAddress
 - Identity Mapped
@@ -76,7 +76,48 @@ SMMU Hardware
 - Validates operation type
 - Called by PciIo protocol for mapping
 
-### DMA Unmapping with IoMmuLib and IoMmu Protocol
+### Bounce Buffering
+
+In certain conditions, `IoMmuMap` will allocate a bounce buffer instead of using the original host address directly.
+A bounce buffer is a temporary intermediate buffer allocated that is used when the original DMA buffer
+cannot be used directly by the device.
+
+**Bounce Buffer Conditions:**
+
+A bounce buffer is allocated when the operation is NOT `EdkiiIoMmuOperationBusMasterCommonBuffer` or
+`EdkiiIoMmuOperationBusMasterCommonBuffer64`, AND any of the following conditions are met:
+
+1. **Alignment Requirements Not Met:**
+   - The `NumberOfBytes` is not 4KB aligned, OR
+   - The `HostAddress` (PhysicalAddress) is not 4KB aligned
+
+2. **32-bit DMA Limitation:**
+   - The operation is a 32-bit DMA operation (`EdkiiIoMmuOperationBusMasterRead` or
+     `EdkiiIoMmuOperationBusMasterWrite`), AND
+   - Any part of the DMA transfer range (`PhysicalAddress + NumberOfBytes`) exceeds 4GB
+
+**Bounce Buffer Behavior:**
+
+- When a bounce buffer is needed due to **alignment issues only** (with 64-bit operations), memory can be allocated
+  anywhere in the address space
+- When a bounce buffer is needed due to the **32-bit DMA limitation**, memory is allocated below 4GB using
+  `AllocateMaxAddress` with `DmaMemoryTop` set to `SIZE_4GB - 1`
+- The `DeviceAddress` returned points to the bounce buffer, not the original host address
+- The `Mapping` handle stores information about both the original host address and the bounce buffer address
+
+**CopyMem on Map (Host → Bounce Buffer):**
+
+A `CopyMem` from the host buffer to the bounce buffer is performed during `IoMmuMap` when:
+
+- A bounce buffer was allocated (NeedRemap is TRUE), AND
+- The operation is a **read operation** from the Bus Master's perspective:
+  - `EdkiiIoMmuOperationBusMasterRead`, OR
+  - `EdkiiIoMmuOperationBusMasterRead64`
+
+This copy ensures the Bus Master can read the correct data from the bounce buffer during the DMA operation.
+For write operations, no copy is needed on Map since the Bus Master will write new data into the bounce buffer.
+
+## DMA Unmapping with IoMmuLib and IoMmu Protocol
 
 1. **PCI Driver Completes DMA**:
    - Calls PciIo->Unmap()
@@ -94,6 +135,29 @@ SMMU Hardware
 
    - Invalidates mapping in Page Table
    - Invalidates TLB entries
+
+### Bounce Buffer Handling on Unmap
+
+When unmapping a DMA operation that used a bounce buffer (i.e., `DeviceAddress != HostAddress`):
+
+**CopyMem on Unmap (Bounce Buffer → Host):**
+
+A `CopyMem` from the bounce buffer back to the host buffer is performed during `IoMmuUnmap` when:
+
+- A bounce buffer was used (`DeviceAddress != HostAddress`), AND
+- The operation is a **write operation** from the Bus Master's perspective:
+  - `EdkiiIoMmuOperationBusMasterWrite`, OR
+  - `EdkiiIoMmuOperationBusMasterWrite64`
+
+This copy ensures the processor can access the data that the Bus Master wrote into the bounce buffer.
+For read operations, no copy is needed on Unmap since the Bus Master only read data and did not modify it.
+
+**Cleanup:**
+
+- The bounce buffer pages are freed using `FreePages`
+- The mapping information structure is freed
+
+For direct mappings (no bounce buffer), only the mapping information structure is freed.
 
 ### DMA Access Attributes with IoMmuLib and IoMmu Protocol
 
@@ -240,7 +304,12 @@ Potential improvements:
 1. Multiple translation granule support
 2. Stage 1 & 2 translation
 3. Different page table mapping schemes
-4. Updated IoMmu Protocol to optimize redundencies
+4. Updated IoMmu Protocol to optimize redundancies
+5. Bounce Buffer Optimization
+   - Remove the `NumberOfBytes` end address alignment check in `IoMmuMap`
+   - Update individual drivers to allocate their DMA buffers by page (page-aligned and page-sized)
+   - This eliminates one case for bounce buffering, improving performance by avoiding unnecessary
+     buffer copies and allocations when only the end address is unaligned
 
 ## Configuration Options
 
