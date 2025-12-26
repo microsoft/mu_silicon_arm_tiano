@@ -451,6 +451,8 @@ ArmSetMemoryRegionReadOnly (
       break;
     }
 
+    DEBUG ((DEBUG_ERROR, "%a: Current MemAttr: 0x%x\n", __FUNCTION__, MemoryAttributes));
+
     if (UseFfaAbis) {
       PermissionRequest = ARM_FFA_SET_MEM_ATTR_MAKE_PERM_REQUEST (
                             ARM_FFA_SET_MEM_ATTR_DATA_PERM_RO,
@@ -596,39 +598,45 @@ ArmSetMemoryAttributes (
     goto Done;
   }
 
-  if ((NeededAttributes & EFI_MEMORY_RP) != 0) {
-    Status = ArmSetMemoryRegionNoAccess (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      goto Done;
-    }
-  } else {
-    Status = ArmClearMemoryRegionNoAccess (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      goto Done;
-    }
-  }
-
-  if ((NeededAttributes & EFI_MEMORY_RO) != 0) {
-    Status = ArmSetMemoryRegionReadOnly (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      goto Done;
-    }
-  } else {
-    Status = ArmClearMemoryRegionReadOnly (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      goto Done;
+  if (AttributeMask & EFI_MEMORY_RP) {
+    if ((NeededAttributes & EFI_MEMORY_RP) != 0) {
+      Status = ArmSetMemoryRegionNoAccess (BaseAddress, Length);
+      if (EFI_ERROR (Status)) {
+        goto Done;
+      }
+    } else {
+      Status = ArmClearMemoryRegionNoAccess (BaseAddress, Length);
+      if (EFI_ERROR (Status)) {
+        goto Done;
+      }
     }
   }
 
-  if ((NeededAttributes & EFI_MEMORY_XP) != 0) {
-    Status = ArmSetMemoryRegionNoExec (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      goto Done;
+  if (AttributeMask & EFI_MEMORY_RO) {
+    if ((NeededAttributes & EFI_MEMORY_RO) != 0) {
+      Status = ArmSetMemoryRegionReadOnly (BaseAddress, Length);
+      if (EFI_ERROR (Status)) {
+        goto Done;
+      }
+    } else {
+      Status = ArmClearMemoryRegionReadOnly (BaseAddress, Length);
+      if (EFI_ERROR (Status)) {
+        goto Done;
+      }
     }
-  } else {
-    Status = ArmClearMemoryRegionNoExec (BaseAddress, Length);
-    if (EFI_ERROR (Status)) {
-      goto Done;
+  }
+
+  if (AttributeMask & EFI_MEMORY_XP) {
+    if ((NeededAttributes & EFI_MEMORY_XP) != 0) {
+      Status = ArmSetMemoryRegionNoExec (BaseAddress, Length);
+      if (EFI_ERROR (Status)) {
+        goto Done;
+      }
+    } else {
+      Status = ArmClearMemoryRegionNoExec (BaseAddress, Length);
+      if (EFI_ERROR (Status)) {
+        goto Done;
+      }
     }
   }
 
