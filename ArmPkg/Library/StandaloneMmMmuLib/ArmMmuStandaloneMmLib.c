@@ -451,8 +451,6 @@ ArmSetMemoryRegionReadOnly (
       break;
     }
 
-    DEBUG ((DEBUG_ERROR, "%a: Current MemAttr: 0x%x\n", __FUNCTION__, MemoryAttributes));
-
     if (UseFfaAbis) {
       PermissionRequest = ARM_FFA_SET_MEM_ATTR_MAKE_PERM_REQUEST (
                             ARM_FFA_SET_MEM_ATTR_DATA_PERM_RO,
