@@ -171,6 +171,8 @@ typedef struct _SMMU_INFO {
   VOID          *EventQueue;
   LIST_ENTRY    RmrNodeList;
   UINT64        SmmuBase;
+  UINT64        CachedProducer;
+  UINT64        CachedConsumer;
   UINT32        StreamTableSize;
   UINT32        StreamTableEntryMax;
   UINT32        Flags;
@@ -182,6 +184,8 @@ typedef struct _SMMU_INFO {
   UINT32        OutputAddressWidth;
   UINT8         TranslationStartingLevel;
   BOOLEAN       PageTableRootConcatenated;
+  BOOLEAN       RangeInvalidationSupported;
+  BOOLEAN       EBSBehaviorAbort;
   BOOLEAN       Enabled;
 } SMMU_INFO;
 
@@ -429,8 +433,12 @@ SmmuV3DumpPageTableEntries (
   Does nothing if no errors found.
 
   @param [in]  SmmuInfo  Pointer to the SMMU_INFO structure.
+
+  @retval EFI_SUCCESS            No SMMU errors found.
+  @retval EFI_INVALID_PARAMETER  Invalid Parameters.
+  @retval EFI_DEVICE_ERROR       SMMU error found.
 **/
-VOID
+EFI_STATUS
 SmmuV3LogErrors (
   IN SMMU_INFO  *SmmuInfo
   );

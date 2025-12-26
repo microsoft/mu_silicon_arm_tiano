@@ -565,6 +565,7 @@ SmmuV3Configure (
   SMMUV3_CR1                         Cr1;
   SMMUV3_CR2                         Cr2;
   SMMUV3_IDR0                        Idr0;
+  SMMUV3_IDR3                        Idr3;
   SMMUV3_CMD_GENERIC                 Command;
   SMMUV3_GERROR                      GError;
   VOID                               *CommandQueue;
@@ -700,6 +701,8 @@ SmmuV3Configure (
   SmmuV3WriteRegister64 (SmmuInfo->SmmuBase, SMMU_CMDQ_BASE, CommandQueueBase.AsUINT64);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_PROD, 0);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase, SMMU_CMDQ_CONS, 0);
+  SmmuInfo->CachedConsumer = 0;
+  SmmuInfo->CachedProducer = 0;
 
   // Configure Event Queue Base
   EventQueueBase.AsUINT64 = 0;
@@ -709,6 +712,10 @@ SmmuV3Configure (
   SmmuV3WriteRegister64 (SmmuInfo->SmmuBase, SMMU_EVENTQ_BASE, EventQueueBase.AsUINT64);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase + SMMUV3_PAGE_1_OFFSET, SMMU_EVENTQ_PROD, 0);
   SmmuV3WriteRegister32 (SmmuInfo->SmmuBase + SMMUV3_PAGE_1_OFFSET, SMMU_EVENTQ_CONS, 0);
+
+  // Check if Range-based invalidation and level hint are supported.
+  Idr3.AsUINT32                        = SmmuV3ReadRegister32 (SmmuInfo->SmmuBase, SMMU_IDR3);
+  SmmuInfo->RangeInvalidationSupported = (Idr3.Ril != 0);
 
   // Enable GError and event interrupts
   Status = SmmuV3EnableInterrupts (SmmuInfo->SmmuBase);
@@ -997,16 +1004,26 @@ SmmuV3ExitBootServices (
   OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
 
   for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    Status = SmmuV3DisableTranslation (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu 0x%llx translation.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
-      ASSERT_EFI_ERROR (Status);
-    }
+    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+      if (mIoMmu->SmmuInfo[SmmuIndex].EBSBehaviorAbort) {
+        Status = SmmuV3GlobalAbort (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+        if (EFI_ERROR (Status)) {
+          DEBUG ((DEBUG_ERROR, "%a: Failed to global abort smmu 0x%llx.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+          ASSERT_EFI_ERROR (Status);
+        }
+      } else {
+        Status = SmmuV3SetGlobalBypass (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+        if (EFI_ERROR (Status)) {
+          DEBUG ((DEBUG_ERROR, "%a: Failed to set smmu 0x%llx global bypass.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+          ASSERT_EFI_ERROR (Status);
+        }
+      }
 
-    Status = SmmuV3SetGlobalBypass (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Failed to set smmu 0x%llx global bypass.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
-      ASSERT_EFI_ERROR (Status);
+      Status = SmmuV3DisableTranslation (mIoMmu->SmmuInfo[SmmuIndex].SmmuBase);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "%a: Failed to disable smmu 0x%llx translation.\n", __func__, mIoMmu->SmmuInfo[SmmuIndex].SmmuBase));
+        ASSERT_EFI_ERROR (Status);
+      }
     }
   }
 

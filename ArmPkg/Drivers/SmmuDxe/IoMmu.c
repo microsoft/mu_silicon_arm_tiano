@@ -29,50 +29,11 @@
   Used to pass between IoMmuMap, IoMmuUnmap and IoMmuSetAttribute.
 **/
 typedef struct IOMMU_MAP_INFO {
-  UINTN     NumberOfBytes;
-  UINT64    VirtualAddress;
-  UINT64    PhysicalAddress;
+  UINTN                    NumberOfBytes;
+  UINT64                   DeviceAddress;
+  UINT64                   HostAddress;
+  EDKII_IOMMU_OPERATION    Operation;
 } IOMMU_MAP_INFO;
-
-/**
-  Update the RW flags of a page table entry per Arm Architecture Reference Manual for A profile.
-  <https://developer.arm.com/documentation/102105/ka-07>
-
-  The bottom 12 bits of a PAGE_TABLE_ENTRY, such as R/W. Only allows setting/clearing of R/W bits
-
-  @param [in]  Table                  Pointer to the page table.
-  @param [in]  Flags                  Flags such as Read/Write Flags to set or clear. Only allows clearing of R/W bits. 12 bits or less.
-  @param [in]  Index                  Index of the entry to update. <= PAGE_TABLE_SIZE
-
-  @retval EFI_SUCCESS            Success.
-  @retval EFI_INVALID_PARAMETER  Invalid parameter.
-**/
-STATIC
-EFI_STATUS
-UpdateReadWriteFlags (
-  IN PAGE_TABLE  *Table,
-  IN UINT16      Flags,
-  IN UINT32      Index
-  )
-{
-  UINT64  Entry;
-
-  if ((Table == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (Index >= PAGE_TABLE_SIZE) ||
-      ((Flags & ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT)) != 0))
-  {
-    DEBUG ((DEBUG_ERROR, "%a: Invalid parameter.\n", __func__));
-    ASSERT_EFI_ERROR (EFI_INVALID_PARAMETER);
-    return EFI_INVALID_PARAMETER;
-  }
-
-  // Allows clearing the R/W bits without affecting the other bits in the entry.
-  Entry = Table->Entries[Index] & ~(PAGE_TABLE_READ_BIT | PAGE_TABLE_WRITE_BIT);
-  // Set R/W bits in page table entry
-  Entry                |= Flags;
-  Table->Entries[Index] = Entry;
-
-  return EFI_SUCCESS;
-}
 
 /**
   Update the mapping of a virtual address to a physical address in the page table.
@@ -87,7 +48,6 @@ UpdateReadWriteFlags (
   @param [in]  PhysicalAddress            Physical address to map to.
   @param [in]  Flags                      Flags to set for the mapping. 12 bit or less.
   @param [in]  Valid                      Boolean to indicate if the entry is valid.
-  @param [in]  SetReadWriteFlagsOnly      Boolean to indicate if only flags should be set.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_INVALID_PARAMETER  Invalid parameter.
@@ -100,8 +60,7 @@ UpdateMapping (
   IN UINT64      VirtualAddress,
   IN UINT64      PhysicalAddress,
   IN UINT16      Flags,
-  IN BOOLEAN     Valid,
-  IN BOOLEAN     SetReadWriteFlagsOnly
+  IN BOOLEAN     Valid
   )
 {
   EFI_STATUS  Status;
@@ -109,7 +68,6 @@ UpdateMapping (
   UINT32      Index;
   PAGE_TABLE  *Current;
   UINT64      Entry;
-  UINT32      SmmuIndex;
 
   // Flags must be 12 bits or less
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0)) {
@@ -150,44 +108,15 @@ UpdateMapping (
       DEBUG ((DEBUG_VERBOSE, "%a: Page already mapped. VirtualAddress = 0x%llx PhysicalAddress=0x%llx\n", __func__, VirtualAddress, PhysicalAddress));
     }
 
-    if (!SetReadWriteFlagsOnly) {
-      if (Valid) {
-        Entry = (PhysicalAddress & ~PAGE_TABLE_BLOCK_OFFSET); // Assign PA
-        // validate entry and set leaf level flags
-        Entry                  |= Flags | PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
-        Current->Entries[Index] =  Entry;
-      } else {
-        Current->Entries[Index] = Current->Entries[Index] & ~PAGE_TABLE_ENTRY_VALID_BIT; // only invalidate leaf entry
-      }
+    if (Valid) {
+      Entry = (PhysicalAddress & ~PAGE_TABLE_BLOCK_OFFSET); // Assign PA
+      // validate entry and set leaf level flags
+      Entry                  |= Flags | PAGE_TABLE_ACCESS_FLAG | PAGE_TABLE_DESCRIPTOR | PAGE_TABLE_ENTRY_VALID_BIT;
+      Current->Entries[Index] =  Entry;
     } else {
-      Status = UpdateReadWriteFlags (Current, Flags, Index);
-      if (EFI_ERROR (Status)) {
-        goto End;
-      }
+      Current->Entries[Index] = Current->Entries[Index] & ~PAGE_TABLE_ENTRY_VALID_BIT; // only invalidate leaf entry
     }
   }
-
-  // Invalidate TLBI Command.
-  // Current implementation of IoMmu protocol doesnt distinguish between stream id's or Smmu's.
-  // As a result we have to invalidate TLB for all SMMU's for the given virtual address to make
-  // sure that the correct smmu's streamid's page table's TLB is invalidated.
-  // To workaround the limitations of the IoMmu protocol, we globally set the page table root
-  // for all SMMU's and stream id's to be the same.
-  // Todo: Update the IoMmu protocol to support multiple SMMU's and stream id's so we don't have to
-  // invalidate all SMMU's TLB for a given virtual address, just the one that was updated.
-  if (!Valid) {
-    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-      if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
-        Status = SmmuV3TLBInvalidateAddress (&mIoMmu->SmmuInfo[SmmuIndex], VirtualAddress);
-        if (EFI_ERROR (Status)) {
-          DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
-          goto End;
-        }
-      }
-    }
-  }
-
-  SpeculationBarrier ();
 
 End:
   ASSERT_EFI_ERROR (Status);
@@ -202,7 +131,6 @@ End:
   @param [in]  Bytes                      Number of bytes to map.
   @param [in]  Flags                      Flags to set for the mapping. 12 bits or less.
   @param [in]  Valid                      Boolean to indicate if the entry is valid.
-  @param [in]  SetReadWriteFlagsOnly      Boolean to indicate if only R/W flags should be set.
 
   @retval EFI_SUCCESS            Success.
   @retval EFI_INVALID_PARAMETER  Invalid parameter.
@@ -214,13 +142,13 @@ UpdatePageTable (
   IN UINT64      PhysicalAddress,
   IN UINT64      Bytes,
   IN UINT16      Flags,
-  IN BOOLEAN     Valid,
-  IN BOOLEAN     SetReadWriteFlagsOnly
+  IN BOOLEAN     Valid
   )
 {
   EFI_STATUS            Status;
   EFI_PHYSICAL_ADDRESS  PhysicalAddressEnd;
   EFI_PHYSICAL_ADDRESS  CurPhysicalAddress;
+  UINT32                SmmuIndex;
 
   if ((Root == NULL) || ((Flags & ~PAGE_TABLE_BLOCK_OFFSET) != 0) || (PhysicalAddress == 0) || (Bytes == 0)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
@@ -232,7 +160,7 @@ UpdatePageTable (
   PhysicalAddressEnd = ALIGN_VALUE (PhysicalAddress + Bytes, EFI_PAGE_SIZE);
 
   while (CurPhysicalAddress < PhysicalAddressEnd) {
-    Status = UpdateMapping (Root, CurPhysicalAddress, CurPhysicalAddress, Flags, Valid, SetReadWriteFlagsOnly);
+    Status = UpdateMapping (Root, CurPhysicalAddress, CurPhysicalAddress, Flags, Valid);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a: Failed to update page table mapping\n", __func__));
       goto End;
@@ -240,6 +168,28 @@ UpdatePageTable (
 
     CurPhysicalAddress += EFI_PAGE_SIZE;
   }
+
+  // Invalidate TLBI Command.
+  // Current implementation of IoMmu protocol doesnt distinguish between stream id's or Smmu's.
+  // As a result we have to invalidate TLB for all SMMU's for the given virtual address to make
+  // sure that the correct smmu's streamid's page table's TLB is invalidated.
+  // To workaround the limitations of the IoMmu protocol, we globally set the page table root
+  // for all SMMU's and stream id's to be the same.
+  // Todo: Update the IoMmu protocol to support multiple SMMU's and stream id's so we don't have to
+  // invalidate all SMMU's TLB for a given virtual address, just the one that was updated.
+  if (!Valid) {
+    for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
+      if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
+        Status = SmmuV3TLBInvalidateAll (&mIoMmu->SmmuInfo[SmmuIndex]);
+        if (EFI_ERROR (Status)) {
+          DEBUG ((DEBUG_ERROR, "%a: Failed to invalidate TLB\n", __func__));
+          goto End;
+        }
+      }
+    }
+  }
+
+  SpeculationBarrier ();
 
 End:
   ASSERT_EFI_ERROR (Status);
@@ -273,9 +223,13 @@ IoMmuMap (
   )
 {
   EFI_STATUS            Status;
-  EFI_PHYSICAL_ADDRESS  PhysicalAddress;
   IOMMU_MAP_INFO        *MapInfo;
-  UINT32                SmmuIndex;
+  EFI_PHYSICAL_ADDRESS  PhysicalAddress;
+  BOOLEAN               NeedRemap;
+  EFI_PHYSICAL_ADDRESS  DmaMemoryTop;
+
+  Status    = EFI_SUCCESS;
+  NeedRemap = FALSE;
 
   if ((This == NULL) ||
       (HostAddress == NULL) ||
@@ -289,30 +243,72 @@ IoMmuMap (
     goto End;
   }
 
-  PhysicalAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress;
-  Status          = UpdatePageTable (mIoMmu->SmmuInfo->PageTableRoot, PhysicalAddress, *NumberOfBytes, 0, TRUE, FALSE);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
+  // Allocate and fill the IOMMU_MAP_INFO structure with mapping information
+  MapInfo = (IOMMU_MAP_INFO *)AllocateZeroPool (sizeof (IOMMU_MAP_INFO));
+  if (MapInfo == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Failed to allocate IOMMU_MAP_INFO structure\n", __func__));
+    Status = EFI_OUT_OF_RESOURCES;
     goto End;
   }
 
-  // Allocate and fill the IOMMU_MAP_INFO structure with mapped information
-  *DeviceAddress = PhysicalAddress; // Identity mapping
+  DmaMemoryTop    = MAX_UINTN;
+  PhysicalAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)HostAddress;
 
-  MapInfo                  = (IOMMU_MAP_INFO *)AllocateZeroPool (sizeof (IOMMU_MAP_INFO));
-  MapInfo->NumberOfBytes   = *NumberOfBytes;
-  MapInfo->VirtualAddress  = *DeviceAddress;
-  MapInfo->PhysicalAddress = PhysicalAddress;
-  *Mapping                 = MapInfo;
+  if ((Operation != EdkiiIoMmuOperationBusMasterCommonBuffer) && (Operation != EdkiiIoMmuOperationBusMasterCommonBuffer64)) {
+    if ((*NumberOfBytes != ALIGN_VALUE (*NumberOfBytes, SIZE_4KB)) || (PhysicalAddress != ALIGN_VALUE (PhysicalAddress, SIZE_4KB))) {
+      NeedRemap = TRUE;
+    }
 
-End:
-  // Only prints errors if Event Queue is not empty and GError != 0
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
-      SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
+    if ((((Operation != EdkiiIoMmuOperationBusMasterRead64) &&
+          (Operation != EdkiiIoMmuOperationBusMasterWrite64))) &&
+        ((PhysicalAddress + *NumberOfBytes) > SIZE_4GB))
+    {
+      //
+      // If the root bridge or the device cannot handle performing DMA above
+      // 4GB but any part of the DMA transfer being mapped is above 4GB, then
+      // map the DMA transfer to a buffer below 4GB.
+      //
+      NeedRemap    = TRUE;
+      DmaMemoryTop = SIZE_4GB - 1;
     }
   }
 
+  MapInfo->NumberOfBytes = *NumberOfBytes;
+  MapInfo->DeviceAddress = DmaMemoryTop;
+  MapInfo->HostAddress   = PhysicalAddress;
+  MapInfo->Operation     = Operation;
+
+  // Bounce buffer case
+  if (NeedRemap) {
+    Status = gBS->AllocatePages (
+                    AllocateMaxAddress,
+                    EfiBootServicesData,
+                    EFI_SIZE_TO_PAGES (MapInfo->NumberOfBytes),
+                    &MapInfo->DeviceAddress
+                    );
+    if (EFI_ERROR (Status)) {
+      FreePool (MapInfo);
+      *NumberOfBytes = 0;
+      DEBUG ((DEBUG_ERROR, "%a: %r\n", __func__, Status));
+      return Status;
+    }
+
+    //
+    // If this is a read operation from the Bus Master's point of view,
+    // then copy the contents of the real buffer into the mapped buffer
+    // so the Bus Master can read the contents of the real buffer.
+    //
+    if ((Operation == EdkiiIoMmuOperationBusMasterRead) || (Operation == EdkiiIoMmuOperationBusMasterRead64)) {
+      CopyMem ((VOID *)(UINTN)MapInfo->DeviceAddress, (VOID *)(UINTN)MapInfo->HostAddress, MapInfo->NumberOfBytes);
+    }
+  } else {
+    MapInfo->DeviceAddress = MapInfo->HostAddress;
+  }
+
+  *DeviceAddress = MapInfo->DeviceAddress;
+  *Mapping       = MapInfo;
+
+End:
   ASSERT_EFI_ERROR (Status);
   return Status;
 }
@@ -335,39 +331,47 @@ IoMmuUnmap (
   IN  VOID                  *Mapping
   )
 {
-  EFI_STATUS      Status;
   IOMMU_MAP_INFO  *MapInfo;
-  UINT32          SmmuIndex;
 
   if ((This == NULL) || (Mapping == NULL)) {
     DEBUG ((DEBUG_ERROR, "%a: Invalid parameter\n", __func__));
-    Status = EFI_INVALID_PARAMETER;
-    goto End;
+    ASSERT (FALSE);
+    return EFI_INVALID_PARAMETER;
   }
 
   MapInfo = (IOMMU_MAP_INFO *)Mapping;
 
-  Status = UpdatePageTable (mIoMmu->SmmuInfo->PageTableRoot, MapInfo->PhysicalAddress, MapInfo->NumberOfBytes, 0, FALSE, FALSE);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
-    goto End;
+  // Bounce buffer case
+  if (MapInfo->DeviceAddress != MapInfo->HostAddress) {
+    if ((MapInfo->DeviceAddress == 0) || (MapInfo->HostAddress == 0) || (MapInfo->NumberOfBytes == 0)) {
+      DEBUG ((DEBUG_ERROR, "%a: Invalid fields in MapInfo struct.\n", __func__));
+      ASSERT (FALSE);
+      return EFI_INVALID_PARAMETER;
+    }
+
+    //
+    // If this is a write operation from the Bus Master's point of view,
+    // then copy the contents of the mapped buffer into the real buffer
+    // so the processor can read the contents of the real buffer.
+    //
+    if ((MapInfo->Operation == EdkiiIoMmuOperationBusMasterWrite) || (MapInfo->Operation == EdkiiIoMmuOperationBusMasterWrite64)) {
+      CopyMem (
+        (VOID *)(UINTN)MapInfo->HostAddress,
+        (VOID *)(UINTN)MapInfo->DeviceAddress,
+        MapInfo->NumberOfBytes
+        );
+    }
+
+    //
+    // Free the mapped buffer and the MAP_INFO structure.
+    //
+    gBS->FreePages (MapInfo->DeviceAddress, EFI_SIZE_TO_PAGES (MapInfo->NumberOfBytes));
   }
 
   // Free the mapping structure allocated in IoMmuMap
-  if (MapInfo != NULL) {
-    FreePool (MapInfo);
-  }
+  FreePool (Mapping);
 
-End:
-  // Only prints errors if Event Queue is not empty and GError != 0
-  for (SmmuIndex = 0; SmmuIndex < mIoMmu->SmmuCount; SmmuIndex++) {
-    if (mIoMmu->SmmuInfo[SmmuIndex].Enabled) {
-      SmmuV3LogErrors (&mIoMmu->SmmuInfo[SmmuIndex]);
-    }
-  }
-
-  ASSERT_EFI_ERROR (Status);
-  return Status;
+  return EFI_SUCCESS;
 }
 
 /**
@@ -507,11 +511,10 @@ IoMmuSetAttribute (
 
   Status = UpdatePageTable (
              mIoMmu->SmmuInfo->PageTableRoot,
-             MapInfo->PhysicalAddress,
+             MapInfo->DeviceAddress,
              MapInfo->NumberOfBytes,
              PAGE_TABLE_READ_WRITE_FROM_IOMMU_ACCESS ((EDKII_IOMMU_ACCESS_READ | EDKII_IOMMU_ACCESS_WRITE)), // TODO: https://github.com/microsoft/mu_silicon_arm_tiano/issues/375 debug issue on physical platform and revert the permissions
-             FALSE,
-             TRUE
+             (IoMmuAccess != 0)
              );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: Failed to update page table.\n", __func__));
