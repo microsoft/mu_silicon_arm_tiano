@@ -52,8 +52,6 @@
 [Pcd]
   gArmTokenSpaceGuid.PcdSystemMemoryBase
   gArmTokenSpaceGuid.PcdSystemMemorySize
-  gArmTokenSpaceGuid.PcdMmBufferBase # MU_CHANGE
-  gArmTokenSpaceGuid.PcdMmBufferSize # MU_CHANGE
 
 [Depex]
   TRUE
