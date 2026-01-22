@@ -7,6 +7,7 @@
 **/
 
 #include "PeilessSec.h"
+#include <Library/Tpm2StartupLib.h>
 
 #define IS_XIP()  (((UINT64)FixedPcdGet64 (PcdFdBaseAddress) > mSystemMemoryEnd) ||\
                   ((FixedPcdGet64 (PcdFdBaseAddress) + FixedPcdGet32 (PcdFdSize)) <= FixedPcdGet64 (PcdSystemMemoryBase)))
@@ -186,6 +187,10 @@ SecMain (
 
   // Decompress firmware volumes and load the DXE Core
   DecompressFvs ();
+
+  // Initialize the TPM before loading the DXE core
+  Status = Tpm2StartupInit ();
+  ASSERT_EFI_ERROR (Status);
 
   // Load the DXE Core and transfer control to it
   Status = LoadDxeCoreFromFv (NULL, 0);
