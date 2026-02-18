@@ -506,7 +506,7 @@ ArmSetMemoryAttributes (
   DEBUG ((
     DEBUG_INFO,
     "%a: BaseAddress == 0x%llx, Length == 0x%llx, Attributes == 0x%llx, Mask == 0x%llx\n",
-    __FUNCTION__,
+    __func__,
     BaseAddress,
     Length,
     Attributes,
@@ -518,6 +518,14 @@ ArmSetMemoryAttributes (
   if ((Length == 0) ||
       ((NeededAttributes & ~(EFI_MEMORY_RO | EFI_MEMORY_RP | EFI_MEMORY_XP)) != 0))
   {
+    DEBUG ((DEBUG_ERROR, "%a: Length is 0 or unsupported attributes are set in Attributes.\n", __func__));
+    Status = EFI_INVALID_PARAMETER;
+    goto Done;
+  }
+
+  if ((BaseAddress % EFI_PAGE_SIZE != 0) || (Length % EFI_PAGE_SIZE != 0)) {
+    // Address and length must be aligned to page size.
+    DEBUG ((DEBUG_ERROR, "%a: Address or length is not aligned to page size.\n", __func__));
     Status = EFI_INVALID_PARAMETER;
     goto Done;
   }
@@ -561,7 +569,8 @@ ArmSetMemoryAttributes (
   while (Length > 0) {
     Status = GetMemoryPermissions (UseFfaAbis, BaseAddress, &MemoryAttributes);
     if (EFI_ERROR (Status)) {
-      break;
+      DEBUG ((DEBUG_ERROR, "%a: GetMemoryPermissions failed with Status == %r\n", __func__, Status));
+      goto Done;
     }
 
     if (Length < Size) {
@@ -576,7 +585,8 @@ ArmSetMemoryAttributes (
                  PermissionRequest
                  );
       if (EFI_ERROR (Status)) {
-        return Status;
+        DEBUG ((DEBUG_ERROR, "%a: RequestMemoryPermissionChange failed with Status == %r\n", __func__, Status));
+        goto Done;
       }
     }
 
