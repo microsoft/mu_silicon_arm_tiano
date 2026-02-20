@@ -48,5 +48,8 @@
 [Guids]
   gArmMmuReplaceLiveTranslationEntryFuncGuid
 
+[Protocols]
+  gArmPageTableMemoryAllocationProtocolGuid
+
 [Pcd.ARM]
   gArmTokenSpaceGuid.PcdNormalMemoryNonshareableOverride
