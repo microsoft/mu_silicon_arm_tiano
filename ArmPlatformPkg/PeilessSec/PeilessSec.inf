@@ -35,7 +35,7 @@
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
-  SecurityPkg/SecurityPkg.dec
+  SecurityPkg/SecurityPkg.dec # MU_CHANGE
 
 [LibraryClasses]
   ArmLib
@@ -54,7 +54,7 @@
   SerialPortLib
   TimerLib
   StackCheckLib
-  Tpm2StartupLib
+  Tpm2StartupLib # MU_CHANGE
 
 [Ppis]
   gArmMpCoreInfoPpiGuid
