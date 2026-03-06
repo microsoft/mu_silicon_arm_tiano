@@ -7,6 +7,7 @@
 **/
 
 #include "PeilessSec.h"
+#include <Library/Tpm2StartupLib.h> // MU_CHANGE
 
 #define IS_XIP()  (((UINT64)FixedPcdGet64 (PcdFdBaseAddress) > mSystemMemoryEnd) ||\
                   ((FixedPcdGet64 (PcdFdBaseAddress) + FixedPcdGet32 (PcdFdSize)) <= FixedPcdGet64 (PcdSystemMemoryBase)))
@@ -181,6 +182,12 @@ SecMain (
 
   // SEC phase needs to run library constructors by hand.
   ProcessLibraryConstructorList ();
+
+  // MU_CHANGE [BEGIN] - Add Tpm2StartupInit call
+  // Initialize the TPM before loading the DXE core
+  Status = Tpm2StartupInit ();
+  ASSERT_EFI_ERROR (Status);
+  // MU_CHANGE [END]
 
   // MU_CHANGE [BEGIN] - Remove DXE Core FV placement assumption
 

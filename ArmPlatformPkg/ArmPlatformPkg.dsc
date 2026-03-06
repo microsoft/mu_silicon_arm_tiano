@@ -89,6 +89,7 @@
   HobLib|EmbeddedPkg/Library/PrePiHobLib/PrePiHobLib.inf
   MemoryAllocationLib|EmbeddedPkg/Library/PrePiMemoryAllocationLib/PrePiMemoryAllocationLib.inf
   PrePiHobListPointerLib|ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
+  Tpm2StartupLib|SecurityPkg/Library/Tpm2StartupLibNull/Tpm2StartupLibNull.inf  # MU_CHANGE
 
 #[LibraryClasses.AARCH64.MM_STANDALONE]   # MU_CHANGE
 [LibraryClasses.common.MM_STANDALONE]     # MU_CHANGE
